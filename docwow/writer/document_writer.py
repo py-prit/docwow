@@ -1,0 +1,343 @@
+"""Build word/document.xml from the Document model."""
+from __future__ import annotations
+
+from lxml import etree
+
+from docwow.models.document import Document
+from docwow.models.image import InlineImage
+from docwow.models.paragraph import ImageRun, Paragraph, Run, TextRun
+from docwow.models.styles import ParagraphFormatting, RunFormatting
+from docwow.models.table import Table, TableCell, TableRow
+from docwow.writer._xml import (
+    DOC_NSMAP, W, R, WP, A, PIC, XML_SPACE,
+    sub, to_bytes, pt_tw, pt_emu, pt_hp,
+)
+from docwow.writer.styles_writer import _write_para_fmt, _write_run_fmt
+
+_JC = {"left": "left", "center": "center", "right": "right", "justify": "both"}
+
+# Image drawing counter (unique per document build; passed in as state)
+# We use a list as a mutable container so nested functions can mutate it.
+
+# Content type → file extension for media naming
+_EXTENSIONS: dict[str, str] = {
+    "image/png":  ".png",
+    "image/jpeg": ".jpg",
+    "image/jpg":  ".jpg",
+    "image/gif":  ".gif",
+    "image/bmp":  ".bmp",
+    "image/tiff": ".tiff",
+    "image/webp": ".webp",
+    "image/svg+xml": ".svg",
+    "image/x-emf": ".emf",
+    "image/x-wmf": ".wmf",
+}
+
+
+def build_document_xml(
+    doc: Document,
+    image_rids: dict[str, str],
+) -> bytes:
+    """Build word/document.xml.
+
+    Args:
+        doc:        The Document model.
+        image_rids: Mapping ``{original_relationship_id → new_rid}`` for images
+                    that have been added to the ZIP's media folder.
+
+    Returns:
+        UTF-8 bytes of the complete document.xml.
+    """
+    root = etree.Element(f"{{{W}}}document", nsmap=DOC_NSMAP)
+    body = etree.SubElement(root, f"{{{W}}}body")
+
+    _draw_counter = [1]   # mutable counter for image drawing IDs
+
+    for element in doc.body:
+        if isinstance(element, Paragraph):
+            _write_paragraph(body, element, image_rids, _draw_counter)
+        elif isinstance(element, Table):
+            _write_table(body, element, image_rids, _draw_counter)
+
+    # w:sectPr — page geometry
+    _write_sect_pr(body, doc)
+
+    return to_bytes(root)
+
+
+# ---------------------------------------------------------------------------
+# Paragraph
+# ---------------------------------------------------------------------------
+
+def _write_paragraph(
+    parent: etree._Element,
+    para: Paragraph,
+    image_rids: dict[str, str],
+    draw_counter: list[int],
+) -> None:
+    p_el = etree.SubElement(parent, f"{{{W}}}p")
+    ppr = etree.SubElement(p_el, f"{{{W}}}pPr")
+    fmt = para.formatting
+
+    if fmt.style_id:
+        sub(ppr, "pStyle", val=fmt.style_id)
+
+    # OOXML schema: keepNext/keepLines/pageBreakBefore must precede w:numPr
+    if fmt.keep_with_next:
+        etree.SubElement(ppr, f"{{{W}}}keepNext")
+    if fmt.keep_together:
+        etree.SubElement(ppr, f"{{{W}}}keepLines")
+    if fmt.page_break_before:
+        etree.SubElement(ppr, f"{{{W}}}pageBreakBefore")
+
+    if para.list_info is not None:
+        num_pr = etree.SubElement(ppr, f"{{{W}}}numPr")
+        sub(num_pr, "ilvl", val=str(para.list_info.level))
+        sub(num_pr, "numId", val=para.list_info.num_id)
+
+    # spacing, ind, jc — keep flags already written above
+    _write_para_fmt(ppr, fmt, skip_keep_flags=True)
+
+    for run in para.runs:
+        _write_run(p_el, run, image_rids, draw_counter)
+
+
+# ---------------------------------------------------------------------------
+# Run dispatch
+# ---------------------------------------------------------------------------
+
+def _write_run(
+    parent: etree._Element,
+    run: Run,
+    image_rids: dict[str, str],
+    draw_counter: list[int],
+) -> None:
+    if isinstance(run, ImageRun):
+        _write_image_run(parent, run.image, image_rids, draw_counter)
+    else:
+        _write_text_run(parent, run)
+
+
+# ---------------------------------------------------------------------------
+# Text run
+# ---------------------------------------------------------------------------
+
+def _write_text_run(parent: etree._Element, run: TextRun) -> None:
+    r_el = etree.SubElement(parent, f"{{{W}}}r")
+    fmt = run.formatting
+
+    # w:rPr (only if there is non-default formatting)
+    if _has_run_fmt(fmt):
+        rpr = etree.SubElement(r_el, f"{{{W}}}rPr")
+        _write_run_fmt(rpr, fmt)
+
+    # Write text, converting embedded newlines to <w:br/>
+    _write_text_content(r_el, run.text)
+
+
+def _has_run_fmt(fmt: RunFormatting) -> bool:
+    return any([
+        fmt.bold, fmt.italic, fmt.underline, fmt.strike,
+        fmt.font_name, fmt.font_size_pt is not None,
+        fmt.color, fmt.highlight, fmt.vertical_align,
+    ])
+
+
+def _write_text_content(r_el: etree._Element, text: str) -> None:
+    """Write text to a run, splitting on \\n and inserting w:br elements."""
+    parts = text.split("\n")
+    _append_t(r_el, parts[0])
+    for part in parts[1:]:
+        etree.SubElement(r_el, f"{{{W}}}br")
+        _append_t(r_el, part)
+
+
+def _append_t(r_el: etree._Element, text: str) -> None:
+    t_el = etree.SubElement(r_el, f"{{{W}}}t")
+    t_el.set(XML_SPACE, "preserve")
+    t_el.text = text
+
+
+# ---------------------------------------------------------------------------
+# Image run
+# ---------------------------------------------------------------------------
+
+def _write_image_run(
+    parent: etree._Element,
+    image: InlineImage,
+    image_rids: dict[str, str],
+    draw_counter: list[int],
+) -> None:
+    new_rid = image_rids.get(image.relationship_id, image.relationship_id)
+    draw_id = draw_counter[0]
+    draw_counter[0] += 1
+
+    cx = pt_emu(image.width_pt)
+    cy = pt_emu(image.height_pt)
+    name = f"Image{draw_id}"
+
+    r_el = etree.SubElement(parent, f"{{{W}}}r")
+    drawing = etree.SubElement(r_el, f"{{{W}}}drawing")
+    inline = etree.SubElement(drawing, f"{{{WP}}}inline")
+    inline.set("distT", "0")
+    inline.set("distB", "0")
+    inline.set("distL", "0")
+    inline.set("distR", "0")
+
+    extent = etree.SubElement(inline, f"{{{WP}}}extent")
+    extent.set("cx", cx)
+    extent.set("cy", cy)
+
+    effect = etree.SubElement(inline, f"{{{WP}}}effectExtent")
+    for attr in ("l", "t", "r", "b"):
+        effect.set(attr, "0")
+
+    doc_pr = etree.SubElement(inline, f"{{{WP}}}docPr")
+    doc_pr.set("id", str(draw_id))
+    doc_pr.set("name", name)
+
+    # a:graphic
+    graphic = etree.SubElement(inline, f"{{{A}}}graphic")
+    gdata = etree.SubElement(graphic, f"{{{A}}}graphicData")
+    gdata.set("uri", f"http://schemas.openxmlformats.org/drawingml/2006/picture")
+
+    # pic:pic
+    pic_el = etree.SubElement(gdata, f"{{{PIC}}}pic")
+
+    nv_pr = etree.SubElement(pic_el, f"{{{PIC}}}nvPicPr")
+    cnv_pr = etree.SubElement(nv_pr, f"{{{PIC}}}cNvPr")
+    cnv_pr.set("id", "0")
+    cnv_pr.set("name", name)
+    etree.SubElement(nv_pr, f"{{{PIC}}}cNvPicPr")
+
+    blip_fill = etree.SubElement(pic_el, f"{{{PIC}}}blipFill")
+    blip = etree.SubElement(blip_fill, f"{{{A}}}blip")
+    blip.set(f"{{{R}}}embed", new_rid)
+    etree.SubElement(blip_fill, f"{{{A}}}stretch").append(
+        etree.Element(f"{{{A}}}fillRect")
+    )
+
+    sp_pr = etree.SubElement(pic_el, f"{{{PIC}}}spPr")
+    xfrm = etree.SubElement(sp_pr, f"{{{A}}}xfrm")
+    off = etree.SubElement(xfrm, f"{{{A}}}off")
+    off.set("x", "0")
+    off.set("y", "0")
+    ext = etree.SubElement(xfrm, f"{{{A}}}ext")
+    ext.set("cx", cx)
+    ext.set("cy", cy)
+    prst = etree.SubElement(sp_pr, f"{{{A}}}prstGeom")
+    prst.set("prst", "rect")
+    etree.SubElement(prst, f"{{{A}}}avLst")
+
+
+# ---------------------------------------------------------------------------
+# Table
+# ---------------------------------------------------------------------------
+
+def _write_table(
+    parent: etree._Element,
+    table: Table,
+    image_rids: dict[str, str],
+    draw_counter: list[int],
+) -> None:
+    tbl = etree.SubElement(parent, f"{{{W}}}tbl")
+    _write_tbl_pr(tbl, table)
+
+    # tblGrid — column widths
+    if table.col_widths_pt:
+        grid = etree.SubElement(tbl, f"{{{W}}}tblGrid")
+        for w_pt in table.col_widths_pt:
+            col = etree.SubElement(grid, f"{{{W}}}gridCol")
+            col.set(f"{{{W}}}w", pt_tw(w_pt))
+
+    for row in table.rows:
+        _write_row(tbl, row, image_rids, draw_counter)
+
+
+def _write_tbl_pr(tbl: etree._Element, table: Table) -> None:
+    tpr = etree.SubElement(tbl, f"{{{W}}}tblPr")
+
+    if table.style_id:
+        sub(tpr, "tblStyle", val=table.style_id)
+
+    # Width
+    if table.width_pt is not None:
+        tw = etree.SubElement(tpr, f"{{{W}}}tblW")
+        tw.set(f"{{{W}}}w", pt_tw(table.width_pt))
+        tw.set(f"{{{W}}}type", "dxa")
+
+    # Default single-line borders so the table is visible
+    borders = etree.SubElement(tpr, f"{{{W}}}tblBorders")
+    for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        b = etree.SubElement(borders, f"{{{W}}}{side}")
+        b.set(f"{{{W}}}val", "single")
+        b.set(f"{{{W}}}sz", "4")
+        b.set(f"{{{W}}}space", "0")
+        b.set(f"{{{W}}}color", "auto")
+
+
+def _write_row(
+    tbl: etree._Element,
+    row: TableRow,
+    image_rids: dict[str, str],
+    draw_counter: list[int],
+) -> None:
+    tr = etree.SubElement(tbl, f"{{{W}}}tr")
+
+    if row.height_pt is not None:
+        trpr = etree.SubElement(tr, f"{{{W}}}trPr")
+        trh = etree.SubElement(trpr, f"{{{W}}}trHeight")
+        trh.set(f"{{{W}}}val", pt_tw(row.height_pt))
+
+    for cell in row.cells:
+        _write_cell(tr, cell, image_rids, draw_counter)
+
+
+def _write_cell(
+    tr: etree._Element,
+    cell: TableCell,
+    image_rids: dict[str, str],
+    draw_counter: list[int],
+) -> None:
+    tc = etree.SubElement(tr, f"{{{W}}}tc")
+    tcpr = etree.SubElement(tc, f"{{{W}}}tcPr")
+
+    if cell.width_pt is not None:
+        tcw = etree.SubElement(tcpr, f"{{{W}}}tcW")
+        tcw.set(f"{{{W}}}w", pt_tw(cell.width_pt))
+        tcw.set(f"{{{W}}}type", "dxa")
+
+    if cell.col_span > 1:
+        gs = etree.SubElement(tcpr, f"{{{W}}}gridSpan")
+        gs.set(f"{{{W}}}val", str(cell.col_span))
+
+    if cell.v_merge_start:
+        vm = etree.SubElement(tcpr, f"{{{W}}}vMerge")
+        vm.set(f"{{{W}}}val", "restart")
+    elif cell.v_merge_continue:
+        etree.SubElement(tcpr, f"{{{W}}}vMerge")
+
+    # Each cell must have at least one paragraph
+    if cell.paragraphs:
+        for para in cell.paragraphs:
+            _write_paragraph(tc, para, image_rids, draw_counter)
+    else:
+        etree.SubElement(tc, f"{{{W}}}p")
+
+
+# ---------------------------------------------------------------------------
+# Section properties (page geometry)
+# ---------------------------------------------------------------------------
+
+def _write_sect_pr(body: etree._Element, doc) -> None:
+    sect = etree.SubElement(body, f"{{{W}}}sectPr")
+
+    pgsz = etree.SubElement(sect, f"{{{W}}}pgSz")
+    pgsz.set(f"{{{W}}}w", pt_tw(doc.page_width_pt))
+    pgsz.set(f"{{{W}}}h", pt_tw(doc.page_height_pt))
+
+    pgmar = etree.SubElement(sect, f"{{{W}}}pgMar")
+    pgmar.set(f"{{{W}}}top",    pt_tw(doc.margin_top_pt))
+    pgmar.set(f"{{{W}}}right",  pt_tw(doc.margin_right_pt))
+    pgmar.set(f"{{{W}}}bottom", pt_tw(doc.margin_bottom_pt))
+    pgmar.set(f"{{{W}}}left",   pt_tw(doc.margin_left_pt))
