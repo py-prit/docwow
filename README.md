@@ -41,7 +41,7 @@ doc.to_docx("output.docx")
 
 ## Documentation
 
-Full documentation at [docwow.dev](https://docwow.dev).
+Full documentation at [docwow.readthedocs.io](https://docwow.readthedocs.io).
 
 ## Requirements
 
