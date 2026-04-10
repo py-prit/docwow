@@ -29,9 +29,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://docwow.dev"
+Homepage = "https://docwow.readthedocs.io"
 Repository = "https://github.com/py-prit/docwow"
-Documentation = "https://docwow.dev"
+Documentation = "https://docwow.readthedocs.io"
 "Bug Tracker" = "https://github.com/py-prit/docwow/issues"
 
 [project.optional-dependencies]

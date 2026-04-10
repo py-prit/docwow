@@ -1,6 +1,6 @@
 site_name: docwow
 site_description: Pure Python Word (DOCX) ↔ HTML conversion with guaranteed round-trip fidelity
-site_url: https://docwow.dev
+site_url: https://docwow.readthedocs.io
 repo_url: https://github.com/py-prit/docwow
 repo_name: docwow
 edit_uri: edit/main/docs/
