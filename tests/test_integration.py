@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 import docwow
+from docwow.api.document import DocumentWrapper
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
@@ -74,17 +75,17 @@ def _is_valid_zip(data: bytes) -> bool:
 class TestPublicApi:
     def test_open_docx_file(self):
         doc = docwow.open(FIXTURES / "paragraphs.docx")
-        assert isinstance(doc, Document)
+        assert isinstance(doc, DocumentWrapper)
 
     def test_open_docx_bytes(self):
         data = (FIXTURES / "paragraphs.docx").read_bytes()
         doc = docwow.open(data)
-        assert isinstance(doc, Document)
+        assert isinstance(doc, DocumentWrapper)
 
     def test_open_html_string(self):
         html = docwow.render_document(_doc(body=(_para("test"),)))
         doc = docwow.open(html)
-        assert isinstance(doc, Document)
+        assert isinstance(doc, DocumentWrapper)
 
     def test_open_invalid_type_raises(self):
         with pytest.raises(TypeError):
