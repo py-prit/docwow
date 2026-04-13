@@ -45,7 +45,9 @@ The pipeline is strictly unidirectional at each stage. No layer reaches into ano
                     │  │   │       └── MutableRun          │
                     │  │   ├── MutableListItem             │
                     │  │   ├── MutableImage                │
-                    │  │   └── TableView (read-only)       │
+                    │  │   └── MutableTable               │
+                    │  │       └── MutableTableRow        │
+                    │  │           └── MutableTableCell   │
                     └──────────────┬───────────────────────┘
                                    │  _to_frozen()
                                    ▼
@@ -101,7 +103,7 @@ docwow/
 │   ├── run.py               MutableRun, MutableImageRun, RunCollection
 │   ├── list_item.py         MutableListItem
 │   ├── image.py             MutableImage
-│   ├── table.py             TableView, TableRowView, TableCellView
+│   ├── table.py             MutableTable, MutableTableRow, MutableTableCell
 │   └── _convert.py          DocumentWrapper → frozen Document (internal)
 ├── models/                  Internal Document model (frozen dataclasses)
 │   ├── document.py          Document — top-level container

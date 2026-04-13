@@ -46,14 +46,14 @@ These classes are returned by `docwow.open()` and are the primary interface for 
 
 ::: docwow.api.MutableImage
 
-## TableView
+## MutableTable
 
-::: docwow.api.TableView
+::: docwow.api.MutableTable
 
-## TableRowView
+## MutableTableRow
 
-::: docwow.api.TableRowView
+::: docwow.api.MutableTableRow
 
-## TableCellView
+## MutableTableCell
 
-::: docwow.api.TableCellView
+::: docwow.api.MutableTableCell

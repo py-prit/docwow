@@ -10,7 +10,7 @@ from docwow.models.styles import ParagraphFormatting
 from docwow.api.run import MutableImageRun, MutableRun, RunCollection
 
 if TYPE_CHECKING:
-    from docwow.api.table import TableView
+    from docwow.api.table import MutableTable
 
 
 class MutableParagraph:
@@ -313,28 +313,28 @@ class ParagraphCollection:
     """Ordered mutable collection of body elements (paragraphs, list items, images, tables)."""
 
     def __init__(self) -> None:
-        self._items: list[MutableParagraph | TableView] = []
+        self._items: list[MutableParagraph | "MutableTable"] = []
 
     # ---- Sequence protocol ---------------------------------------------------
 
     def __len__(self) -> int:
         return len(self._items)
 
-    def __iter__(self) -> Iterator[MutableParagraph | TableView]:
+    def __iter__(self) -> Iterator[MutableParagraph | "MutableTable"]:
         return iter(self._items)
 
-    def __getitem__(self, index: int) -> MutableParagraph | TableView:
+    def __getitem__(self, index: int) -> MutableParagraph | "MutableTable":
         return self._items[index]
 
     # ---- Mutation ------------------------------------------------------------
 
-    def append(self, item: MutableParagraph | TableView) -> None:
-        """Append a paragraph or table view to the collection."""
+    def append(self, item: "MutableParagraph | MutableTable") -> None:
+        """Append a paragraph or table to the collection."""
         self._check_type(item)
         self._items.append(item)
 
-    def insert(self, index: int, item: MutableParagraph | TableView) -> None:
-        """Insert a paragraph or table view at the given index."""
+    def insert(self, index: int, item: "MutableParagraph | MutableTable") -> None:
+        """Insert a paragraph or table at the given index."""
         self._check_type(item)
         self._items.insert(index, item)
 
@@ -394,6 +394,30 @@ class ParagraphCollection:
         self._items.append(img)
         return img
 
+    def add_table(
+        self,
+        rows: int,
+        cols: int,
+        width_pt: float | None = None,
+        style_id: str | None = None,
+    ) -> "MutableTable":
+        """Create and append a new table with *rows* × *cols* empty cells, returning it.
+
+        Args:
+            rows: Number of rows.
+            cols: Number of columns (cells per row).
+            width_pt: Optional total table width in points.
+            style_id: Optional Word table style ID (e.g. ``'TableGrid'``).
+        """
+        from docwow.api.table import MutableTable, MutableTableRow, MutableTableCell
+        table_rows = [
+            MutableTableRow(cells=[MutableTableCell() for _ in range(cols)])
+            for _ in range(rows)
+        ]
+        table = MutableTable(rows=table_rows, width_pt=width_pt, style_id=style_id)
+        self._items.append(table)
+        return table
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen_body(self) -> tuple:
@@ -409,15 +433,15 @@ class ParagraphCollection:
     # ---- Type enforcement ----------------------------------------------------
 
     def _check_type(self, item: object) -> None:
-        from docwow.api.table import TableView as TV
-        if not isinstance(item, (MutableParagraph, TV, PageBreak)):
+        from docwow.api.table import MutableTable as MT
+        if not isinstance(item, (MutableParagraph, MT, PageBreak)):
             if isinstance(item, Paragraph):
                 raise TypeError(
                     "Cannot add a frozen Paragraph directly. "
                     "Use MutableParagraph or call paragraphs.add_paragraph() instead."
                 )
             raise TypeError(
-                f"Expected MutableParagraph, TableView, or PageBreak; got {type(item).__name__!r}"
+                f"Expected MutableParagraph, MutableTable, or PageBreak; got {type(item).__name__!r}"
             )
 
     def __repr__(self) -> str:

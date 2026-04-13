@@ -10,11 +10,11 @@ from __future__ import annotations
 from docwow.models.document import Document
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
-from docwow.models.table import Table
+from docwow.models.table import Table, TableCell, TableRow
 from docwow.api.run import MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, RunCollection
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
-from docwow.api.table import TableView
+from docwow.api.table import MutableTable, MutableTableCell, MutableTableRow
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +78,39 @@ def paragraph_from_frozen(frozen: Paragraph) -> MutableParagraph:
     return para
 
 
+def table_cell_from_frozen(frozen: TableCell) -> MutableTableCell:
+    """Convert a frozen TableCell to a MutableTableCell."""
+    collection = ParagraphCollection()
+    for para in frozen.paragraphs:
+        collection._items.append(paragraph_from_frozen(para))
+    return MutableTableCell(
+        paragraphs=collection,
+        col_span=frozen.col_span,
+        row_span=frozen.row_span,
+        width_pt=frozen.width_pt,
+        v_merge_start=frozen.v_merge_start,
+        v_merge_continue=frozen.v_merge_continue,
+    )
+
+
+def table_row_from_frozen(frozen: TableRow) -> MutableTableRow:
+    """Convert a frozen TableRow to a MutableTableRow."""
+    return MutableTableRow(
+        cells=[table_cell_from_frozen(c) for c in frozen.cells],
+        height_pt=frozen.height_pt,
+    )
+
+
+def table_from_frozen(frozen: Table) -> MutableTable:
+    """Convert a frozen Table to a MutableTable."""
+    return MutableTable(
+        rows=[table_row_from_frozen(r) for r in frozen.rows],
+        width_pt=frozen.width_pt,
+        style_id=frozen.style_id,
+        col_widths_pt=frozen.col_widths_pt,
+    )
+
+
 def document_from_frozen(frozen: Document) -> "DocumentWrapper":
     """Convert a frozen Document to a DocumentWrapper."""
     from docwow.api.document import DocumentWrapper
@@ -87,7 +120,7 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
         if isinstance(element, Paragraph):
             collection._items.append(paragraph_from_frozen(element))
         elif isinstance(element, Table):
-            collection._items.append(TableView(element))
+            collection._items.append(table_from_frozen(element))
         elif isinstance(element, PageBreak):
             collection._items.append(element)  # already frozen, pass through
 

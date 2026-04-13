@@ -308,10 +308,10 @@ class TestParagraphCollection:
         assert img.alt_text == "test"
         assert pc[0] is img
 
-    def test_accepts_table_view(self):
+    def test_accepts_mutable_table(self):
+        from docwow.api.table import MutableTable
         pc = ParagraphCollection()
-        table = Table(rows=(), width_pt=None, style_id=None)
-        tv = TableView(table)
+        tv = MutableTable()
         pc.append(tv)
         assert pc[0] is tv
 
@@ -437,13 +437,16 @@ class TestParagraphCollectionToFrozenBody:
         assert body[0].runs[0].text == "first"
         assert body[1].runs[0].text == "second"
 
-    def test_table_view_passes_through(self):
+    def test_mutable_table_freezes_to_frozen_table(self):
+        from docwow.api.table import MutableTable
+        from docwow.models.table import Table as FrozenTable
         pc = ParagraphCollection()
-        table = Table(rows=(), width_pt=None, style_id=None)
-        tv = TableView(table)
+        tv = MutableTable(width_pt=300.0, style_id="TableGrid")
         pc.append(tv)
         body = pc._to_frozen_body()
-        assert body[0] is table
+        assert isinstance(body[0], FrozenTable)
+        assert body[0].width_pt == 300.0
+        assert body[0].style_id == "TableGrid"
 
     def test_repr(self):
         pc = ParagraphCollection()

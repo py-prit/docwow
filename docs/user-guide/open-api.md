@@ -44,10 +44,10 @@ html = doc.to_html(page_view=True)
 ### Iterating body elements
 
 ```python
-from docwow.api import MutableParagraph, TableView
+from docwow.api import MutableParagraph, MutableTable
 
 for item in doc.paragraphs:
-    if isinstance(item, TableView):
+    if isinstance(item, MutableTable):
         print(f"Table with {len(item)} rows")
     else:
         print(item.get_text())
@@ -86,16 +86,17 @@ for run in para.runs:
 ### Reading tables
 
 ```python
-from docwow.api import TableView
+from docwow.api import MutableTable
 
 for item in doc.paragraphs:
-    if isinstance(item, TableView):
+    if isinstance(item, MutableTable):
+        print(f"Table: {len(item)} rows × {len(item[0])} cols")
         for row in item:
             for cell in row:
                 print(cell.get_text())
 ```
 
-Tables parsed from DOCX or HTML are exposed as read-only `TableView` objects. They pass through unchanged on round-trip. Full table editing is planned for a future release.
+Tables loaded from DOCX or HTML are fully mutable `MutableTable` objects — you can read, edit, add, and remove rows, cells, and content.
 
 ## Editing existing content
 
@@ -228,6 +229,73 @@ Registers a new list style and returns its `num_id`. Pass that `num_id` when add
 num_fmt options: "bullet", "decimal", "lowerLetter", "upperLetter", "lowerRoman", "upperRoman"
 ```
 
+## Tables
+
+### Building a table from scratch
+
+```python
+# 3-row × 3-col table
+tbl = doc.paragraphs.add_table(rows=3, cols=3, style_id="TableGrid")
+
+# Fill header row with bold text
+for col, heading in enumerate(["Region", "Q2 Revenue", "Growth"]):
+    tbl[0][col].paragraphs.add_paragraph().runs.add_text(heading, bold=True)
+
+# Fill data rows
+tbl[1][0].paragraphs.add_paragraph("EMEA")
+tbl[1][1].paragraphs.add_paragraph("$1.8 M")
+tbl[1][2].paragraphs.add_paragraph("+22%")
+```
+
+### Adding and removing rows
+
+```python
+# Append a new row at the end
+row = tbl.add_row(num_cells=3, height_pt=20.0)
+row[0].paragraphs.add_paragraph("New row")
+
+# Insert a row at position 1
+from docwow.api import MutableTableRow, MutableTableCell
+new_row = MutableTableRow(cells=[MutableTableCell() for _ in range(3)])
+tbl.insert(1, new_row)
+
+# Remove the last row
+tbl.remove(len(tbl) - 1)
+```
+
+### Editing cells from an existing document
+
+```python
+from docwow.api import MutableTable
+
+for item in doc.paragraphs:
+    if isinstance(item, MutableTable):
+        # Edit existing cell
+        item[0][0].paragraphs[0].set_text("Updated header")
+        # Add a new paragraph inside a cell
+        item[1][2].paragraphs.add_paragraph("extra note")
+        break
+```
+
+### Cell properties
+
+```python
+cell = tbl[0][0]
+cell.set_width_pt(150.0)   # cell width
+cell.set_col_span(2)       # merge across 2 columns
+cell.set_row_span(1)       # row span
+print(cell.col_span, cell.row_span, cell.width_pt)
+```
+
+### Table properties
+
+```python
+tbl.set_width_pt(450.0)
+tbl.set_style("TableGrid")
+tbl.set_col_widths_pt([150.0, 150.0, 150.0])
+print(tbl.width_pt, tbl.style_id, tbl.col_widths_pt)
+```
+
 ## Images
 
 ```python
@@ -280,7 +348,8 @@ doc.set_margins(top_pt=72.0, bottom_pt=72.0, left_pt=72.0, right_pt=72.0)
 | `add_list_item(text, level, num_id)` | Create and append a list item, return it |
 | `add_image(data, content_type, width_pt, height_pt, alt_text)` | Create and append an image paragraph, return it |
 | `add_page_break()` | Append an explicit page break, return it |
-| `append(item)` | Append an existing `MutableParagraph`, `TableView`, or `PageBreak` |
+| `add_table(rows, cols, width_pt, style_id)` | Create and append a table, return it |
+| `append(item)` | Append an existing `MutableParagraph`, `MutableTable`, or `PageBreak` |
 | `insert(index, item)` | Insert at index |
 | `remove(index)` | Remove item at index |
 | `clear()` | Remove all items |

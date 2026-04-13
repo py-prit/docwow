@@ -11,12 +11,12 @@ This tutorial covers two things:
 
 ```python
 import docwow
-from docwow.api import MutableParagraph, MutableRun, MutableImageRun, MutableHyperlink, TableView
+from docwow.api import MutableParagraph, MutableRun, MutableImageRun, MutableHyperlink, MutableTable
 
 doc = docwow.open("report.docx")
 
 for item in doc.paragraphs:
-    if isinstance(item, TableView):
+    if isinstance(item, MutableTable):
         print(f"Table: {len(item)} rows × {len(item[0])} cols")
         for row in item:
             for cell in row:
@@ -61,6 +61,35 @@ for run in para.runs:
         print(f"Image {run.width_pt}×{run.height_pt}pt, alt={run.alt_text!r}")
     elif isinstance(run, MutableHyperlink):
         print(f"Link: {run.get_text()!r} → {run.url}")
+```
+
+### Read and edit tables
+
+```python
+from docwow.api import MutableTable
+
+for item in doc.paragraphs:
+    if isinstance(item, MutableTable):
+        print(f"Table: {len(item)} rows × {len(item[0])} cols")
+        for row in item:
+            for cell in row:
+                print(f"  {cell.get_text()!r}")
+```
+
+Edit a cell's content:
+
+```python
+table = next(item for item in doc.paragraphs if isinstance(item, MutableTable))
+
+# Edit existing cell text
+table[0][0].paragraphs[0].set_text("Updated header")
+
+# Add a new paragraph to a cell
+table[1][2].paragraphs.add_paragraph("new content")
+
+# Add a new row
+row = table.add_row(num_cells=3)
+row[0].paragraphs.add_paragraph("New row, col 1")
 ```
 
 ### Edit what you read
@@ -162,27 +191,28 @@ doc.paragraphs.add_page_break()
 
 In HTML this becomes `<div class="dw-page-break" data-dw-page="2">` — invisible but preserved for the round-trip.
 
-## 7. Regional breakdown heading and table (from an existing DOCX)
-
-If you have a DOCX file with a table you want to reuse, parse it and copy the content into the new document.  
-For this tutorial we'll just show the pattern — replace `"existing.docx"` with your own file:
+## 7. Regional breakdown table
 
 ```python
 doc.paragraphs.add_paragraph("Regional Breakdown", style_id="Heading2")
 
-# Parse an existing document and copy its table content as plain text
-existing = docwow.open("existing.docx")
-for item in existing.paragraphs:
-    from docwow.api import TableView
-    if isinstance(item, TableView):
-        for row in item:
-            row_text = " | ".join(cell.get_text() for cell in row)
-            doc.paragraphs.add_paragraph(row_text)
-        break  # first table only
-```
+# Build a 3×3 table from scratch
+tbl = doc.paragraphs.add_table(rows=3, cols=3, style_id="TableGrid")
 
-!!! note
-    Table editing (adding/modifying cells) is not yet supported. Tables parsed from DOCX or HTML pass through unchanged.
+# Header row — bold
+headers = ["Region", "Q2 Revenue", "Growth"]
+for col_idx, text in enumerate(headers):
+    tbl[0][col_idx].paragraphs.add_paragraph().runs.add_text(text, bold=True)
+
+# Data rows
+data = [
+    ("EMEA",  "$1.8 M", "+22%"),
+    ("AMER",  "$1.6 M", "+14%"),
+]
+for row_idx, row_data in enumerate(data, start=1):
+    for col_idx, text in enumerate(row_data):
+        tbl[row_idx][col_idx].paragraphs.add_paragraph(text)
+```
 
 ## 8. Image
 
@@ -275,7 +305,10 @@ Open `q2_report_restored.docx` in Word and verify that the header, footer page n
 | Hyperlink | `para.runs.add_hyperlink(text, url)` |
 | Bullet list | `add_numbering_definition("bullet")` + `add_list_item()` |
 | Numbered list | `add_numbering_definition("decimal")` + `add_list_item()` |
-| Page break | `doc.paragraphs.append(PageBreak())` |
+| Table | `doc.paragraphs.add_table(rows, cols, style_id="TableGrid")` |
+| Edit table cell | `table[row][col].paragraphs.add_paragraph(text)` |
+| Add table row | `table.add_row(num_cells=N)` |
+| Page break | `doc.paragraphs.add_page_break()` |
 | Image | `doc.paragraphs.add_image(data, content_type, width_pt, height_pt)` |
 | Save DOCX | `doc.save("file.docx")` or `doc.to_bytes()` |
 | Convert to HTML | `doc.to_html()` or `docwow.to_html("file.docx")` |
