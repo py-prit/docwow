@@ -19,6 +19,7 @@ from docwow.models.header_footer import HeaderFooter
 from docwow.models.paragraph import PageBreak, PageNumberField, Paragraph, TextRun
 from docwow.models.table import Table
 from docwow.renderer.css_generator import generate_css
+from docwow.renderer.footnote_renderer import render_endnotes, render_footnotes
 from docwow.renderer.list_renderer import render_list_group
 from docwow.renderer.paragraph_renderer import render_paragraph
 from docwow.renderer.table_renderer import render_table
@@ -50,6 +51,8 @@ def render_document(
     header_html = _render_hf_slots(doc, kind="header")
     footer_html = _render_hf_slots(doc, kind="footer")
     body_html = _render_body(doc, page_view=page_view)
+    footnotes_html = render_footnotes(doc.footnotes)
+    endnotes_html = render_endnotes(doc.endnotes)
     doc_attrs = _document_attrs(doc)
 
     return (
@@ -65,6 +68,8 @@ def render_document(
         f'<div {doc_attrs}>\n'
         f"{body_html}\n"
         "</div>\n"
+        f"{footnotes_html}"
+        f"{endnotes_html}"
         f"{footer_html}"
         "</body>\n"
         "</html>"

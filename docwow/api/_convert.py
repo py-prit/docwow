@@ -8,9 +8,11 @@ in the codebase where frozen models and mutable wrappers are coupled.
 from __future__ import annotations
 
 from docwow.models.document import Document
+from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
-from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
+from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
 from docwow.api.run import MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, RunCollection
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
@@ -21,7 +23,19 @@ from docwow.api.table import MutableTable, MutableTableCell, MutableTableRow
 # Frozen → Wrapper  (used at docwow.open() time)
 # ---------------------------------------------------------------------------
 
-def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField:
+def footnote_from_frozen(frozen: Footnote) -> MutableFootnote:
+    """Convert a frozen Footnote to a MutableFootnote."""
+    collection = ParagraphCollection()
+    for para in frozen.paragraphs:
+        collection._items.append(paragraph_from_frozen(para))
+    return MutableFootnote(
+        note_id=frozen.note_id,
+        paragraphs=collection,
+        note_type=frozen.note_type,
+    )
+
+
+def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField | MutableFootnoteRef:
     """Convert a frozen run to its mutable wrapper."""
     if isinstance(frozen, TextRun):
         fmt = frozen.formatting
@@ -45,6 +59,8 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperl
         return MutableHyperlink(text=text, url=frozen.url)
     if isinstance(frozen, PageNumberField):
         return MutablePageNumberField(field_type=frozen.field_type)
+    if isinstance(frozen, FootnoteRef):
+        return MutableFootnoteRef(note_id=frozen.note_id, note_type=frozen.note_type)
     raise TypeError(f"Unknown run type: {type(frozen).__name__}")
 
 
@@ -144,6 +160,8 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
         footer_first=_hf(frozen.footer_first),
         footer_even=_hf(frozen.footer_even),
         title_pg=frozen.title_pg,
+        footnotes=[footnote_from_frozen(n) for n in frozen.footnotes],
+        endnotes=[footnote_from_frozen(n) for n in frozen.endnotes],
     )
 
 
@@ -173,4 +191,6 @@ def document_to_frozen(wrapper: "DocumentWrapper") -> Document:
         footer_first=_hf_frozen(wrapper._footer_first),
         footer_even=_hf_frozen(wrapper._footer_even),
         title_pg=wrapper._title_pg,
+        footnotes=wrapper._footnotes_frozen,
+        endnotes=wrapper._endnotes_frozen,
     )

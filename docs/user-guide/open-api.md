@@ -296,6 +296,50 @@ tbl.set_col_widths_pt([150.0, 150.0, 150.0])
 print(tbl.width_pt, tbl.style_id, tbl.col_widths_pt)
 ```
 
+## Footnotes and endnotes
+
+### Reading footnotes from an existing document
+
+```python
+from docwow.api import MutableFootnote, MutableFootnoteRef
+
+# All footnote bodies
+for note in doc.footnotes:
+    print(f"Footnote {note.note_id}: {note.get_text()}")
+
+# Endnotes
+for note in doc.endnotes:
+    print(f"Endnote {note.note_id}: {note.get_text()}")
+
+# Find footnote references in the body
+from docwow.api import MutableParagraph
+for item in doc.paragraphs:
+    if isinstance(item, MutableParagraph):
+        for run in item.runs:
+            if isinstance(run, MutableFootnoteRef):
+                print(f"Footnote reference to note {run.note_id}")
+```
+
+### Adding footnotes programmatically
+
+```python
+# Register a footnote body — auto-assigns an ID
+note = doc.add_footnote()
+note.paragraphs.add_paragraph("This is the footnote text.")
+
+# Place the marker in the body paragraph
+para = doc.paragraphs.add_paragraph("See the attached reference")
+para.runs.add_footnote_ref(note_id=note.note_id)
+
+# Endnotes use the same API with note_type="endnote"
+en = doc.add_footnote(note_type="endnote")
+en.paragraphs.add_paragraph("This appears in the endnote section.")
+para2 = doc.paragraphs.add_paragraph("Another referenced paragraph")
+para2.runs.add_footnote_ref(note_id=en.note_id, note_type="endnote")
+```
+
+Footnote IDs are assigned automatically and sequentially within each note type. Footnote and endnote IDs are independent — both start at 1.
+
 ## Images
 
 ```python

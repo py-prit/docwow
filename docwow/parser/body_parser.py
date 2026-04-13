@@ -17,7 +17,7 @@ from lxml import etree
 
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.parser.image_parser import extract_image
 from docwow.parser.style_parser import parse_para_fmt, parse_run_fmt
@@ -297,6 +297,20 @@ def _parse_run(
             if br_type in (None, "textWrapping"):
                 result.append(TextRun(text="\n", formatting=fmt))
             # Page breaks handled at paragraph level by _is_page_break_paragraph
+
+        elif tag == qn("w:footnoteReference"):
+            note_id_str = attrib(child, "w:id") or ""
+            try:
+                result.append(FootnoteRef(note_id=int(note_id_str), note_type="footnote"))
+            except ValueError:
+                pass
+
+        elif tag == qn("w:endnoteReference"):
+            note_id_str = attrib(child, "w:id") or ""
+            try:
+                result.append(FootnoteRef(note_id=int(note_id_str), note_type="endnote"))
+            except ValueError:
+                pass
 
     return result
 

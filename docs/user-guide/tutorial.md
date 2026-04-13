@@ -244,7 +244,21 @@ doc.paragraphs.add_list_item("Finalise EMEA hiring plan", num_id=steps_id)
 doc.paragraphs.add_list_item("Update sales forecast model", num_id=steps_id)
 ```
 
-## 10. Save to DOCX
+## 10. Footnotes
+
+```python
+# Create a footnote body
+fn = doc.add_footnote()
+fn.paragraphs.add_paragraph("Source: Internal Q2 analytics dashboard.")
+
+# Add a reference marker inside a body paragraph
+para = doc.paragraphs.add_paragraph()
+para.runs.add_text("All revenue figures are reported in USD")
+para.runs.add_footnote_ref(note_id=fn.note_id)
+para.runs.add_text(".")
+```
+
+## 11. Save to DOCX
 
 ```python
 doc.save("q2_report.docx")
@@ -257,8 +271,9 @@ Open `q2_report.docx` in Word and verify:
 - A page break separates the introduction from the regional breakdown
 - Bullet and numbered lists are formatted correctly
 - The image is embedded
+- The footnote appears at the bottom of the relevant page
 
-## 11. Convert to HTML
+## 12. Convert to HTML
 
 ```python
 # Standard HTML — for browser viewing or embedding in a web app
@@ -279,7 +294,7 @@ Open `q2_report.html` in a browser and verify:
 - Body text, lists, and hyperlink all render correctly
 - The page break div is invisible
 
-## 12. Round-trip HTML → DOCX
+## 13. Round-trip HTML → DOCX
 
 ```python
 # Read the HTML back and convert to DOCX
@@ -310,6 +325,8 @@ Open `q2_report_restored.docx` in Word and verify that the header, footer page n
 | Add table row | `table.add_row(num_cells=N)` |
 | Page break | `doc.paragraphs.add_page_break()` |
 | Image | `doc.paragraphs.add_image(data, content_type, width_pt, height_pt)` |
+| Footnote | `doc.add_footnote()` + `para.runs.add_footnote_ref(note_id)` |
+| Endnote | `doc.add_footnote(note_type="endnote")` + `add_footnote_ref(..., note_type="endnote")` |
 | Save DOCX | `doc.save("file.docx")` or `doc.to_bytes()` |
 | Convert to HTML | `doc.to_html()` or `docwow.to_html("file.docx")` |
 | Round-trip | `docwow.to_docx(html)` |

@@ -57,3 +57,11 @@ These classes are returned by `docwow.open()` and are the primary interface for 
 ## MutableTableCell
 
 ::: docwow.api.MutableTableCell
+
+## MutableFootnote
+
+::: docwow.api.MutableFootnote
+
+## MutableFootnoteRef
+
+::: docwow.api.MutableFootnoteRef

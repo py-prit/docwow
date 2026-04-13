@@ -18,10 +18,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from docwow.models.document import Document
+from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
-from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
+from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer.docx_writer import write_docx
@@ -301,18 +302,67 @@ def build_showcase() -> Document:
         formatting=ParagraphFormatting(),
     ))
 
+    # -----------------------------------------------------------------------
+    # Section 11: Footnotes and endnotes
+    # -----------------------------------------------------------------------
+    body.append(_p("Footnotes and Endnotes", style_id="Heading2"))
+
+    fn1 = Footnote(
+        note_id=1,
+        paragraphs=(Paragraph(
+            runs=(TextRun(text="This is the first footnote. It demonstrates the footnote body."),),
+            formatting=ParagraphFormatting(),
+        ),),
+        note_type="footnote",
+    )
+    fn2 = Footnote(
+        note_id=2,
+        paragraphs=(Paragraph(
+            runs=(TextRun(text="Second footnote — attached to the second sentence."),),
+            formatting=ParagraphFormatting(),
+        ),),
+        note_type="footnote",
+    )
+    en1 = Footnote(
+        note_id=1,
+        paragraphs=(Paragraph(
+            runs=(TextRun(text="This is an endnote. It appears at the end of the document."),),
+            formatting=ParagraphFormatting(),
+        ),),
+        note_type="endnote",
+    )
+
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="This sentence has a footnote reference"),
+            FootnoteRef(note_id=1, note_type="footnote"),
+            TextRun(text=" at the end."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="A second sentence with another footnote"),
+            FootnoteRef(note_id=2, note_type="footnote"),
+            TextRun(text=" and an endnote reference"),
+            FootnoteRef(note_id=1, note_type="endnote"),
+            TextRun(text="."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+
     # Explicit page break before the headers/footers section
     body.append(PageBreak())
 
     # -----------------------------------------------------------------------
-    # Section 11: Headers and footers
+    # Section 12: Headers and footers
     # -----------------------------------------------------------------------
     body.append(_p("Headers and Footers", style_id="Heading2"))
     body.append(_p("This document has a default header and footer with page numbers."))
     body.append(_p("The header shows the document title; the footer shows 'Page N of M'."))
 
     # -----------------------------------------------------------------------
-    # Section 12: Mixed content
+    # Section 13: Mixed content
     # -----------------------------------------------------------------------
     body.append(_p("Mixed Content", style_id="Heading2"))
     body.append(_p("A paragraph before a table."))
@@ -380,6 +430,8 @@ def build_showcase() -> Document:
         margin_right_pt=72.0,
         header_default=header_default,
         footer_default=footer_default,
+        footnotes=(fn1, fn2),
+        endnotes=(en1,),
     )
 
 

@@ -47,8 +47,21 @@ class PageNumberField:
     formatting: RunFormatting = field(default_factory=RunFormatting)
 
 
+@dataclass(frozen=True)
+class FootnoteRef:
+    """An inline footnote or endnote reference marker.
+
+    ``note_type`` is either ``"footnote"`` or ``"endnote"``.
+    ``note_id`` is the integer ID matching an entry in
+    ``Document.footnotes`` / ``Document.endnotes``.
+    """
+
+    note_id: int
+    note_type: str = "footnote"
+
+
 # A paragraph's content is a sequence of runs.
-Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField
+Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | FootnoteRef
 
 
 @dataclass(frozen=True)

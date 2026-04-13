@@ -5,7 +5,7 @@ from lxml import etree
 
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer._xml import (
@@ -140,6 +140,8 @@ def _write_run(
         _write_image_run(parent, run.image, image_rids, draw_counter)
     elif isinstance(run, PageNumberField):
         _write_page_number_field(parent, run)
+    elif isinstance(run, FootnoteRef):
+        _write_footnote_ref(parent, run)
     else:
         _write_text_run(parent, run)
 
@@ -202,6 +204,24 @@ def _write_page_number_field(parent: etree._Element, field: PageNumberField) -> 
     r_end = _run_with_fmt()
     fc_end = etree.SubElement(r_end, f"{{{W}}}fldChar")
     fc_end.set(f"{{{W}}}fldCharType", "end")
+
+
+# ---------------------------------------------------------------------------
+# Footnote / endnote reference
+# ---------------------------------------------------------------------------
+
+def _write_footnote_ref(parent: etree._Element, ref: FootnoteRef) -> None:
+    """Write a footnote or endnote reference run."""
+    r_el = etree.SubElement(parent, f"{{{W}}}r")
+    # Mark run with the appropriate reference style
+    rpr = etree.SubElement(r_el, f"{{{W}}}rPr")
+    rstyle = etree.SubElement(rpr, f"{{{W}}}rStyle")
+    style_val = "FootnoteReference" if ref.note_type == "footnote" else "EndnoteReference"
+    rstyle.set(f"{{{W}}}val", style_val)
+
+    ref_tag = "footnoteReference" if ref.note_type == "footnote" else "endnoteReference"
+    ref_el = etree.SubElement(r_el, f"{{{W}}}{ref_tag}")
+    ref_el.set(f"{{{W}}}id", str(ref.note_id))
 
 
 # ---------------------------------------------------------------------------

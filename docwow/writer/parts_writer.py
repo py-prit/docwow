@@ -25,6 +25,8 @@ def build_content_types_xml(
     image_entries: list[tuple[str, str]],
     has_numbering: bool,
     hf_entries: list[tuple[str, str, str]] | None = None,
+    has_footnotes: bool = False,
+    has_endnotes: bool = False,
 ) -> bytes:
     """Build ``[Content_Types].xml``.
 
@@ -76,6 +78,17 @@ def build_content_types_xml(
             else "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"
         )
         _override(f"/word/{filename}", ct)
+
+    if has_footnotes:
+        _override(
+            "/word/footnotes.xml",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml",
+        )
+    if has_endnotes:
+        _override(
+            "/word/endnotes.xml",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml",
+        )
 
     return to_bytes(root)
 

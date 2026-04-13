@@ -15,6 +15,7 @@ from docwow.html_parser._utils import has_class, pt_val
 from docwow.html_parser.paragraph_parser import parse_paragraph
 from docwow.html_parser.table_parser import parse_table
 from docwow.models.document import Document
+from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.lists import ListLevel, NumberingDefinition
 from docwow.models.paragraph import PageBreak, Paragraph
@@ -66,6 +67,10 @@ def parse_html(source: str | bytes) -> Document:
     # Headers and footers — parsed from <header>/<footer> siblings of dw-document
     hf_kwargs = _parse_hf_elements(root)
 
+    # Footnotes and endnotes — parsed from <section class="dw-footnotes/endnotes">
+    footnotes = _parse_note_section(root, note_type="footnote")
+    endnotes = _parse_note_section(root, note_type="endnote")
+
     return Document(
         body=body,
         styles=styles,
@@ -77,6 +82,8 @@ def parse_html(source: str | bytes) -> Document:
         margin_left_pt=margin_left_pt,
         margin_right_pt=margin_right_pt,
         title_pg=title_pg,
+        footnotes=footnotes,
+        endnotes=endnotes,
         **hf_kwargs,
     )
 
@@ -178,6 +185,40 @@ def _collect_list(
 def _collect_style(para: Paragraph, style_ids: set[str]) -> None:
     if para.formatting.style_id:
         style_ids.add(para.formatting.style_id)
+
+
+def _parse_note_section(root, note_type: str) -> tuple[Footnote, ...]:
+    """Parse ``<section class="dw-footnotes/endnotes">`` into Footnote objects."""
+    section_class = f"dw-{note_type}s"
+    item_class = "dw-fn" if note_type == "footnote" else "dw-en"
+    sections = root.xpath(f'.//section[contains(@class,"{section_class}")]')
+    if not sections:
+        return ()
+
+    notes: list[Footnote] = []
+    for section in sections:
+        for item in section:
+            if not has_class(item, item_class):
+                continue
+            note_id_str = item.get("data-dw-note-id", "")
+            try:
+                note_id = int(note_id_str)
+            except ValueError:
+                continue
+            # Content is inside .dw-fn-body div
+            body_divs = item.xpath('./div[contains(@class,"dw-fn-body")]')
+            paragraphs = []
+            for body_div in body_divs:
+                for p_el in body_div:
+                    if p_el.tag == "p" and has_class(p_el, "dw-p"):
+                        paragraphs.append(parse_paragraph(p_el))
+            notes.append(Footnote(
+                note_id=note_id,
+                paragraphs=tuple(paragraphs),
+                note_type=note_type,
+            ))
+
+    return tuple(notes)
 
 
 def _build_numbering(

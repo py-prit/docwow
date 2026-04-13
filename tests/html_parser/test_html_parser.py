@@ -338,3 +338,100 @@ class TestStylesReconstruction:
         doc = _doc(body=(_para(style_id="Normal"), _para(style_id="Normal")))
         parsed = _roundtrip(doc)
         assert len([s for s in parsed.styles if s.style_id == "Normal"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# Footnotes & endnotes HTML → Document
+# ---------------------------------------------------------------------------
+
+class TestFootnoteHtmlParsing:
+    """Tests for parsing dw-footnotes/dw-endnotes sections from rendered HTML."""
+
+    def _footnote_doc(self):
+        from docwow.models.footnote import Footnote
+        from docwow.models.paragraph import FootnoteRef
+        fn = Footnote(
+            note_id=1,
+            paragraphs=(_para("Footnote body text"),),
+            note_type="footnote",
+        )
+        body_para = Paragraph(
+            runs=(
+                TextRun(text="Body text"),
+                FootnoteRef(note_id=1, note_type="footnote"),
+            ),
+            formatting=ParagraphFormatting(),
+        )
+        return _doc(body=(body_para,), **{}), fn
+
+    def _roundtrip_with_footnote(self):
+        from docwow.models.footnote import Footnote
+        from docwow.models.paragraph import FootnoteRef
+        fn = Footnote(
+            note_id=1,
+            paragraphs=(_para("Footnote body text"),),
+            note_type="footnote",
+        )
+        body_para = Paragraph(
+            runs=(
+                TextRun(text="Body text"),
+                FootnoteRef(note_id=1, note_type="footnote"),
+            ),
+            formatting=ParagraphFormatting(),
+        )
+        doc = _doc(body=(body_para,), footnotes=(fn,))
+        return parse_html(render_document(doc))
+
+    def test_footnote_count(self):
+        rt = self._roundtrip_with_footnote()
+        assert len(rt.footnotes) == 1
+
+    def test_footnote_id(self):
+        rt = self._roundtrip_with_footnote()
+        assert rt.footnotes[0].note_id == 1
+
+    def test_footnote_note_type(self):
+        rt = self._roundtrip_with_footnote()
+        assert rt.footnotes[0].note_type == "footnote"
+
+    def test_footnote_text(self):
+        rt = self._roundtrip_with_footnote()
+        text = "".join(
+            r.text for p in rt.footnotes[0].paragraphs
+            for r in p.runs if isinstance(r, TextRun)
+        )
+        assert "Footnote body text" in text
+
+    def test_footnote_ref_in_body(self):
+        from docwow.models.paragraph import FootnoteRef
+        rt = self._roundtrip_with_footnote()
+        refs = [
+            r for el in rt.body
+            if isinstance(el, Paragraph)
+            for r in el.runs
+            if isinstance(r, FootnoteRef)
+        ]
+        assert len(refs) >= 1
+
+    def test_empty_footnotes_when_no_section(self):
+        doc = _doc(body=(_para("simple"),))
+        rt = parse_html(render_document(doc))
+        assert rt.footnotes == ()
+
+    def test_endnote_roundtrip(self):
+        from docwow.models.footnote import Footnote
+        from docwow.models.paragraph import FootnoteRef
+        en = Footnote(
+            note_id=1,
+            paragraphs=(_para("Endnote body"),),
+            note_type="endnote",
+        )
+        body_para = Paragraph(
+            runs=(FootnoteRef(note_id=1, note_type="endnote"),),
+            formatting=ParagraphFormatting(),
+        )
+        doc = _doc(body=(body_para,), endnotes=(en,))
+        rt = parse_html(render_document(doc))
+        assert len(rt.endnotes) == 1
+        assert rt.endnotes[0].note_id == 1
+        assert rt.endnotes[0].note_type == "endnote"

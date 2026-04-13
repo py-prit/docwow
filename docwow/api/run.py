@@ -427,6 +427,18 @@ class RunCollection:
         self._items.append(field)
         return field
 
+    def add_footnote_ref(self, note_id: int, note_type: str = "footnote") -> "MutableFootnoteRef":
+        """Create a footnote or endnote reference marker, append it, and return it.
+
+        Args:
+            note_id:   The integer ID of the note this marker points to.
+            note_type: ``'footnote'`` (default) or ``'endnote'``.
+        """
+        from docwow.api.footnote import MutableFootnoteRef
+        ref = MutableFootnoteRef(note_id=note_id, note_type=note_type)
+        self._items.append(ref)
+        return ref
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen(self) -> tuple[Run, ...]:
@@ -436,7 +448,9 @@ class RunCollection:
     # ---- Type enforcement ----------------------------------------------------
 
     def _check_type(self, run: object) -> None:
-        if not isinstance(run, self._ALLOWED):
+        from docwow.api.footnote import MutableFootnoteRef
+        allowed = self._ALLOWED + (MutableFootnoteRef,)
+        if not isinstance(run, allowed):
             if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField)):
                 raise TypeError(
                     f"Cannot add a frozen {type(run).__name__} directly. "
@@ -444,8 +458,8 @@ class RunCollection:
                     "or the add_* factory methods instead."
                 )
             raise TypeError(
-                f"Expected MutableRun, MutableImageRun, MutableHyperlink, or "
-                f"MutablePageNumberField; got {type(run).__name__!r}"
+                f"Expected MutableRun, MutableImageRun, MutableHyperlink, "
+                f"MutablePageNumberField, or MutableFootnoteRef; got {type(run).__name__!r}"
             )
 
     def __repr__(self) -> str:

@@ -81,6 +81,45 @@
   color: #888888;
   font-style: italic;
 }
+
+/* Footnotes / endnotes */
+.dw-footnote-ref, .dw-endnote-ref {
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 1;
+  text-decoration: none;
+  color: #1155cc;
+  cursor: pointer;
+}
+.dw-footnote-ref:hover, .dw-endnote-ref:hover {
+  text-decoration: underline;
+}
+
+.dw-footnotes, .dw-endnotes {
+  max-width: var(--dw-page-width, 595.28pt);
+  margin: 24pt auto 0;
+  padding-top: 8pt;
+  border-top: 1px solid #cccccc;
+  font-size: 9pt;
+}
+
+.dw-footnotes-heading, .dw-endnotes-heading {
+  font-size: 9pt;
+  font-weight: bold;
+  margin-bottom: 4pt;
+}
+
+.dw-fn, .dw-en {
+  display: flex;
+  gap: 6pt;
+  margin-bottom: 4pt;
+}
+
+.dw-fn-marker, .dw-en-marker {
+  flex-shrink: 0;
+  font-size: 0.75em;
+  vertical-align: super;
+}
 .dw-document {
   max-width:595.28pt;
   padding:72pt 72pt 72pt 72pt;
@@ -211,6 +250,9 @@
 <p class="dw-p"><span class="dw-r">Visit the </span><a href="https://docwow.readthedocs.io" class="dw-hyperlink" data-dw-href="https://docwow.readthedocs.io"><span class="dw-r">docwow documentation</span></a><span class="dw-r"> for full details.</span></p>
 <p class="dw-p"><span class="dw-r">Report bugs on </span><a href="https://github.com/py-prit/docwow/issues" class="dw-hyperlink" data-dw-href="https://github.com/py-prit/docwow/issues"><span class="dw-r">GitHub Issues</span></a><span class="dw-r">.</span></p>
 <p class="dw-p"><span class="dw-r">Contact us at </span><a href="mailto:hello@example.com" class="dw-hyperlink" data-dw-href="mailto:hello@example.com"><span class="dw-r">hello@example.com</span></a><span class="dw-r">.</span></p>
+<p class="dw-p dw-style-Heading2" data-dw-style="Heading2"><span class="dw-r">Footnotes and Endnotes</span></p>
+<p class="dw-p"><span class="dw-r">This sentence has a footnote reference</span><a href="#fn-1" class="dw-footnote-ref" data-dw-note-type="footnote" data-dw-note-id="1">[1]</a><span class="dw-r"> at the end.</span></p>
+<p class="dw-p"><span class="dw-r">A second sentence with another footnote</span><a href="#fn-2" class="dw-footnote-ref" data-dw-note-type="footnote" data-dw-note-id="2">[2]</a><span class="dw-r"> and an endnote reference</span><a href="#en-1" class="dw-endnote-ref" data-dw-note-type="endnote" data-dw-note-id="1">[1]</a><span class="dw-r">.</span></p>
 <div class="dw-page-break" data-dw-page="2"></div>
 <p class="dw-p dw-style-Heading2" data-dw-style="Heading2"><span class="dw-r">Headers and Footers</span></p>
 <p class="dw-p"><span class="dw-r">This document has a default header and footer with page numbers.</span></p>
@@ -232,7 +274,12 @@
 </li></ul>
 <p class="dw-p"><span class="dw-r">Normal paragraph after list.</span></p>
 </div>
-<footer class="dw-footer dw-footer-default" data-dw-footer-type="default">
+<section class="dw-footnotes" data-dw-note-section="footnotes">
+<div class="dw-fn" id="fn-1" data-dw-note-id="1" data-dw-note-type="footnote"><span class="dw-fn-marker">[1]</span><div class="dw-fn-body"><p class="dw-p"><span class="dw-r">This is the first footnote. It demonstrates the footnote body.</span></p></div></div>
+<div class="dw-fn" id="fn-2" data-dw-note-id="2" data-dw-note-type="footnote"><span class="dw-fn-marker">[2]</span><div class="dw-fn-body"><p class="dw-p"><span class="dw-r">Second footnote — attached to the second sentence.</span></p></div></div>
+</section><section class="dw-endnotes" data-dw-note-section="endnotes">
+<div class="dw-en" id="en-1" data-dw-note-id="1" data-dw-note-type="endnote"><span class="dw-en-marker">[1]</span><div class="dw-fn-body"><p class="dw-p"><span class="dw-r">This is an endnote. It appears at the end of the document.</span></p></div></div>
+</section><footer class="dw-footer dw-footer-default" data-dw-footer-type="default">
 <p class="dw-p dw-page-only"><span class="dw-r">Page </span><span class="dw-field" data-dw-field="PAGE">1</span><span class="dw-r"> of </span><span class="dw-field" data-dw-field="NUMPAGES">1</span></p>
 </footer>
 </body>

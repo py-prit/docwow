@@ -7,6 +7,7 @@ constructed or mutated by user code.
 """
 
 from docwow.api.document import DocumentWrapper
+from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
 from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.image import MutableImage
 from docwow.api.list_item import MutableListItem
@@ -24,6 +25,8 @@ from docwow.api.table import (
 
 __all__ = [
     "DocumentWrapper",
+    "MutableFootnote",
+    "MutableFootnoteRef",
     "MutableHeaderFooter",
     "MutableImage",
     "MutableHyperlink",
