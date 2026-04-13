@@ -1,0 +1,47 @@
+# Programmatic API Classes
+
+These classes are returned by `docwow.open()` and are the primary interface for reading, editing, and building documents in Python. They live in `docwow.api` but you do not need to import them directly — `docwow.open()` returns a `DocumentWrapper` automatically.
+
+## DocumentWrapper
+
+::: docwow.api.DocumentWrapper
+
+## ParagraphCollection
+
+::: docwow.api.ParagraphCollection
+
+## MutableParagraph
+
+::: docwow.api.MutableParagraph
+
+## MutableListItem
+
+::: docwow.api.MutableListItem
+
+## RunCollection
+
+::: docwow.api.RunCollection
+
+## MutableRun
+
+::: docwow.api.MutableRun
+
+## MutableImageRun
+
+::: docwow.api.MutableImageRun
+
+## MutableImage
+
+::: docwow.api.MutableImage
+
+## TableView
+
+::: docwow.api.TableView
+
+## TableRowView
+
+::: docwow.api.TableRowView
+
+## TableCellView
+
+::: docwow.api.TableCellView

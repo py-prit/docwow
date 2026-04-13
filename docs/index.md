@@ -35,12 +35,14 @@ docx_bytes = docwow.to_docx(html)
 with open("report-copy.docx", "wb") as f:
     f.write(docx_bytes)
 
-# Or work with the Document model directly
+# Open and edit a document programmatically
 doc = docwow.open("report.docx")
-html = docwow.render_document(doc)
+doc.paragraphs[0].set_text("New title").set_style("Heading1")
+doc.paragraphs.add_paragraph("Added paragraph.")
+doc.save("updated.docx")
 ```
 
-## What's supported (v0.1)
+## What's supported (v0.2)
 
 - **Paragraphs** — alignment, indentation (left/right/first-line/hanging), spacing (before/after/line), page-break-before, keep-together, keep-with-next
 - **Run formatting** — bold, italic, underline, strikethrough, font name, font size, color, highlight, superscript/subscript
@@ -48,6 +50,7 @@ html = docwow.render_document(doc)
 - **Tables** — column widths, row heights, colspan, rowspan (vertical merge), cell borders
 - **Lists** — bullet and numbered, nested up to any depth, multiple list instances per document
 - **Inline images** — embedded as base64 data URIs in HTML, restored as binary data in DOCX
+- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, and friends; build documents from scratch; save to DOCX or render to HTML
 
 ## Design principles
 

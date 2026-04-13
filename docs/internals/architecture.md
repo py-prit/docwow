@@ -31,6 +31,34 @@ DOCX file
 
 The pipeline is strictly unidirectional at each stage. No layer reaches into another layer's internals.
 
+## Programmatic API layer (v0.2)
+
+`docwow/api/` sits above the pipeline as a mutable wrapper layer. It is the primary interface for user code — `docwow.open()` returns a `DocumentWrapper`, not a raw `Document`.
+
+```
+                    ┌──────────────────────────────────────┐
+                    │           docwow/api/                │
+                    │  DocumentWrapper                     │
+                    │  ├── ParagraphCollection             │  ◄── user code
+                    │  │   ├── MutableParagraph            │
+                    │  │   │   └── RunCollection           │
+                    │  │   │       └── MutableRun          │
+                    │  │   ├── MutableListItem             │
+                    │  │   ├── MutableImage                │
+                    │  │   └── TableView (read-only)       │
+                    └──────────────┬───────────────────────┘
+                                   │  _to_frozen()
+                                   ▼
+                        Document (frozen dataclasses)
+                                   │
+                    ┌──────────────┴───────────────┐
+                    ▼                               ▼
+             docwow/renderer/              docwow/writer/
+             HTML output                   DOCX output
+```
+
+The API layer converts to frozen models on demand via `_to_frozen()` — only when `save()`, `to_bytes()`, or `to_html()` is called. The frozen pipeline is never exposed to user code directly.
+
 ## Key design decisions
 
 ### Frozen dataclasses for the Document model
@@ -67,6 +95,14 @@ The DOCX parser silently ignores XML elements it doesn't recognise. This is inte
 ```
 docwow/
 ├── __init__.py              Public API (open, to_html, to_docx, ...)
+├── api/                     Programmatic API — mutable wrapper layer
+│   ├── document.py          DocumentWrapper
+│   ├── paragraph.py         MutableParagraph, ParagraphCollection
+│   ├── run.py               MutableRun, MutableImageRun, RunCollection
+│   ├── list_item.py         MutableListItem
+│   ├── image.py             MutableImage
+│   ├── table.py             TableView, TableRowView, TableCellView
+│   └── _convert.py          DocumentWrapper → frozen Document (internal)
 ├── models/                  Internal Document model (frozen dataclasses)
 │   ├── document.py          Document — top-level container
 │   ├── paragraph.py         Paragraph, TextRun, ImageRun

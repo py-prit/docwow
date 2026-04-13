@@ -54,7 +54,7 @@ nav:
   - User Guide:
     - Converting to HTML: user-guide/to-html.md
     - Round-tripping to DOCX: user-guide/to-docx.md
-    - Working with the Document model: user-guide/open-api.md
+    - Programmatic API: user-guide/open-api.md
   - HTML Format:
     - Overview: html-format/overview.md
     - data-dw-* Attributes: html-format/data-attributes.md
@@ -66,6 +66,7 @@ nav:
       - Images: html-format/elements/images.md
   - API Reference:
     - Public API: api-reference/public-api.md
+    - Programmatic API Classes: api-reference/api-classes.md
     - Models: api-reference/models.md
     - Parser: api-reference/parser.md
     - Renderer: api-reference/renderer.md
