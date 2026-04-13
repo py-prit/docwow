@@ -1,11 +1,11 @@
-"""Tests for MutableRun, MutableImageRun, and RunCollection."""
+"""Tests for MutableRun, MutableImageRun, MutableHyperlink, and RunCollection."""
 from __future__ import annotations
 
 import pytest
 
-from docwow.api.run import MutableImageRun, MutableRun, RunCollection
+from docwow.api.run import MutableHyperlink, MutableImageRun, MutableRun, RunCollection
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import ImageRun, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, TextRun
 
 
 # ---------------------------------------------------------------------------
@@ -358,3 +358,110 @@ class TestRunCollectionToFrozen:
         rc = RunCollection()
         rc.add_text("a")
         assert "1 run" in repr(rc)
+
+
+# ---------------------------------------------------------------------------
+# MutableHyperlink
+# ---------------------------------------------------------------------------
+
+class TestMutableHyperlinkConstruction:
+    def test_defaults(self):
+        link = MutableHyperlink()
+        assert link.get_text() == ""
+        assert link.url == ""
+
+    def test_custom_text_and_url(self):
+        link = MutableHyperlink(text="Click here", url="https://example.com")
+        assert link.get_text() == "Click here"
+        assert link.url == "https://example.com"
+
+    def test_mailto_url(self):
+        link = MutableHyperlink(text="email", url="mailto:hi@example.com")
+        assert link.url == "mailto:hi@example.com"
+
+
+class TestMutableHyperlinkSetters:
+    def test_set_text(self):
+        link = MutableHyperlink()
+        result = link.set_text("new text")
+        assert link.get_text() == "new text"
+        assert result is link  # chaining
+
+    def test_set_url(self):
+        link = MutableHyperlink()
+        result = link.set_url("https://example.com")
+        assert link.url == "https://example.com"
+        assert result is link  # chaining
+
+    def test_chaining(self):
+        link = MutableHyperlink()
+        link.set_text("Link").set_url("https://example.com")
+        assert link.get_text() == "Link"
+        assert link.url == "https://example.com"
+
+
+class TestMutableHyperlinkToFrozen:
+    def test_produces_hyperlink(self):
+        link = MutableHyperlink(text="Click", url="https://example.com")
+        frozen = link._to_frozen()
+        assert isinstance(frozen, Hyperlink)
+        assert frozen.url == "https://example.com"
+        assert frozen.runs[0].text == "Click"
+
+    def test_empty_text_produces_empty_runs(self):
+        link = MutableHyperlink(text="", url="https://example.com")
+        frozen = link._to_frozen()
+        assert isinstance(frozen, Hyperlink)
+        assert len(frozen.runs) == 0
+
+    def test_frozen_runs_are_text_runs(self):
+        link = MutableHyperlink(text="Hello", url="https://example.com")
+        frozen = link._to_frozen()
+        assert isinstance(frozen.runs[0], TextRun)
+
+    def test_frozen_is_immutable(self):
+        link = MutableHyperlink(text="x", url="https://example.com")
+        frozen = link._to_frozen()
+        with pytest.raises(Exception):
+            frozen.url = "https://other.com"  # type: ignore[misc]
+
+
+class TestRunCollectionHyperlink:
+    def test_append_hyperlink(self):
+        rc = RunCollection()
+        link = MutableHyperlink(text="click", url="https://example.com")
+        rc.append(link)
+        assert rc[0] is link
+        assert len(rc) == 1
+
+    def test_add_hyperlink_factory(self):
+        rc = RunCollection()
+        link = rc.add_hyperlink(text="click", url="https://example.com")
+        assert isinstance(link, MutableHyperlink)
+        assert link.get_text() == "click"
+        assert link.url == "https://example.com"
+        assert rc[0] is link
+
+    def test_to_frozen_includes_hyperlink(self):
+        rc = RunCollection()
+        rc.add_hyperlink("Click", "https://example.com")
+        frozen = rc._to_frozen()
+        assert len(frozen) == 1
+        assert isinstance(frozen[0], Hyperlink)
+        assert frozen[0].url == "https://example.com"
+
+    def test_mixed_runs_with_hyperlink(self):
+        rc = RunCollection()
+        rc.add_text("See ")
+        rc.add_hyperlink("this", "https://example.com")
+        rc.add_text(" for details")
+        frozen = rc._to_frozen()
+        assert isinstance(frozen[0], TextRun)
+        assert isinstance(frozen[1], Hyperlink)
+        assert isinstance(frozen[2], TextRun)
+
+    def test_rejects_frozen_hyperlink(self):
+        rc = RunCollection()
+        frozen = Hyperlink(url="https://example.com", runs=(TextRun(text="x"),))
+        with pytest.raises(TypeError, match="frozen Hyperlink"):
+            rc.append(frozen)  # type: ignore[arg-type]

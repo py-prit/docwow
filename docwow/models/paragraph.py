@@ -24,8 +24,16 @@ class ImageRun:
     formatting: RunFormatting = field(default_factory=RunFormatting)
 
 
-# A paragraph's content is a sequence of runs — either text or an inline image.
-Run: TypeAlias = TextRun | ImageRun
+@dataclass(frozen=True)
+class Hyperlink:
+    """An inline hyperlink wrapping one or more text runs."""
+
+    url: str
+    runs: tuple[TextRun, ...]
+
+
+# A paragraph's content is a sequence of runs — text, image, or hyperlink.
+Run: TypeAlias = TextRun | ImageRun | Hyperlink
 
 
 @dataclass(frozen=True)

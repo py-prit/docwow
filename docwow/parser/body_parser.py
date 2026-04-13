@@ -17,7 +17,7 @@ from lxml import etree
 
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.parser.image_parser import extract_image
 from docwow.parser.style_parser import parse_para_fmt, parse_run_fmt
@@ -74,9 +74,13 @@ def _parse_paragraph(
         if child.tag == qn("w:r"):
             runs.extend(_parse_run(child, zf, relationships))
         elif child.tag == qn("w:hyperlink"):
-            # Flatten hyperlink runs (v0.1 — href not preserved yet)
-            for r_el in child.findall(qn("w:r")):
-                runs.extend(_parse_run(r_el, zf, relationships))
+            hyperlink = _parse_hyperlink(child, zf, relationships)
+            if hyperlink is not None:
+                runs.append(hyperlink)
+            else:
+                # No URL found — flatten to plain runs
+                for r_el in child.findall(qn("w:r")):
+                    runs.extend(_parse_run(r_el, zf, relationships))
 
     from docwow.models.styles import ParagraphFormatting
     return Paragraph(
@@ -110,6 +114,53 @@ def _parse_list_info(
             return ListInfo(num_id=num_id, level=level)
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# Hyperlink
+# ---------------------------------------------------------------------------
+
+def _parse_hyperlink(
+    hl_el: etree._Element,
+    zf: zipfile.ZipFile,
+    relationships: dict[str, str],
+) -> Hyperlink | None:
+    """Parse a <w:hyperlink> element into a Hyperlink model.
+
+    Returns None if no URL can be resolved (hyperlink is dropped).
+    """
+    # External link: r:id → URL from relationships
+    r_id = attrib(hl_el, "r:id")
+    if r_id:
+        url = relationships.get(r_id)
+        if url and url.startswith(("http://", "https://", "mailto:", "ftp://")):
+            inner_runs = _parse_hyperlink_runs(hl_el, zf, relationships)
+            if inner_runs:
+                return Hyperlink(url=url, runs=tuple(inner_runs))
+            return None
+
+    # Internal anchor link: w:anchor → #anchor
+    anchor = attrib(hl_el, "w:anchor")
+    if anchor:
+        inner_runs = _parse_hyperlink_runs(hl_el, zf, relationships)
+        if inner_runs:
+            return Hyperlink(url=f"#{anchor}", runs=tuple(inner_runs))
+
+    return None
+
+
+def _parse_hyperlink_runs(
+    hl_el: etree._Element,
+    zf: zipfile.ZipFile,
+    relationships: dict[str, str],
+) -> list[TextRun]:
+    """Extract text runs from inside a <w:hyperlink> element."""
+    result: list[TextRun] = []
+    for r_el in hl_el.findall(qn("w:r")):
+        for run in _parse_run(r_el, zf, relationships):
+            if isinstance(run, TextRun):
+                result.append(run)
+    return result
 
 
 # ---------------------------------------------------------------------------

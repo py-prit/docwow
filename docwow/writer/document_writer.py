@@ -5,7 +5,7 @@ from lxml import etree
 
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer._xml import (
@@ -37,17 +37,19 @@ _EXTENSIONS: dict[str, str] = {
 def build_document_xml(
     doc: Document,
     image_rids: dict[str, str],
+    hyperlink_rids: dict[str, str] | None = None,
 ) -> bytes:
     """Build word/document.xml.
 
     Args:
-        doc:        The Document model.
-        image_rids: Mapping ``{original_relationship_id → new_rid}`` for images
-                    that have been added to the ZIP's media folder.
+        doc:            The Document model.
+        image_rids:     Mapping ``{original_relationship_id → new_rid}`` for images.
+        hyperlink_rids: Mapping ``{url → rid}`` for hyperlink relationships.
 
     Returns:
         UTF-8 bytes of the complete document.xml.
     """
+    _hyperlink_rids = hyperlink_rids or {}
     root = etree.Element(f"{{{W}}}document", nsmap=DOC_NSMAP)
     body = etree.SubElement(root, f"{{{W}}}body")
 
@@ -55,9 +57,9 @@ def build_document_xml(
 
     for element in doc.body:
         if isinstance(element, Paragraph):
-            _write_paragraph(body, element, image_rids, _draw_counter)
+            _write_paragraph(body, element, image_rids, _draw_counter, _hyperlink_rids)
         elif isinstance(element, Table):
-            _write_table(body, element, image_rids, _draw_counter)
+            _write_table(body, element, image_rids, _draw_counter, _hyperlink_rids)
 
     # w:sectPr — page geometry
     _write_sect_pr(body, doc)
@@ -74,6 +76,7 @@ def _write_paragraph(
     para: Paragraph,
     image_rids: dict[str, str],
     draw_counter: list[int],
+    hyperlink_rids: dict[str, str] | None = None,
 ) -> None:
     p_el = etree.SubElement(parent, f"{{{W}}}p")
     ppr = etree.SubElement(p_el, f"{{{W}}}pPr")
@@ -98,8 +101,9 @@ def _write_paragraph(
     # spacing, ind, jc — keep flags already written above
     _write_para_fmt(ppr, fmt, skip_keep_flags=True)
 
+    _hl_rids = hyperlink_rids or {}
     for run in para.runs:
-        _write_run(p_el, run, image_rids, draw_counter)
+        _write_run(p_el, run, image_rids, draw_counter, _hl_rids)
 
 
 # ---------------------------------------------------------------------------
@@ -111,11 +115,32 @@ def _write_run(
     run: Run,
     image_rids: dict[str, str],
     draw_counter: list[int],
+    hyperlink_rids: dict[str, str] | None = None,
 ) -> None:
-    if isinstance(run, ImageRun):
+    if isinstance(run, Hyperlink):
+        _write_hyperlink(parent, run, hyperlink_rids or {})
+    elif isinstance(run, ImageRun):
         _write_image_run(parent, run.image, image_rids, draw_counter)
     else:
         _write_text_run(parent, run)
+
+
+# ---------------------------------------------------------------------------
+# Hyperlink
+# ---------------------------------------------------------------------------
+
+def _write_hyperlink(
+    parent: etree._Element,
+    link: Hyperlink,
+    hyperlink_rids: dict[str, str],
+) -> None:
+    hl = etree.SubElement(parent, f"{{{W}}}hyperlink")
+    if link.url.startswith("#"):
+        hl.set(f"{{{W}}}anchor", link.url[1:])
+    else:
+        hl.set(f"{{{R}}}id", hyperlink_rids.get(link.url, ""))
+    for run in link.runs:
+        _write_text_run(hl, run)
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +264,7 @@ def _write_table(
     table: Table,
     image_rids: dict[str, str],
     draw_counter: list[int],
+    hyperlink_rids: dict[str, str] | None = None,
 ) -> None:
     tbl = etree.SubElement(parent, f"{{{W}}}tbl")
     _write_tbl_pr(tbl, table)
@@ -251,7 +277,7 @@ def _write_table(
             col.set(f"{{{W}}}w", pt_tw(w_pt))
 
     for row in table.rows:
-        _write_row(tbl, row, image_rids, draw_counter)
+        _write_row(tbl, row, image_rids, draw_counter, hyperlink_rids)
 
 
 def _write_tbl_pr(tbl: etree._Element, table: Table) -> None:
@@ -281,6 +307,7 @@ def _write_row(
     row: TableRow,
     image_rids: dict[str, str],
     draw_counter: list[int],
+    hyperlink_rids: dict[str, str] | None = None,
 ) -> None:
     tr = etree.SubElement(tbl, f"{{{W}}}tr")
 
@@ -290,7 +317,7 @@ def _write_row(
         trh.set(f"{{{W}}}val", pt_tw(row.height_pt))
 
     for cell in row.cells:
-        _write_cell(tr, cell, image_rids, draw_counter)
+        _write_cell(tr, cell, image_rids, draw_counter, hyperlink_rids)
 
 
 def _write_cell(
@@ -298,6 +325,7 @@ def _write_cell(
     cell: TableCell,
     image_rids: dict[str, str],
     draw_counter: list[int],
+    hyperlink_rids: dict[str, str] | None = None,
 ) -> None:
     tc = etree.SubElement(tr, f"{{{W}}}tc")
     tcpr = etree.SubElement(tc, f"{{{W}}}tcPr")
@@ -320,7 +348,7 @@ def _write_cell(
     # Each cell must have at least one paragraph
     if cell.paragraphs:
         for para in cell.paragraphs:
-            _write_paragraph(tc, para, image_rids, draw_counter)
+            _write_paragraph(tc, para, image_rids, draw_counter, hyperlink_rids)
     else:
         etree.SubElement(tc, f"{{{W}}}p")
 

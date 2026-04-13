@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import html
 
-from docwow.models.paragraph import ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
@@ -31,8 +31,15 @@ def render_paragraph(p: Paragraph) -> str:
 def _render_run(run: Run) -> str:
     if isinstance(run, ImageRun):
         return render_image(run.image)
-    # TextRun
+    if isinstance(run, Hyperlink):
+        return _render_hyperlink(run)
     return _render_text_run(run)
+
+
+def _render_hyperlink(link: Hyperlink) -> str:
+    inner = "".join(_render_text_run(r) for r in link.runs)
+    url = html.escape(link.url, quote=True)
+    return f'<a href="{url}" class="dw-hyperlink" data-dw-href="{url}">{inner}</a>'
 
 
 def _render_text_run(run: TextRun) -> str:

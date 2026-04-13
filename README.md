@@ -33,11 +33,44 @@ html = docwow.to_html("document.docx")
 # HTML → DOCX (round-trip)
 docwow.to_docx(html, "output.docx")
 
-# Or use the Document object
+# Or use the Document object for programmatic editing
 doc = docwow.open("document.docx")
-html = doc.to_html()
+para = doc.paragraphs.add_paragraph()
+para.runs.add_text("Hello world", bold=True)
 doc.to_docx("output.docx")
 ```
+
+## Feature Support
+
+### ✅ Supported
+
+| Feature | Notes |
+|---|---|
+| Paragraphs | Text, alignment, indentation, spacing, keep-together/with-next, page-break-before |
+| Run formatting | Bold, italic, underline, strikethrough, font name/size, colour, highlight, superscript/subscript |
+| Inline images | PNG, JPEG, GIF, BMP, TIFF, WebP, SVG, EMF, WMF |
+| Tables | Column spans, row spans (vMerge), column/row widths, table-level styles |
+| Lists | Bullet and numbered, up to 9 nesting levels, decimal/lowerLetter/upperLetter/lowerRoman/upperRoman formats |
+| Hyperlinks | External URLs, mailto links |
+| Paragraph styles | Style ID round-trip, Heading 1–9 and custom styles |
+| Page geometry | Page size, margins |
+| Programmatic API | Open, edit, and save documents in pure Python |
+
+### 🚧 In Progress
+
+Nothing currently — check back soon.
+
+### 🗓 Planned
+
+| Feature | Notes |
+|---|---|
+| Headers & footers | Including page numbers |
+| Table of contents | Requires bookmark support |
+| Bookmarks | In-document anchor links and TOC targets |
+| Comments | Annotations / review marks |
+| Track changes | Accept/reject revision marks |
+| Footnotes & endnotes | |
+| General HTML → DOCX | Best-effort conversion of arbitrary HTML (not just docwow HTML) |
 
 ## Documentation
 

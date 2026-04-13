@@ -5,7 +5,7 @@ import lxml.html
 
 from docwow.html_parser._utils import has_class, pt_val
 from docwow.html_parser.paragraph_parser import parse_paragraph
-from docwow.models.paragraph import ImageRun, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, TextRun
 from docwow.models.lists import ListInfo
 
 PNG = b"\x89PNG\r\n\x1a\n"
@@ -326,3 +326,59 @@ class TestImageRun:
         img = para.runs[0].image
         assert img.content_type == "image/png"
         assert img.data == b""
+
+
+# ---------------------------------------------------------------------------
+# Hyperlink parsing
+# ---------------------------------------------------------------------------
+
+def _a(url="https://example.com", inner='<span class="dw-r">Click here</span>'):
+    return f'<a href="{url}" class="dw-hyperlink" data-dw-href="{url}">{inner}</a>'
+
+
+class TestHyperlinkParsing:
+    def test_hyperlink_run_type(self):
+        para = parse_paragraph(_p(_a()))
+        assert len(para.runs) == 1
+        assert isinstance(para.runs[0], Hyperlink)
+
+    def test_hyperlink_url(self):
+        para = parse_paragraph(_p(_a(url="https://example.com")))
+        assert para.runs[0].url == "https://example.com"
+
+    def test_hyperlink_text(self):
+        para = parse_paragraph(_p(_a(inner='<span class="dw-r">Click here</span>')))
+        assert para.runs[0].runs[0].text == "Click here"
+
+    def test_hyperlink_inner_run_type(self):
+        para = parse_paragraph(_p(_a()))
+        assert isinstance(para.runs[0].runs[0], TextRun)
+
+    def test_hyperlink_multiple_inner_runs(self):
+        inner = '<span class="dw-r">Hello </span><span class="dw-r">world</span>'
+        para = parse_paragraph(_p(_a(inner=inner)))
+        link = para.runs[0]
+        assert len(link.runs) == 2
+        assert link.runs[0].text == "Hello "
+        assert link.runs[1].text == "world"
+
+    def test_mailto_url(self):
+        para = parse_paragraph(_p(_a(url="mailto:test@example.com")))
+        assert para.runs[0].url == "mailto:test@example.com"
+
+    def test_anchor_without_data_dw_href_not_parsed_as_hyperlink(self):
+        # A plain <a> without data-dw-href is ignored
+        para = parse_paragraph(_p('<a href="https://example.com">plain link</a>'))
+        assert len(para.runs) == 0
+
+    def test_mixed_spans_and_hyperlink(self):
+        html = (
+            '<span class="dw-r">Before </span>'
+            + _a(inner='<span class="dw-r">link</span>')
+            + '<span class="dw-r"> after</span>'
+        )
+        para = parse_paragraph(_p(html))
+        assert len(para.runs) == 3
+        assert isinstance(para.runs[0], TextRun)
+        assert isinstance(para.runs[1], Hyperlink)
+        assert isinstance(para.runs[2], TextRun)

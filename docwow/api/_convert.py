@@ -8,9 +8,9 @@ in the codebase where frozen models and mutable wrappers are coupled.
 from __future__ import annotations
 
 from docwow.models.document import Document
-from docwow.models.paragraph import ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
 from docwow.models.table import Table
-from docwow.api.run import MutableImageRun, MutableRun, RunCollection
+from docwow.api.run import MutableHyperlink, MutableImageRun, MutableRun, RunCollection
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
 from docwow.api.table import TableView
 
@@ -19,8 +19,8 @@ from docwow.api.table import TableView
 # Frozen → Wrapper  (used at docwow.open() time)
 # ---------------------------------------------------------------------------
 
-def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun:
-    """Convert a frozen TextRun or ImageRun to its mutable wrapper."""
+def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperlink:
+    """Convert a frozen TextRun, ImageRun, or Hyperlink to its mutable wrapper."""
     if isinstance(frozen, TextRun):
         fmt = frozen.formatting
         return MutableRun(
@@ -37,6 +37,10 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun:
         )
     if isinstance(frozen, ImageRun):
         return MutableImageRun(frozen.image)
+    if isinstance(frozen, Hyperlink):
+        # Flatten multi-run hyperlink text into a single string
+        text = "".join(r.text for r in frozen.runs)
+        return MutableHyperlink(text=text, url=frozen.url)
     raise TypeError(f"Unknown run type: {type(frozen).__name__}")
 
 
