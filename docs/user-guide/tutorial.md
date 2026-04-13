@@ -1,8 +1,91 @@
-# Tutorial: Build a Document from Scratch
+# Tutorial: Build and Read Documents
 
-This tutorial walks through every major docwow feature by building a complete Word document in Python — a short company report with a title, sections, formatted text, a list, a table (parsed from an existing file), an image, a hyperlink, a header, a footer with a page number, and a page break.
+This tutorial covers two things:
 
-By the end you will have produced a `.docx` file and an `.html` file, and round-tripped the HTML back to DOCX.
+1. **Reading an existing document** — iterating body elements, reading paragraph formatting and run properties
+2. **Building a document from scratch** — a complete company report covering every major feature
+
+## Reading an existing document
+
+### Open and iterate
+
+```python
+import docwow
+from docwow.api import MutableParagraph, MutableRun, MutableImageRun, MutableHyperlink, TableView
+
+doc = docwow.open("report.docx")
+
+for item in doc.paragraphs:
+    if isinstance(item, TableView):
+        print(f"Table: {len(item)} rows × {len(item[0])} cols")
+        for row in item:
+            for cell in row:
+                print(f"  {cell.get_text()!r}")
+    else:
+        print(f"Para [{item.style_id}]: {item.get_text()!r}")
+```
+
+### Read paragraph formatting
+
+```python
+para = doc.paragraphs[0]
+
+# Text and style
+print(para.get_text())
+print(para.style_id)          # e.g. "Heading1"
+print(para.alignment)         # "left", "center", "right", "justify", or None
+
+# Indentation
+print(para.indent_left_pt)
+print(para.indent_right_pt)
+print(para.indent_first_line_pt)
+
+# Spacing
+print(para.space_before_pt)
+print(para.space_after_pt)
+print(para.line_spacing_pt)   # None = automatic
+
+# Pagination flags
+print(para.keep_together)
+print(para.keep_with_next)
+print(para.page_break_before)
+```
+
+### Read run properties
+
+```python
+for run in para.runs:
+    if isinstance(run, MutableRun):
+        print(run.get_text(), run.bold, run.italic, run.font_size, run.color)
+    elif isinstance(run, MutableImageRun):
+        print(f"Image {run.width_pt}×{run.height_pt}pt, alt={run.alt_text!r}")
+    elif isinstance(run, MutableHyperlink):
+        print(f"Link: {run.get_text()!r} → {run.url}")
+```
+
+### Edit what you read
+
+```python
+# Update formatting on an existing paragraph
+para = doc.paragraphs[0]
+para.set_alignment("center").set_style("Heading1")
+
+# Update a specific run
+run = para.runs[0]
+if isinstance(run, MutableRun):
+    run.set_bold(True).set_color("1A237E")
+
+# Resize an image in-place
+for run in para.runs:
+    if isinstance(run, MutableImageRun):
+        run.set_width_pt(300.0).set_height_pt(150.0).set_alt_text("Updated chart")
+
+doc.save("updated.docx")
+```
+
+---
+
+## Building a document from scratch
 
 ## 1. Setup
 

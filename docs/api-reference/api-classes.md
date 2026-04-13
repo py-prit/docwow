@@ -30,6 +30,18 @@ These classes are returned by `docwow.open()` and are the primary interface for 
 
 ::: docwow.api.MutableImageRun
 
+## MutableHyperlink
+
+::: docwow.api.MutableHyperlink
+
+## MutablePageNumberField
+
+::: docwow.api.MutablePageNumberField
+
+## MutableHeaderFooter
+
+::: docwow.api.MutableHeaderFooter
+
 ## MutableImage
 
 ::: docwow.api.MutableImage

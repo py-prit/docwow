@@ -203,7 +203,7 @@ class MutableImageRun:
         return self
 
     def set_width_pt(self, width_pt: float) -> "MutableImageRun":
-        """Set the rendered width in points."""
+        """Set the rendered width in points. Other image properties are unchanged."""
         self._image = InlineImage(
             relationship_id=self._image.relationship_id,
             content_type=self._image.content_type,
@@ -215,7 +215,7 @@ class MutableImageRun:
         return self
 
     def set_height_pt(self, height_pt: float) -> "MutableImageRun":
-        """Set the rendered height in points."""
+        """Set the rendered height in points. Other image properties are unchanged."""
         self._image = InlineImage(
             relationship_id=self._image.relationship_id,
             content_type=self._image.content_type,
@@ -227,7 +227,7 @@ class MutableImageRun:
         return self
 
     def set_alt_text(self, alt_text: str) -> "MutableImageRun":
-        """Set the alt text description."""
+        """Set the image alt text description. Other image properties are unchanged."""
         self._image = InlineImage(
             relationship_id=self._image.relationship_id,
             content_type=self._image.content_type,

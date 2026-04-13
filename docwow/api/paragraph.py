@@ -229,46 +229,57 @@ class MutableParagraph:
 
     @property
     def style_id(self) -> str | None:
+        """Named Word style ID (e.g. ``'Heading1'``, ``'Normal'``)."""
         return self._fmt.style_id
 
     @property
     def alignment(self) -> str | None:
+        """Text alignment: ``'left'``, ``'center'``, ``'right'``, ``'justify'``, or ``None``."""
         return self._fmt.alignment
 
     @property
     def indent_left_pt(self) -> float:
+        """Left indent in points."""
         return self._fmt.indent_left_pt
 
     @property
     def indent_right_pt(self) -> float:
+        """Right indent in points."""
         return self._fmt.indent_right_pt
 
     @property
     def indent_first_line_pt(self) -> float:
+        """First-line indent in points (negative = hanging indent)."""
         return self._fmt.indent_first_line_pt
 
     @property
     def space_before_pt(self) -> float:
+        """Space before the paragraph in points."""
         return self._fmt.space_before_pt
 
     @property
     def space_after_pt(self) -> float:
+        """Space after the paragraph in points."""
         return self._fmt.space_after_pt
 
     @property
     def line_spacing_pt(self) -> float | None:
+        """Exact line spacing in points, or ``None`` for automatic."""
         return self._fmt.line_spacing_pt
 
     @property
     def keep_together(self) -> bool:
+        """Whether all lines of this paragraph are kept on the same page."""
         return self._fmt.keep_together
 
     @property
     def keep_with_next(self) -> bool:
+        """Whether this paragraph is kept on the same page as the following one."""
         return self._fmt.keep_with_next
 
     @property
     def page_break_before(self) -> bool:
+        """Whether a page break is forced before this paragraph."""
         return self._fmt.page_break_before
 
     # ---- List info (internal use; MutableListItem provides nicer surface) ----
