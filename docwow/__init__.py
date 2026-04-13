@@ -5,8 +5,14 @@ Public API
 ----------
 Parse::
 
-    doc = docwow.open("report.docx")          # DOCX → Document
-    doc = docwow.open(html_string)             # docwow HTML → Document
+    doc = docwow.open("report.docx")          # DOCX → DocumentWrapper
+    doc = docwow.open(html_string)             # docwow HTML → DocumentWrapper
+
+Edit::
+
+    doc.paragraphs.add_paragraph("Hello", style_id="Heading1")
+    doc.paragraphs[0].set_bold(True)
+    doc.save("output.docx")
 
 Convert::
 
@@ -47,8 +53,8 @@ __version__ = "0.1.0"
 # Convenience API
 # ---------------------------------------------------------------------------
 
-def open(source: str | Path | bytes) -> "Document":
-    """Parse a DOCX file *or* a docwow HTML string into a Document model.
+def open(source: str | Path | bytes) -> "DocumentWrapper":
+    """Parse a DOCX file *or* a docwow HTML string into a :class:`~docwow.api.document.DocumentWrapper`.
 
     Args:
         source: A file path (``str`` or :class:`~pathlib.Path`) or raw bytes
@@ -56,8 +62,10 @@ def open(source: str | Path | bytes) -> "Document":
                 by :func:`render_document`.
 
     Returns:
-        A :class:`~docwow.models.document.Document` instance.
+        A :class:`~docwow.api.document.DocumentWrapper` instance.
     """
+    from docwow.api._convert import document_from_frozen
+
     if isinstance(source, (str, Path)):
         path = Path(source)
         try:
@@ -65,14 +73,12 @@ def open(source: str | Path | bytes) -> "Document":
         except (OSError, ValueError):
             is_docx = False
         if is_docx:
-            return parse_docx(source)
-        # Treat as HTML string
-        return parse_html(str(source))
-    # bytes — try DOCX first (ZIP magic bytes), fall back to HTML
+            return document_from_frozen(parse_docx(source))
+        return document_from_frozen(parse_html(str(source)))
     if isinstance(source, bytes):
         if source[:2] == b"PK":
-            return parse_docx(source)
-        return parse_html(source)
+            return document_from_frozen(parse_docx(source))
+        return document_from_frozen(parse_html(source))
     raise TypeError(f"Expected str, Path, or bytes; got {type(source).__name__}")
 
 

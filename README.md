@@ -49,6 +49,10 @@ Full documentation at [docwow.readthedocs.io](https://docwow.readthedocs.io).
 - lxml
 - Pillow
 
+## Built with Claude Code
+
+This library was vibe coded using [Claude Code](https://claude.ai/code). Community suggestions, bug reports, and PRs are very welcome.
+
 ## License
 
 MIT

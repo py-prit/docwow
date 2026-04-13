@@ -23,6 +23,9 @@ htmlcov/
 # MkDocs
 site/
 
+# Stress test downloaded files
+tests/stress_files/
+
 # Claude Code
 .claude/
 
