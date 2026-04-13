@@ -22,7 +22,9 @@ import zipfile
 from pathlib import Path
 
 from docwow.models.document import Document
+from docwow.models.header_footer import HeaderFooter
 from docwow.parser.body_parser import parse_body
+from docwow.parser.header_footer_parser import parse_header_footer
 from docwow.parser.image_parser import parse_relationships
 from docwow.parser.numbering_parser import parse_numbering
 from docwow.parser.style_parser import parse_style_numbering, parse_styles
@@ -95,6 +97,11 @@ def _parse_zip(zf: zipfile.ZipFile) -> Document:
     # -----------------------------------------------------------------------
     page_width_pt, page_height_pt, margins = _parse_page_geometry(doc_root)
 
+    # -----------------------------------------------------------------------
+    # Headers and footers
+    # -----------------------------------------------------------------------
+    hf = _parse_headers_footers(doc_root, zf, relationships, names)
+
     return Document(
         body=body,
         styles=styles,
@@ -102,6 +109,7 @@ def _parse_zip(zf: zipfile.ZipFile) -> Document:
         page_width_pt=page_width_pt,
         page_height_pt=page_height_pt,
         **margins,
+        **hf,
     )
 
 
@@ -177,3 +185,89 @@ def _parse_page_geometry(doc_root: object) -> tuple[float, float, dict]:
         "margin_left_pt": margin_left_pt,
         "margin_right_pt": margin_right_pt,
     }
+
+
+# ---------------------------------------------------------------------------
+# Headers and footers
+# ---------------------------------------------------------------------------
+
+_REL_HEADER = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"
+_REL_FOOTER = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"
+
+
+def _parse_headers_footers(
+    doc_root,
+    zf: zipfile.ZipFile,
+    relationships: dict[str, str],
+    names: list[str],
+) -> dict:
+    """Parse header/footer references from sectPr and return a dict of kwargs."""
+    result: dict = {}
+
+    body_el = find(doc_root, "w:body")
+    sect_pr = None
+    if body_el is not None:
+        sect_pr = find(body_el, "w:sectPr")
+    if sect_pr is None:
+        sect_pr = find(doc_root, "w:sectPr")
+    if sect_pr is None:
+        return result
+
+    # Detect different first page
+    title_pg_el = find(sect_pr, "w:titlePg")
+    if title_pg_el is not None:
+        val = attrib(title_pg_el, "w:val")
+        result["title_pg"] = val != "0"
+
+    # Collect rId→target map limited to header/footer types
+    # relationships already contains ALL rels; we need the file targets
+    # But parse_relationships returns {rId: target_value}.
+    # For headers/footers the target is a file path like "header1.xml".
+    # We need to also know the *type* (header vs footer) per rId.
+    # Re-read the rels XML to get type info.
+    rels_path = "word/_rels/document.xml.rels"
+    hf_rels: dict[str, tuple[str, str]] = {}  # rId → (type, target)
+    if rels_path in names:
+        rels_root = parse_xml(zf.read(rels_path))
+        PKG_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
+        for rel in rels_root:
+            rel_type = rel.get("Type", "")
+            if rel_type in (_REL_HEADER, _REL_FOOTER):
+                rid = rel.get("Id", "")
+                target = rel.get("Target", "")
+                hf_rels[rid] = (rel_type, target)
+
+    # Map sectPr headerReference/footerReference to parsed HeaderFooter objects
+    _hdr_type_map = {
+        "default": "header_default",
+        "first":   "header_first",
+        "even":    "header_even",
+    }
+    _ftr_type_map = {
+        "default": "footer_default",
+        "first":   "footer_first",
+        "even":    "footer_even",
+    }
+
+    for ref_tag, type_map, rel_type_uri in (
+        ("w:headerReference", _hdr_type_map, _REL_HEADER),
+        ("w:footerReference", _ftr_type_map, _REL_FOOTER),
+    ):
+        for ref_el in sect_pr.findall(qn(ref_tag)):
+            hf_type = attrib(ref_el, "w:type") or "default"
+            rid = attrib(ref_el, "r:id") or ""
+            if rid not in hf_rels:
+                continue
+            rel_type, target = hf_rels[rid]
+            if rel_type != rel_type_uri:
+                continue
+            # target is relative to "word/" e.g. "header1.xml"
+            part_path = f"word/{target}"
+            if part_path not in names:
+                continue
+            hf_obj = parse_header_footer(zf.read(part_path), zf, relationships)
+            field_name = type_map.get(hf_type)
+            if field_name:
+                result[field_name] = hf_obj
+
+    return result

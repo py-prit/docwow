@@ -18,7 +18,7 @@ from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.utils.units import pt_to_css
 
 
-def generate_css(doc: Document) -> str:
+def generate_css(doc: Document, page_view: bool = False) -> str:
     """Return a complete CSS string (without the <style> wrapper tags)."""
     parts: list[str] = [_BASE_CSS]
     parts.append(_document_rule(doc))
@@ -26,6 +26,8 @@ def generate_css(doc: Document) -> str:
         rule = _style_rule(style)
         if rule:
             parts.append(rule)
+    if page_view:
+        parts.append(_page_view_css(doc))
     return "\n".join(parts)
 
 
@@ -118,6 +120,41 @@ def _css_ident(style_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Page-view CSS  (opt-in via page_view=True)
+# ---------------------------------------------------------------------------
+
+def _page_view_css(doc: Document) -> str:
+    """Return @page and print CSS for page_view mode.
+
+    Controls paper size and margins when the user prints or exports to PDF.
+    Visual in-browser page separation is a planned future feature.
+    """
+    w = pt_to_css(doc.page_width_pt)
+    h = pt_to_css(doc.page_height_pt)
+    mt = pt_to_css(doc.margin_top_pt)
+    mr = pt_to_css(doc.margin_right_pt)
+    mb = pt_to_css(doc.margin_bottom_pt)
+    ml = pt_to_css(doc.margin_left_pt)
+
+    return f"""\
+/* docwow — page view: print / PDF pagination */
+@media print {{
+  .dw-table, .dw-img {{
+    page-break-inside: avoid;
+  }}
+
+  .dw-style-Heading1, .dw-style-Heading2, .dw-style-Heading3 {{
+    page-break-after: avoid;
+  }}
+
+  @page {{
+    size: {w} {h};
+    margin: {mt} {mr} {mb} {ml};
+  }}
+}}"""
+
+
+# ---------------------------------------------------------------------------
 # Base CSS (fixed across all documents)
 # ---------------------------------------------------------------------------
 
@@ -171,4 +208,31 @@ _BASE_CSS = """\
 .dw-img {
   display: inline-block;
   max-width: 100%;
+}
+
+.dw-page-break {
+  display: none;
+}
+
+.dw-page-only {
+  display: none;
+}
+
+.dw-header, .dw-footer {
+  max-width: var(--dw-page-width, 595.28pt);
+  margin: 0 auto;
+  padding: 4pt 72pt;
+  font-size: 9pt;
+  color: #555555;
+  border-bottom: 1px solid #cccccc;
+}
+
+.dw-footer {
+  border-top: 1px solid #cccccc;
+  border-bottom: none;
+}
+
+.dw-field {
+  color: #888888;
+  font-style: italic;
 }"""

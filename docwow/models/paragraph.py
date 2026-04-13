@@ -32,8 +32,28 @@ class Hyperlink:
     runs: tuple[TextRun, ...]
 
 
-# A paragraph's content is a sequence of runs — text, image, or hyperlink.
-Run: TypeAlias = TextRun | ImageRun | Hyperlink
+@dataclass(frozen=True)
+class PageNumberField:
+    """An inline field that inserts a dynamic page number.
+
+    ``field_type`` is one of:
+
+    * ``"PAGE"``         — current page number
+    * ``"NUMPAGES"``     — total number of pages in the document
+    * ``"SECTIONPAGES"`` — total number of pages in the current section
+    """
+
+    field_type: str
+    formatting: RunFormatting = field(default_factory=RunFormatting)
+
+
+# A paragraph's content is a sequence of runs.
+Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField
+
+
+@dataclass(frozen=True)
+class PageBreak:
+    """An explicit page break — marks the boundary between two pages."""
 
 
 @dataclass(frozen=True)

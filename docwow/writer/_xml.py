@@ -29,6 +29,8 @@ REL_NUMBERING = "http://schemas.openxmlformats.org/officeDocument/2006/relations
 REL_SETTINGS  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings"
 REL_IMAGE      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 REL_HYPERLINK  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+REL_HEADER     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"
+REL_FOOTER     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"
 
 # Namespace maps for each XML part
 DOC_NSMAP = {"w": W, "r": R, "wp": WP, "a": A, "pic": PIC}

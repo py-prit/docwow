@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Iterator
 
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import Hyperlink, ImageRun, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, PageNumberField, Run, TextRun
 from docwow.models.styles import RunFormatting
 
 
@@ -271,33 +271,67 @@ class MutableHyperlink:
         return f"MutableHyperlink({self._text!r}, url={self._url!r})"
 
 
-class RunCollection:
-    """Ordered mutable collection of MutableRun, MutableImageRun, and MutableHyperlink instances."""
+class MutablePageNumberField:
+    """A mutable page-number field (PAGE, NUMPAGES, SECTIONPAGES)."""
 
-    _ALLOWED = (MutableRun, MutableImageRun, MutableHyperlink)
+    _VALID_TYPES = ("PAGE", "NUMPAGES", "SECTIONPAGES")
+
+    def __init__(self, field_type: str = "PAGE") -> None:
+        if field_type not in self._VALID_TYPES:
+            raise ValueError(
+                f"field_type must be one of {self._VALID_TYPES}; got {field_type!r}"
+            )
+        self._field_type = field_type
+
+    @property
+    def field_type(self) -> str:
+        return self._field_type
+
+    def set_field_type(self, field_type: str) -> "MutablePageNumberField":
+        """Change the field type."""
+        if field_type not in self._VALID_TYPES:
+            raise ValueError(
+                f"field_type must be one of {self._VALID_TYPES}; got {field_type!r}"
+            )
+        self._field_type = field_type
+        return self
+
+    def _to_frozen(self) -> PageNumberField:
+        return PageNumberField(field_type=self._field_type)
+
+    def __repr__(self) -> str:
+        return f"MutablePageNumberField({self._field_type!r})"
+
+
+class RunCollection:
+    """Ordered mutable collection of run instances."""
+
+    _ALLOWED = (MutableRun, MutableImageRun, MutableHyperlink, MutablePageNumberField)
+
+    _AnyRun = MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField
 
     def __init__(self) -> None:
-        self._items: list[MutableRun | MutableImageRun | MutableHyperlink] = []
+        self._items: list[RunCollection._AnyRun] = []
 
     # ---- Sequence protocol ---------------------------------------------------
 
     def __len__(self) -> int:
         return len(self._items)
 
-    def __iter__(self) -> Iterator[MutableRun | MutableImageRun | MutableHyperlink]:
+    def __iter__(self) -> Iterator[_AnyRun]:
         return iter(self._items)
 
-    def __getitem__(self, index: int) -> MutableRun | MutableImageRun | MutableHyperlink:
+    def __getitem__(self, index: int) -> _AnyRun:
         return self._items[index]
 
     # ---- Mutation ------------------------------------------------------------
 
-    def append(self, run: MutableRun | MutableImageRun | MutableHyperlink) -> None:
+    def append(self, run: _AnyRun) -> None:
         """Append a run to the end of the collection."""
         self._check_type(run)
         self._items.append(run)
 
-    def insert(self, index: int, run: MutableRun | MutableImageRun | MutableHyperlink) -> None:
+    def insert(self, index: int, run: _AnyRun) -> None:
         """Insert a run at the given index."""
         self._check_type(run)
         self._items.insert(index, run)
@@ -347,6 +381,16 @@ class RunCollection:
         self._items.append(link)
         return link
 
+    def add_page_number(self, field_type: str = "PAGE") -> MutablePageNumberField:
+        """Create a MutablePageNumberField, append it, and return it.
+
+        Args:
+            field_type: One of ``'PAGE'``, ``'NUMPAGES'``, ``'SECTIONPAGES'``.
+        """
+        field = MutablePageNumberField(field_type=field_type)
+        self._items.append(field)
+        return field
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen(self) -> tuple[Run, ...]:
@@ -357,14 +401,15 @@ class RunCollection:
 
     def _check_type(self, run: object) -> None:
         if not isinstance(run, self._ALLOWED):
-            if isinstance(run, (TextRun, ImageRun, Hyperlink)):
+            if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField)):
                 raise TypeError(
                     f"Cannot add a frozen {type(run).__name__} directly. "
-                    "Use MutableRun, MutableHyperlink, or the add_* factory methods instead."
+                    "Use MutableRun, MutableHyperlink, MutablePageNumberField, "
+                    "or the add_* factory methods instead."
                 )
             raise TypeError(
-                f"Expected MutableRun, MutableImageRun, or MutableHyperlink, "
-                f"got {type(run).__name__!r}"
+                f"Expected MutableRun, MutableImageRun, MutableHyperlink, or "
+                f"MutablePageNumberField; got {type(run).__name__!r}"
             )
 
     def __repr__(self) -> str:

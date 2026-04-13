@@ -21,9 +21,12 @@ from docwow.models.document import Document
 from docwow.models.image import InlineImage
 from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph
 from docwow.models.table import Table
+from docwow.models.header_footer import HeaderFooter
 from docwow.writer._xml import (
     REL_HYPERLINK, REL_IMAGE, REL_STYLES, REL_NUMBERING, REL_SETTINGS,
+    REL_HEADER, REL_FOOTER,
 )
+from docwow.writer.header_footer_writer import build_header_xml, build_footer_xml
 from docwow.writer.document_writer import build_document_xml
 from docwow.writer.numbering_writer import build_numbering_xml
 from docwow.writer.parts_writer import (
@@ -107,10 +110,32 @@ def _build_zip(doc: Document) -> bytes:
             hyperlink_rids[link.url] = f"rId{next_rid}"
             next_rid += 1
 
-    # 5. Build image_rids map used by document_writer
+    # 5. Collect header/footer parts and assign rIds
+    #    hf_parts: {("header"|"footer", type) → (rid, filename, hf_obj)}
+    hf_parts: dict[tuple[str, str], tuple[str, str, HeaderFooter]] = {}
+    hf_slots = [
+        (doc.header_default, "header", "default"),
+        (doc.header_first,   "header", "first"),
+        (doc.header_even,    "header", "even"),
+        (doc.footer_default, "footer", "default"),
+        (doc.footer_first,   "footer", "first"),
+        (doc.footer_even,    "footer", "even"),
+    ]
+    hf_counter = 1
+    for hf_obj, kind, hf_type in hf_slots:
+        if hf_obj is not None:
+            rid = f"rId{next_rid}"
+            next_rid += 1
+            filename = f"{kind}{hf_counter}.xml"
+            hf_counter += 1
+            hf_parts[(kind, hf_type)] = (rid, filename, hf_obj)
+
+    hf_rids: dict[tuple[str, str], str] = {k: v[0] for k, v in hf_parts.items()}
+
+    # 6. Build image_rids map used by document_writer
     image_rids = {orig: info[0] for orig, info in image_info.items()}
 
-    # 6. Assemble document.xml.rels entries
+    # 7. Assemble document.xml.rels entries
     rel_entries: list[tuple] = []
     for orig_rid, (new_rid, filename, ct, _) in image_info.items():
         rel_entries.append((new_rid, REL_IMAGE, f"media/{filename}"))
@@ -120,23 +145,35 @@ def _build_zip(doc: Document) -> bytes:
         rel_entries.append((numbering_rid, REL_NUMBERING, "numbering.xml"))
     for url, rid in hyperlink_rids.items():
         rel_entries.append((rid, REL_HYPERLINK, url, "External"))
+    for (kind, hf_type), (rid, filename, _) in hf_parts.items():
+        rel_type = REL_HEADER if kind == "header" else REL_FOOTER
+        rel_entries.append((rid, rel_type, filename))
 
-    # 7. Build image content-type entries for [Content_Types].xml
+    # 8. Build image content-type entries for [Content_Types].xml
     ct_image_entries = [
         (f"/word/media/{info[1]}", info[2])
         for info in image_info.values()
     ]
+    hf_filenames = [(kind, hf_type, filename) for (kind, hf_type), (rid, filename, _) in hf_parts.items()]
 
-    # 8. Build all XML parts
-    doc_xml       = build_document_xml(doc, image_rids, hyperlink_rids)
+    # 9. Build all XML parts
+    doc_xml       = build_document_xml(doc, image_rids, hyperlink_rids, hf_rids)
     styles_xml    = build_styles_xml(doc.styles)
     settings_xml  = build_settings_xml()
     doc_rels_xml  = build_document_rels_xml(rel_entries)
     root_rels_xml = build_root_rels_xml()
-    ct_xml        = build_content_types_xml(ct_image_entries, has_numbering)
+    ct_xml        = build_content_types_xml(ct_image_entries, has_numbering, hf_filenames)
     numbering_xml = build_numbering_xml(doc.numbering) if has_numbering else None
 
-    # 8. Write ZIP archive
+    # Build header/footer XML parts
+    hf_xmls: dict[str, bytes] = {}
+    for (kind, hf_type), (rid, filename, hf_obj) in hf_parts.items():
+        if kind == "header":
+            hf_xmls[filename] = build_header_xml(hf_obj, image_rids, hyperlink_rids)
+        else:
+            hf_xmls[filename] = build_footer_xml(hf_obj, image_rids, hyperlink_rids)
+
+    # 10. Write ZIP archive
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("[Content_Types].xml",         ct_xml)
@@ -149,6 +186,8 @@ def _build_zip(doc: Document) -> bytes:
             zf.writestr("word/numbering.xml", numbering_xml)
         for orig_rid, (new_rid, filename, ct, data) in image_info.items():
             zf.writestr(f"word/media/{filename}", data)
+        for filename, xml_bytes in hf_xmls.items():
+            zf.writestr(f"word/{filename}", xml_bytes)
 
     return buf.getvalue()
 

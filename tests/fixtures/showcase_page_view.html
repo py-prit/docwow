@@ -93,6 +93,21 @@
   font-weight:bold;
   font-size:14pt;
 }
+/* docwow — page view: print / PDF pagination */
+@media print {
+  .dw-table, .dw-img {
+    page-break-inside: avoid;
+  }
+
+  .dw-style-Heading1, .dw-style-Heading2, .dw-style-Heading3 {
+    page-break-after: avoid;
+  }
+
+  @page {
+    size: 595.28pt 841.89pt;
+    margin: 72pt 72pt 72pt 72pt;
+  }
+}
 </style>
 </head>
 <body>

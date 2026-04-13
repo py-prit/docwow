@@ -5,7 +5,7 @@ from lxml import etree
 
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer._xml import (
@@ -38,6 +38,7 @@ def build_document_xml(
     doc: Document,
     image_rids: dict[str, str],
     hyperlink_rids: dict[str, str] | None = None,
+    hf_rids: dict[tuple[str, str], str] | None = None,
 ) -> bytes:
     """Build word/document.xml.
 
@@ -45,6 +46,8 @@ def build_document_xml(
         doc:            The Document model.
         image_rids:     Mapping ``{original_relationship_id → new_rid}`` for images.
         hyperlink_rids: Mapping ``{url → rid}`` for hyperlink relationships.
+        hf_rids:        Mapping ``{("header"|"footer", type) → rid}`` for
+                        header/footer relationships (e.g. ``("header", "default") → "rId5"``).
 
     Returns:
         UTF-8 bytes of the complete document.xml.
@@ -60,11 +63,25 @@ def build_document_xml(
             _write_paragraph(body, element, image_rids, _draw_counter, _hyperlink_rids)
         elif isinstance(element, Table):
             _write_table(body, element, image_rids, _draw_counter, _hyperlink_rids)
+        elif isinstance(element, PageBreak):
+            _write_page_break(body)
 
-    # w:sectPr — page geometry
-    _write_sect_pr(body, doc)
+    # w:sectPr — page geometry + header/footer references
+    _write_sect_pr(body, doc, hf_rids or {})
 
     return to_bytes(root)
+
+
+# ---------------------------------------------------------------------------
+# Page break
+# ---------------------------------------------------------------------------
+
+def _write_page_break(parent: etree._Element) -> None:
+    """Write an explicit page break as <w:p><w:r><w:br w:type="page"/></w:r></w:p>."""
+    p_el = etree.SubElement(parent, f"{{{W}}}p")
+    r_el = etree.SubElement(p_el, f"{{{W}}}r")
+    br_el = etree.SubElement(r_el, f"{{{W}}}br")
+    br_el.set(f"{{{W}}}type", "page")
 
 
 # ---------------------------------------------------------------------------
@@ -121,6 +138,8 @@ def _write_run(
         _write_hyperlink(parent, run, hyperlink_rids or {})
     elif isinstance(run, ImageRun):
         _write_image_run(parent, run.image, image_rids, draw_counter)
+    elif isinstance(run, PageNumberField):
+        _write_page_number_field(parent, run)
     else:
         _write_text_run(parent, run)
 
@@ -141,6 +160,48 @@ def _write_hyperlink(
         hl.set(f"{{{R}}}id", hyperlink_rids.get(link.url, ""))
     for run in link.runs:
         _write_text_run(hl, run)
+
+
+# ---------------------------------------------------------------------------
+# Page number field
+# ---------------------------------------------------------------------------
+
+def _write_page_number_field(parent: etree._Element, field: PageNumberField) -> None:
+    """Write a page number field using the complex fldChar form."""
+    fmt = field.formatting
+
+    def _run_with_fmt() -> etree._Element:
+        r_el = etree.SubElement(parent, f"{{{W}}}r")
+        if _has_run_fmt(fmt):
+            rpr = etree.SubElement(r_el, f"{{{W}}}rPr")
+            _write_run_fmt(rpr, fmt)
+        return r_el
+
+    # begin
+    r_begin = _run_with_fmt()
+    fc_begin = etree.SubElement(r_begin, f"{{{W}}}fldChar")
+    fc_begin.set(f"{{{W}}}fldCharType", "begin")
+
+    # instrText
+    r_instr = _run_with_fmt()
+    instr = etree.SubElement(r_instr, f"{{{W}}}instrText")
+    instr.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    instr.text = f" {field.field_type} "
+
+    # separate
+    r_sep = _run_with_fmt()
+    fc_sep = etree.SubElement(r_sep, f"{{{W}}}fldChar")
+    fc_sep.set(f"{{{W}}}fldCharType", "separate")
+
+    # placeholder display value
+    r_disp = _run_with_fmt()
+    t_el = etree.SubElement(r_disp, f"{{{W}}}t")
+    t_el.text = "1"
+
+    # end
+    r_end = _run_with_fmt()
+    fc_end = etree.SubElement(r_end, f"{{{W}}}fldChar")
+    fc_end.set(f"{{{W}}}fldCharType", "end")
 
 
 # ---------------------------------------------------------------------------
@@ -357,8 +418,34 @@ def _write_cell(
 # Section properties (page geometry)
 # ---------------------------------------------------------------------------
 
-def _write_sect_pr(body: etree._Element, doc) -> None:
+def _write_sect_pr(
+    body: etree._Element,
+    doc,
+    hf_rids: dict[tuple[str, str], str],
+) -> None:
+    """Write <w:sectPr> with page geometry and optional header/footer references."""
+    from docwow.writer._xml import R as _R
     sect = etree.SubElement(body, f"{{{W}}}sectPr")
+
+    # Header/footer references must precede pgSz per OOXML schema
+    hf_slots = [
+        (doc.header_default, "headerReference", "default"),
+        (doc.header_first,   "headerReference", "first"),
+        (doc.header_even,    "headerReference", "even"),
+        (doc.footer_default, "footerReference", "default"),
+        (doc.footer_first,   "footerReference", "first"),
+        (doc.footer_even,    "footerReference", "even"),
+    ]
+    for hf, ref_tag, hf_type in hf_slots:
+        if hf is not None:
+            kind = "header" if ref_tag == "headerReference" else "footer"
+            rid = hf_rids.get((kind, hf_type), "")
+            ref_el = etree.SubElement(sect, f"{{{W}}}{ref_tag}")
+            ref_el.set(f"{{{W}}}type", hf_type)
+            ref_el.set(f"{{{_R}}}id", rid)
+
+    if doc.title_pg:
+        etree.SubElement(sect, f"{{{W}}}titlePg")
 
     pgsz = etree.SubElement(sect, f"{{{W}}}pgSz")
     pgsz.set(f"{{{W}}}w", pt_tw(doc.page_width_pt))

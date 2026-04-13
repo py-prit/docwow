@@ -195,6 +195,64 @@ Nested lists are represented as nested `<ul>`/`<ol>` elements inside `<li>` elem
 
 ---
 
+## Headers and footers (`<header>` / `<footer>`)
+
+```html
+<header class="dw-header dw-header-default" data-dw-header-type="default">
+  <p class="dw-p">...</p>
+</header>
+
+<footer class="dw-footer dw-footer-default" data-dw-footer-type="default">
+  <p class="dw-p dw-page-only">...</p>
+</footer>
+```
+
+| Attribute | Type | Description |
+|---|---|---|
+| `data-dw-header-type` | string | `default` \| `first` \| `even` — which slot this header occupies |
+| `data-dw-footer-type` | string | `default` \| `first` \| `even` — which slot this footer occupies |
+
+The `data-dw-title-pg` attribute on the document div signals that a different first-page header/footer is active:
+
+```html
+<div class="dw-document" data-dw-title-pg="true" ...>
+```
+
+| Attribute | Type | Description |
+|---|---|---|
+| `data-dw-title-pg` | `"true"` | Document uses a distinct first-page header/footer |
+
+---
+
+## Page number fields (`<span class="dw-field">`)
+
+```html
+<span class="dw-field" data-dw-field="PAGE">1</span>
+<span class="dw-field" data-dw-field="NUMPAGES">1</span>
+```
+
+| Attribute | Type | Description |
+|---|---|---|
+| `data-dw-field` | string | `PAGE` \| `NUMPAGES` \| `SECTIONPAGES` |
+
+The text content is always the static placeholder `1`. The HTML parser reads `data-dw-field` to reconstruct the `PageNumberField` model — the placeholder text is ignored.
+
+---
+
+## Page breaks (`<div class="dw-page-break">`)
+
+```html
+<div class="dw-page-break" data-dw-page="2"></div>
+```
+
+| Attribute | Type | Description |
+|---|---|---|
+| `data-dw-page` | integer | The page number that begins after this break |
+
+Always `display:none`. Preserved for round-trip only.
+
+---
+
 ## Attribute presence rules
 
 - **Omitted = default.** Attributes are only written when their value differs from the Word default (e.g. `data-dw-align` is omitted for left-aligned paragraphs).

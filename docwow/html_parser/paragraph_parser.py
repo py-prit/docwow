@@ -6,7 +6,7 @@ import base64
 from docwow.html_parser._utils import has_class, pt_val
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 
 
@@ -56,11 +56,22 @@ def _parse_runs(p_el) -> list[Run]:
     for child in p_el:
         if child.tag == "span" and has_class(child, "dw-r"):
             runs.append(_parse_text_run(child))
+        elif child.tag == "span" and has_class(child, "dw-field"):
+            pf = _parse_page_number_field(child)
+            if pf is not None:
+                runs.append(pf)
         elif child.tag == "img" and has_class(child, "dw-img"):
             runs.append(_parse_image_run(child))
         elif child.tag == "a" and child.get("data-dw-href"):
             runs.append(_parse_hyperlink(child))
     return runs
+
+
+def _parse_page_number_field(span_el) -> PageNumberField | None:
+    field_type = span_el.get("data-dw-field", "")
+    if not field_type:
+        return None
+    return PageNumberField(field_type=field_type)
 
 
 def _parse_hyperlink(a_el) -> Hyperlink:

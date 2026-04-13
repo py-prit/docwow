@@ -87,6 +87,56 @@ Inline run. `white-space: pre-wrap` preserves the spaces and newlines that Word 
 }
 ```
 
+### `.dw-header`, `.dw-footer`
+
+Header and footer containers. Visual styles (border lines, smaller font, gray colour) are applied by default. The `max-width` mirrors the document page width.
+
+```css
+.dw-header, .dw-footer {
+  max-width: var(--dw-page-width, 595.28pt);
+  margin: 0 auto;
+  padding: 4pt 72pt;
+  font-size: 9pt;
+  color: #555555;
+  border-bottom: 1px solid #cccccc;
+}
+.dw-footer {
+  border-top: 1px solid #cccccc;
+  border-bottom: none;
+}
+```
+
+### `.dw-page-break`
+
+Always hidden. Present in the DOM only for round-trip fidelity.
+
+```css
+.dw-page-break {
+  display: none;
+}
+```
+
+### `.dw-page-only`
+
+Applied to header/footer paragraphs that consist entirely of page number fields and connector words (e.g. "Page N of M"). Hidden visually but kept in the DOM so the `data-dw-field` spans survive an HTML → DOCX round-trip.
+
+```css
+.dw-page-only {
+  display: none;
+}
+```
+
+### `.dw-field`
+
+Inline span for a page number field. Rendered as gray italic to signal it is a placeholder, not real content.
+
+```css
+.dw-field {
+  color: #888888;
+  font-style: italic;
+}
+```
+
 ---
 
 ## Style classes (`.dw-style-*`)

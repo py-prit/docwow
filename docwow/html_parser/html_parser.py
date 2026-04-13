@@ -15,8 +15,9 @@ from docwow.html_parser._utils import has_class, pt_val
 from docwow.html_parser.paragraph_parser import parse_paragraph
 from docwow.html_parser.table_parser import parse_table
 from docwow.models.document import Document
+from docwow.models.header_footer import HeaderFooter
 from docwow.models.lists import ListLevel, NumberingDefinition
-from docwow.models.paragraph import Paragraph
+from docwow.models.paragraph import PageBreak, Paragraph
 from docwow.models.styles import Style
 from docwow.models.table import Table
 
@@ -54,12 +55,16 @@ def parse_html(source: str | bytes) -> Document:
     margin_right_pt  = pt_val(g("data-dw-margin-right"),  72.0)
 
     body, numbering, style_ids = _parse_body(doc_div)
+    title_pg = doc_div.get("data-dw-title-pg") == "true"
 
     # Minimal Style objects: carry the style_id so the writer can reference them
     styles = tuple(
         Style(style_id=sid, name=sid, style_type="paragraph")
         for sid in sorted(style_ids)
     )
+
+    # Headers and footers — parsed from <header>/<footer> siblings of dw-document
+    hf_kwargs = _parse_hf_elements(root)
 
     return Document(
         body=body,
@@ -71,7 +76,46 @@ def parse_html(source: str | bytes) -> Document:
         margin_bottom_pt=margin_bottom_pt,
         margin_left_pt=margin_left_pt,
         margin_right_pt=margin_right_pt,
+        title_pg=title_pg,
+        **hf_kwargs,
     )
+
+
+# ---------------------------------------------------------------------------
+# Header / footer parsing
+# ---------------------------------------------------------------------------
+
+_HF_FIELD_MAP = {
+    ("header", "default"): "header_default",
+    ("header", "first"):   "header_first",
+    ("header", "even"):    "header_even",
+    ("footer", "default"): "footer_default",
+    ("footer", "first"):   "footer_first",
+    ("footer", "even"):    "footer_even",
+}
+
+
+def _parse_hf_elements(root) -> dict:
+    """Find all <header>/<footer class="dw-header/footer"> elements and parse them."""
+    result: dict = {}
+    body_el = root.find(".//body")
+    if body_el is None:
+        body_el = root
+    for child in body_el:
+        tag = child.tag
+        if tag not in ("header", "footer"):
+            continue
+        hf_type = child.get(f"data-dw-{tag}-type", "default")
+        key = _HF_FIELD_MAP.get((tag, hf_type))
+        if key is None:
+            continue
+        paragraphs = tuple(
+            parse_paragraph(p_el)
+            for p_el in child
+            if p_el.tag == "p" and has_class(p_el, "dw-p")
+        )
+        result[key] = HeaderFooter(paragraphs=paragraphs)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -80,9 +124,9 @@ def parse_html(source: str | bytes) -> Document:
 
 def _parse_body(
     doc_div,
-) -> tuple[tuple[Paragraph | Table, ...], tuple[NumberingDefinition, ...], set[str]]:
+) -> tuple[tuple, tuple[NumberingDefinition, ...], set[str]]:
     """Walk direct children of the dw-document div and build the body tuple."""
-    body: list[Paragraph | Table] = []
+    body: list = []
     style_ids: set[str] = set()
     # num_id → {level → num_fmt}
     numbering_levels: dict[str, dict[int, str]] = {}
@@ -99,6 +143,9 @@ def _parse_body(
 
         elif tag in ("ul", "ol") and has_class(child, "dw-list"):
             _collect_list(child, body, style_ids, numbering_levels)
+
+        elif tag == "div" and has_class(child, "dw-page-break"):
+            body.append(PageBreak())
 
     return tuple(body), _build_numbering(numbering_levels), style_ids
 

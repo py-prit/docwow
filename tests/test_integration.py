@@ -19,7 +19,8 @@ from docwow.api.document import DocumentWrapper
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
-from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, TextRun
+from docwow.models.header_footer import HeaderFooter
+from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from tests.fixtures.generate_showcase import build_showcase
@@ -536,12 +537,14 @@ class TestShowcase:
 
     @pytest.fixture(autouse=True, scope="class")
     def showcase_doc(self):
-        """Build the showcase Document, write showcase.docx and showcase.html."""
+        """Build the showcase Document, write showcase.docx, showcase.html, and showcase_page_view.html."""
         doc = build_showcase()
         data = docwow.write_docx(doc)
         (FIXTURES / "showcase.docx").write_bytes(data)
         html = docwow.render_document(doc)
         (FIXTURES / "showcase.html").write_text(html, encoding="utf-8")
+        html_pv = docwow.render_document(doc, page_view=True)
+        (FIXTURES / "showcase_page_view.html").write_text(html_pv, encoding="utf-8")
         return doc
 
     # --- DOCX round-trip ---
@@ -651,3 +654,380 @@ class TestShowcase:
         html = docwow.to_html(FIXTURES / "showcase.docx")
         data = docwow.to_docx(html)
         assert _is_valid_zip(data)
+
+    def test_docx_roundtrip_has_header(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        assert doc.header_default is not None
+        assert len(doc.header_default.paragraphs) >= 1
+
+    def test_docx_roundtrip_has_footer_with_page_number(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        assert doc.footer_default is not None
+        runs = doc.footer_default.paragraphs[0].runs
+        assert any(isinstance(r, PageNumberField) for r in runs)
+
+    def test_html_roundtrip_has_header(self):
+        # Showcase header has text content — must render as <header> element
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        html = docwow.render_document(doc)
+        assert 'dw-header' in html
+
+    def test_html_roundtrip_footer_present_but_hidden(self):
+        # Showcase footer is "Page N of M" — page-number-only paragraphs get
+        # dw-page-only class (display:none) but the <footer> element IS present
+        # so the HTML → DOCX round-trip can recover it
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        html = docwow.render_document(doc)
+        assert '<footer' in html
+        assert 'dw-page-only' in html
+
+    def test_html_roundtrip_page_break_preserved(self):
+        # Page breaks are kept as hidden divs for round-trip fidelity
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        html = docwow.render_document(doc)
+        assert 'dw-page-break' in html
+
+
+class TestHeaderFooterDocxRoundTrip:
+    """DOCX write → parse round-trip for headers and footers."""
+
+    def _make_doc_with_header(self) -> Document:
+        from docwow.models.styles import ParagraphFormatting
+        hf = HeaderFooter(paragraphs=(
+            Paragraph(
+                runs=(TextRun(text="Test Header"),),
+                formatting=ParagraphFormatting(),
+            ),
+        ))
+        return Document(
+            body=(),
+            styles=(),
+            numbering=(),
+            header_default=hf,
+        )
+
+    def _make_doc_with_footer(self) -> Document:
+        from docwow.models.styles import ParagraphFormatting
+        ftr = HeaderFooter(paragraphs=(
+            Paragraph(
+                runs=(TextRun(text="Page "), PageNumberField(field_type="PAGE")),
+                formatting=ParagraphFormatting(),
+            ),
+        ))
+        return Document(
+            body=(),
+            styles=(),
+            numbering=(),
+            footer_default=ftr,
+        )
+
+    def test_header_survives_docx_roundtrip(self):
+        doc = self._make_doc_with_header()
+        data = docwow.write_docx(doc)
+        rt = docwow.parse_docx(data)
+        assert rt.header_default is not None
+
+    def test_header_text_preserved(self):
+        doc = self._make_doc_with_header()
+        data = docwow.write_docx(doc)
+        rt = docwow.parse_docx(data)
+        text = "".join(
+            r.text for r in rt.header_default.paragraphs[0].runs
+            if isinstance(r, TextRun)
+        )
+        assert "Test Header" in text
+
+    def test_footer_page_number_preserved(self):
+        doc = self._make_doc_with_footer()
+        data = docwow.write_docx(doc)
+        rt = docwow.parse_docx(data)
+        assert rt.footer_default is not None
+        runs = rt.footer_default.paragraphs[0].runs
+        assert any(isinstance(r, PageNumberField) and r.field_type == "PAGE" for r in runs)
+
+    def test_docx_contains_header_xml(self):
+        doc = self._make_doc_with_header()
+        data = docwow.write_docx(doc)
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            names = zf.namelist()
+        assert any("header" in n for n in names)
+
+    def test_docx_contains_footer_xml(self):
+        doc = self._make_doc_with_footer()
+        data = docwow.write_docx(doc)
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            names = zf.namelist()
+        assert any("footer" in n for n in names)
+
+    def test_docx_content_types_has_header(self):
+        doc = self._make_doc_with_header()
+        data = docwow.write_docx(doc)
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            ct_xml = zf.read("[Content_Types].xml").decode("utf-8")
+        assert "header+xml" in ct_xml
+
+    def test_docx_document_rels_has_header_rel(self):
+        doc = self._make_doc_with_header()
+        data = docwow.write_docx(doc)
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            rels = zf.read("word/_rels/document.xml.rels").decode("utf-8")
+        assert "header" in rels.lower()
+
+    def test_no_header_means_no_header_file(self):
+        doc = Document(body=(), styles=(), numbering=())
+        data = docwow.write_docx(doc)
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            names = zf.namelist()
+        assert not any("header" in n for n in names)
+
+    def test_title_pg_survives_roundtrip(self):
+        from docwow.models.styles import ParagraphFormatting
+        hf = HeaderFooter(paragraphs=(
+            Paragraph(runs=(TextRun(text="First"),), formatting=ParagraphFormatting()),
+        ))
+        doc = Document(body=(), styles=(), numbering=(), header_first=hf, title_pg=True)
+        data = docwow.write_docx(doc)
+        rt = docwow.parse_docx(data)
+        assert rt.title_pg is True
+        assert rt.header_first is not None
+
+
+class TestHeaderFooterHtmlRoundTrip:
+    """HTML render → parse round-trip for headers and footers."""
+
+    def _make_doc(self) -> Document:
+        from docwow.models.styles import ParagraphFormatting
+        hdr = HeaderFooter(paragraphs=(
+            Paragraph(
+                runs=(TextRun(text="My Header"),),
+                formatting=ParagraphFormatting(),
+            ),
+        ))
+        ftr = HeaderFooter(paragraphs=(
+            Paragraph(
+                runs=(TextRun(text="Page "), PageNumberField(field_type="PAGE")),
+                formatting=ParagraphFormatting(),
+            ),
+        ))
+        return Document(
+            body=(),
+            styles=(),
+            numbering=(),
+            header_default=hdr,
+            footer_default=ftr,
+        )
+
+    def test_html_contains_header_element(self):
+        doc = self._make_doc()
+        html = docwow.render_document(doc)
+        assert 'dw-header' in html
+
+    def test_html_contains_footer_element(self):
+        doc = self._make_doc()
+        html = docwow.render_document(doc)
+        assert 'dw-footer' in html
+
+    def test_html_header_text_present(self):
+        doc = self._make_doc()
+        html = docwow.render_document(doc)
+        assert "My Header" in html
+
+    def test_html_footer_page_field_present_for_roundtrip(self):
+        # Page number fields must be present in HTML (as dw-field spans) so
+        # that HTML → DOCX round-trip can recover them
+        doc = self._make_doc()
+        html = docwow.render_document(doc)
+        assert 'data-dw-field="PAGE"' in html
+
+    def test_html_footer_page_only_paragraph_is_hidden(self):
+        # "Page N" footer is a page-number template — paragraph gets
+        # dw-page-only class (display:none) but <footer> element stays in DOM
+        doc = self._make_doc()
+        html = docwow.render_document(doc)
+        assert '<footer' in html
+        assert 'dw-page-only' in html
+
+    def test_html_footer_real_content_preserved(self):
+        # Footer with non-connector text alongside a page field: text part shown,
+        # field stripped — e.g. "Confidential — Page N" → "Confidential — "
+        from docwow.models.styles import ParagraphFormatting
+        ftr = HeaderFooter(paragraphs=(
+            Paragraph(
+                runs=(
+                    TextRun(text="Confidential — "),
+                    PageNumberField(field_type="PAGE"),
+                ),
+                formatting=ParagraphFormatting(),
+            ),
+        ))
+        doc = Document(body=(), styles=(), numbering=(), footer_default=ftr)
+        html = docwow.render_document(doc)
+        assert '<footer' in html
+        assert 'Confidential' in html
+
+    def test_html_roundtrip_preserves_header(self):
+        doc = self._make_doc()
+        html = docwow.render_document(doc)
+        rt = docwow.parse_html(html)
+        assert rt.header_default is not None
+        text = "".join(
+            r.text for r in rt.header_default.paragraphs[0].runs
+            if isinstance(r, TextRun)
+        )
+        assert "My Header" in text
+
+    def test_html_footer_page_number_only_paragraph_hidden(self):
+        # A footer containing ONLY a page number field: <footer> element IS
+        # present but the paragraph is hidden (dw-page-only class)
+        from docwow.models.styles import ParagraphFormatting
+        ftr = HeaderFooter(paragraphs=(
+            Paragraph(
+                runs=(PageNumberField(field_type="PAGE"),),
+                formatting=ParagraphFormatting(),
+            ),
+        ))
+        doc = Document(body=(), styles=(), numbering=(), footer_default=ftr)
+        html = docwow.render_document(doc)
+        assert '<footer' in html
+        assert 'dw-page-only' in html
+
+    def test_html_roundtrip_preserves_footer_page_number_field(self):
+        # HTML → parse_html must recover the PageNumberField from a hidden paragraph
+        doc = self._make_doc()
+        html = docwow.render_document(doc)
+        rt = docwow.parse_html(html)
+        assert rt.footer_default is not None
+        runs = rt.footer_default.paragraphs[0].runs
+        assert any(isinstance(r, PageNumberField) for r in runs)
+
+
+# ---------------------------------------------------------------------------
+# DOCX → HTML → DOCX semantic round-trip
+# ---------------------------------------------------------------------------
+
+class TestDocxHtmlDocxRoundTrip:
+    """Verify that DOCX → render_document() → parse_html() → write_docx() →
+    parse_docx() preserves all semantically significant content.
+
+    We don't compare raw XML (attribute order, namespace prefixes, and default
+    values differ); instead we assert structural and content equivalence on the
+    re-parsed model.
+    """
+
+    def _build_doc(self) -> Document:
+        """A document with header, page-number footer, body text, and a page break."""
+        from docwow.models.styles import ParagraphFormatting
+        hdr = HeaderFooter(paragraphs=(
+            Paragraph(
+                runs=(TextRun(text="Round-trip Header"),),
+                formatting=ParagraphFormatting(),
+            ),
+        ))
+        ftr = HeaderFooter(paragraphs=(
+            Paragraph(
+                runs=(
+                    TextRun(text="Page "),
+                    PageNumberField(field_type="PAGE"),
+                    TextRun(text=" of "),
+                    PageNumberField(field_type="NUMPAGES"),
+                ),
+                formatting=ParagraphFormatting(),
+            ),
+        ))
+        body = (
+            Paragraph(runs=(TextRun(text="First page content"),), formatting=ParagraphFormatting()),
+            PageBreak(),
+            Paragraph(runs=(TextRun(text="Second page content"),), formatting=ParagraphFormatting()),
+        )
+        return Document(
+            body=body,
+            styles=(),
+            numbering=(),
+            header_default=hdr,
+            footer_default=ftr,
+        )
+
+    def _roundtrip(self, doc: Document) -> Document:
+        """DOCX → HTML → DOCX → re-parsed Document."""
+        docx_bytes = docwow.write_docx(doc)
+        html = docwow.render_document(docwow.parse_docx(docx_bytes))
+        rt_docx = docwow.to_docx(html)
+        return docwow.parse_docx(rt_docx)
+
+    def test_body_paragraphs_preserved(self):
+        rt = self._roundtrip(self._build_doc())
+        texts = [
+            "".join(r.text for r in el.runs if isinstance(r, TextRun))
+            for el in rt.body if isinstance(el, Paragraph)
+        ]
+        assert "First page content" in texts
+        assert "Second page content" in texts
+
+    def test_page_break_preserved(self):
+        rt = self._roundtrip(self._build_doc())
+        assert any(isinstance(el, PageBreak) for el in rt.body)
+
+    def test_header_text_preserved(self):
+        rt = self._roundtrip(self._build_doc())
+        assert rt.header_default is not None
+        text = "".join(
+            r.text for r in rt.header_default.paragraphs[0].runs
+            if isinstance(r, TextRun)
+        )
+        assert "Round-trip Header" in text
+
+    def test_footer_page_number_field_preserved(self):
+        rt = self._roundtrip(self._build_doc())
+        assert rt.footer_default is not None
+        runs = rt.footer_default.paragraphs[0].runs
+        page_fields = [r for r in runs if isinstance(r, PageNumberField) and r.field_type == "PAGE"]
+        numpages_fields = [r for r in runs if isinstance(r, PageNumberField) and r.field_type == "NUMPAGES"]
+        assert len(page_fields) >= 1
+        assert len(numpages_fields) >= 1
+
+    def test_footer_connector_text_preserved(self):
+        rt = self._roundtrip(self._build_doc())
+        assert rt.footer_default is not None
+        texts = [
+            r.text for r in rt.footer_default.paragraphs[0].runs
+            if isinstance(r, TextRun)
+        ]
+        assert "Page " in texts
+        assert " of " in texts
+
+    def test_output_is_valid_docx(self):
+        docx_bytes = docwow.write_docx(self._build_doc())
+        html = docwow.render_document(docwow.parse_docx(docx_bytes))
+        rt_docx = docwow.to_docx(html)
+        assert _is_valid_zip(rt_docx)
+
+    def test_showcase_docx_html_docx_header_preserved(self):
+        """Full showcase pipeline: showcase.docx → HTML → DOCX → re-parse."""
+        docx_bytes = (FIXTURES / "showcase.docx").read_bytes()
+        html = docwow.render_document(docwow.parse_docx(docx_bytes))
+        rt_docx = docwow.to_docx(html)
+        rt = docwow.parse_docx(rt_docx)
+        assert rt.header_default is not None
+        text = "".join(
+            r.text for r in rt.header_default.paragraphs[0].runs
+            if isinstance(r, TextRun)
+        )
+        assert len(text) > 0
+
+    def test_showcase_docx_html_docx_footer_page_field_preserved(self):
+        """Showcase footer (page-number-only) survives HTML round-trip."""
+        docx_bytes = (FIXTURES / "showcase.docx").read_bytes()
+        html = docwow.render_document(docwow.parse_docx(docx_bytes))
+        rt_docx = docwow.to_docx(html)
+        rt = docwow.parse_docx(rt_docx)
+        assert rt.footer_default is not None
+        runs = rt.footer_default.paragraphs[0].runs
+        assert any(isinstance(r, PageNumberField) for r in runs)
+
+    def test_showcase_docx_html_docx_page_break_preserved(self):
+        """Page break in showcase survives HTML round-trip."""
+        docx_bytes = (FIXTURES / "showcase.docx").read_bytes()
+        html = docwow.render_document(docwow.parse_docx(docx_bytes))
+        rt_docx = docwow.to_docx(html)
+        rt = docwow.parse_docx(rt_docx)
+        assert any(isinstance(el, PageBreak) for el in rt.body)

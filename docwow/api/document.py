@@ -7,6 +7,7 @@ from pathlib import Path
 from docwow.models.lists import NumberingDefinition
 from docwow.models.styles import Style
 from docwow.api.paragraph import ParagraphCollection
+from docwow.api.header_footer import MutableHeaderFooter
 
 
 class DocumentWrapper:
@@ -29,6 +30,13 @@ class DocumentWrapper:
         margin_bottom_pt: float = 72.0,
         margin_left_pt: float = 72.0,
         margin_right_pt: float = 72.0,
+        header_default: MutableHeaderFooter | None = None,
+        header_first: MutableHeaderFooter | None = None,
+        header_even: MutableHeaderFooter | None = None,
+        footer_default: MutableHeaderFooter | None = None,
+        footer_first: MutableHeaderFooter | None = None,
+        footer_even: MutableHeaderFooter | None = None,
+        title_pg: bool = False,
     ) -> None:
         self._paragraphs = paragraphs if paragraphs is not None else ParagraphCollection()
         self._styles = styles
@@ -39,6 +47,13 @@ class DocumentWrapper:
         self._margin_bottom_pt = margin_bottom_pt
         self._margin_left_pt = margin_left_pt
         self._margin_right_pt = margin_right_pt
+        self._header_default = header_default
+        self._header_first = header_first
+        self._header_even = header_even
+        self._footer_default = footer_default
+        self._footer_first = footer_first
+        self._footer_even = footer_even
+        self._title_pg = title_pg
 
     # ---- Body access ---------------------------------------------------------
 
@@ -46,6 +61,80 @@ class DocumentWrapper:
     def paragraphs(self) -> ParagraphCollection:
         """The collection of body elements (paragraphs, lists, images, tables)."""
         return self._paragraphs
+
+    # ---- Headers / footers ---------------------------------------------------
+
+    def _get_or_create_hf(self, attr: str) -> MutableHeaderFooter:
+        if getattr(self, attr) is None:
+            setattr(self, attr, MutableHeaderFooter())
+        return getattr(self, attr)
+
+    @property
+    def header(self) -> MutableHeaderFooter:
+        """The default-page header (created on first access if absent)."""
+        if self._header_default is None:
+            self._header_default = MutableHeaderFooter()
+        return self._header_default
+
+    @header.setter
+    def header(self, value: MutableHeaderFooter | None) -> None:
+        self._header_default = value
+
+    @property
+    def header_first(self) -> MutableHeaderFooter | None:
+        """The first-page header (None if not set)."""
+        return self._header_first
+
+    @header_first.setter
+    def header_first(self, value: MutableHeaderFooter | None) -> None:
+        self._header_first = value
+
+    @property
+    def header_even(self) -> MutableHeaderFooter | None:
+        """The even-page header (None if not set)."""
+        return self._header_even
+
+    @header_even.setter
+    def header_even(self, value: MutableHeaderFooter | None) -> None:
+        self._header_even = value
+
+    @property
+    def footer(self) -> MutableHeaderFooter:
+        """The default-page footer (created on first access if absent)."""
+        if self._footer_default is None:
+            self._footer_default = MutableHeaderFooter()
+        return self._footer_default
+
+    @footer.setter
+    def footer(self, value: MutableHeaderFooter | None) -> None:
+        self._footer_default = value
+
+    @property
+    def footer_first(self) -> MutableHeaderFooter | None:
+        """The first-page footer (None if not set)."""
+        return self._footer_first
+
+    @footer_first.setter
+    def footer_first(self, value: MutableHeaderFooter | None) -> None:
+        self._footer_first = value
+
+    @property
+    def footer_even(self) -> MutableHeaderFooter | None:
+        """The even-page footer (None if not set)."""
+        return self._footer_even
+
+    @footer_even.setter
+    def footer_even(self, value: MutableHeaderFooter | None) -> None:
+        self._footer_even = value
+
+    @property
+    def title_pg(self) -> bool:
+        """Whether the first page uses a different header/footer."""
+        return self._title_pg
+
+    @title_pg.setter
+    def title_pg(self, value: bool) -> None:
+        self._title_pg = value
 
     # ---- Page geometry -------------------------------------------------------
 
@@ -151,10 +240,16 @@ class DocumentWrapper:
         data = self.to_bytes()
         Path(path).write_bytes(data)
 
-    def to_html(self) -> str:
-        """Render the document to an HTML string."""
+    def to_html(self, page_view: bool = False) -> str:
+        """Render the document to an HTML string.
+
+        Args:
+            page_view: When True, styles the output as a physical page and
+                       adds ``@media print`` / ``@page`` rules for correct
+                       browser printing and PDF export.
+        """
         from docwow.renderer.html_renderer import render_document
-        return render_document(self._to_frozen())
+        return render_document(self._to_frozen(), page_view=page_view)
 
     def __repr__(self) -> str:
         return (

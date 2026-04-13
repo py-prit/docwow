@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterator
 
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import Paragraph
+from docwow.models.paragraph import PageBreak, Paragraph
 from docwow.models.styles import ParagraphFormatting
 from docwow.api.run import MutableImageRun, MutableRun, RunCollection
 
@@ -321,6 +321,12 @@ class ParagraphCollection:
         self._items.append(item)
         return item
 
+    def add_page_break(self) -> PageBreak:
+        """Append an explicit page break and return it."""
+        pb = PageBreak()
+        self._items.append(pb)
+        return pb
+
     def add_image(
         self,
         data: bytes,
@@ -345,20 +351,26 @@ class ParagraphCollection:
 
     def _to_frozen_body(self) -> tuple:
         """Convert all items to frozen body elements."""
-        return tuple(item._to_frozen() for item in self._items)
+        result = []
+        for item in self._items:
+            if isinstance(item, PageBreak):
+                result.append(item)  # already frozen
+            else:
+                result.append(item._to_frozen())
+        return tuple(result)
 
     # ---- Type enforcement ----------------------------------------------------
 
     def _check_type(self, item: object) -> None:
         from docwow.api.table import TableView as TV
-        if not isinstance(item, (MutableParagraph, TV)):
+        if not isinstance(item, (MutableParagraph, TV, PageBreak)):
             if isinstance(item, Paragraph):
                 raise TypeError(
                     "Cannot add a frozen Paragraph directly. "
                     "Use MutableParagraph or call paragraphs.add_paragraph() instead."
                 )
             raise TypeError(
-                f"Expected MutableParagraph or TableView, got {type(item).__name__!r}"
+                f"Expected MutableParagraph, TableView, or PageBreak; got {type(item).__name__!r}"
             )
 
     def __repr__(self) -> str:
