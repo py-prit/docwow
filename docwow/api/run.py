@@ -202,6 +202,42 @@ class MutableImageRun:
         )
         return self
 
+    def set_width_pt(self, width_pt: float) -> "MutableImageRun":
+        """Set the rendered width in points."""
+        self._image = InlineImage(
+            relationship_id=self._image.relationship_id,
+            content_type=self._image.content_type,
+            data=self._image.data,
+            width_pt=width_pt,
+            height_pt=self._image.height_pt,
+            alt_text=self._image.alt_text,
+        )
+        return self
+
+    def set_height_pt(self, height_pt: float) -> "MutableImageRun":
+        """Set the rendered height in points."""
+        self._image = InlineImage(
+            relationship_id=self._image.relationship_id,
+            content_type=self._image.content_type,
+            data=self._image.data,
+            width_pt=self._image.width_pt,
+            height_pt=height_pt,
+            alt_text=self._image.alt_text,
+        )
+        return self
+
+    def set_alt_text(self, alt_text: str) -> "MutableImageRun":
+        """Set the alt text description."""
+        self._image = InlineImage(
+            relationship_id=self._image.relationship_id,
+            content_type=self._image.content_type,
+            data=self._image.data,
+            width_pt=self._image.width_pt,
+            height_pt=self._image.height_pt,
+            alt_text=alt_text,
+        )
+        return self
+
     @property
     def width_pt(self) -> float:
         return self._image.width_pt

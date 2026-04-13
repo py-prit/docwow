@@ -57,9 +57,18 @@ for item in doc.paragraphs:
 
 ```python
 para = doc.paragraphs[0]
-print(para.get_text())    # full text of all runs concatenated
-print(para.style_id)      # e.g. "Heading1"
-print(para.alignment)     # "left", "center", "right", "justify", or None
+print(para.get_text())           # full text of all runs concatenated
+print(para.style_id)             # e.g. "Heading1"
+print(para.alignment)            # "left", "center", "right", "justify", or None
+print(para.indent_left_pt)       # left indent in points
+print(para.indent_right_pt)      # right indent in points
+print(para.indent_first_line_pt) # first-line indent in points
+print(para.space_before_pt)      # space before paragraph in points
+print(para.space_after_pt)       # space after paragraph in points
+print(para.line_spacing_pt)      # exact line spacing in points, or None for auto
+print(para.keep_together)        # bool
+print(para.keep_with_next)       # bool
+print(para.page_break_before)    # bool
 ```
 
 ### Reading runs
@@ -191,11 +200,8 @@ See [Headers, Footers & Page Numbers](headers-footers.md) for the full reference
 ## Page breaks
 
 ```python
-from docwow.models.paragraph import PageBreak
-
-# Insert an explicit page break between two paragraphs
 doc.paragraphs.add_paragraph("End of section one.")
-doc.paragraphs.append(PageBreak())
+doc.paragraphs.add_page_break()
 doc.paragraphs.add_paragraph("Start of section two.")
 ```
 
@@ -237,6 +243,20 @@ doc.paragraphs.add_image(
 )
 ```
 
+To edit an image run parsed from an existing document:
+
+```python
+from docwow.api import MutableImageRun
+
+for run in para.runs:
+    if isinstance(run, MutableImageRun):
+        run.set_width_pt(300.0)          # resize
+        run.set_height_pt(150.0)
+        run.set_alt_text("Updated chart")
+        # or replace entirely:
+        run.replace_image(new_bytes, "image/png", width_pt=300.0, height_pt=150.0)
+```
+
 ## Page geometry
 
 ```python
@@ -259,6 +279,7 @@ doc.set_margins(top_pt=72.0, bottom_pt=72.0, left_pt=72.0, right_pt=72.0)
 | `add_paragraph(text, style_id)` | Create and append a paragraph, return it |
 | `add_list_item(text, level, num_id)` | Create and append a list item, return it |
 | `add_image(data, content_type, width_pt, height_pt, alt_text)` | Create and append an image paragraph, return it |
+| `add_page_break()` | Append an explicit page break, return it |
 | `append(item)` | Append an existing `MutableParagraph`, `TableView`, or `PageBreak` |
 | `insert(index, item)` | Insert at index |
 | `remove(index)` | Remove item at index |

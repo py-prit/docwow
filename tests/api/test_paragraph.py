@@ -328,6 +328,83 @@ class TestParagraphCollection:
         assert pc[0] is img
 
 
+class TestMutableParagraphReadBack:
+    """Formatting properties set via setters must be readable back."""
+
+    def test_indent_readback(self):
+        para = MutableParagraph()
+        para.set_indent(left_pt=36.0, right_pt=18.0, first_line_pt=12.0)
+        assert para.indent_left_pt == 36.0
+        assert para.indent_right_pt == 18.0
+        assert para.indent_first_line_pt == 12.0
+
+    def test_spacing_readback(self):
+        para = MutableParagraph()
+        para.set_spacing(before_pt=6.0, after_pt=3.0, line_pt=14.0)
+        assert para.space_before_pt == 6.0
+        assert para.space_after_pt == 3.0
+        assert para.line_spacing_pt == 14.0
+
+    def test_line_spacing_none_by_default(self):
+        para = MutableParagraph()
+        assert para.line_spacing_pt is None
+
+    def test_keep_together_readback(self):
+        para = MutableParagraph()
+        assert para.keep_together is False
+        para.set_keep_together(True)
+        assert para.keep_together is True
+        para.set_keep_together(False)
+        assert para.keep_together is False
+
+    def test_keep_with_next_readback(self):
+        para = MutableParagraph()
+        assert para.keep_with_next is False
+        para.set_keep_with_next(True)
+        assert para.keep_with_next is True
+
+    def test_page_break_before_readback(self):
+        para = MutableParagraph()
+        assert para.page_break_before is False
+        para.set_page_break_before(True)
+        assert para.page_break_before is True
+
+    def test_defaults_are_zero(self):
+        para = MutableParagraph()
+        assert para.indent_left_pt == 0.0
+        assert para.indent_right_pt == 0.0
+        assert para.indent_first_line_pt == 0.0
+        assert para.space_before_pt == 0.0
+        assert para.space_after_pt == 0.0
+
+    def test_readback_consistent_with_frozen(self):
+        para = MutableParagraph()
+        para.set_indent(left_pt=24.0).set_spacing(before_pt=8.0).set_keep_together(True)
+        frozen = para._to_frozen()
+        assert para.indent_left_pt == frozen.formatting.indent_left_pt
+        assert para.space_before_pt == frozen.formatting.space_before_pt
+        assert para.keep_together == frozen.formatting.keep_together
+
+
+class TestParagraphCollectionAddPageBreak:
+    def test_add_page_break_appends(self):
+        from docwow.models.paragraph import PageBreak
+        pc = ParagraphCollection()
+        pc.add_paragraph("before")
+        result = pc.add_page_break()
+        pc.add_paragraph("after")
+        assert len(pc) == 3
+        assert isinstance(result, PageBreak)
+        assert isinstance(pc[1], PageBreak)
+
+    def test_page_break_in_frozen_body(self):
+        from docwow.models.paragraph import PageBreak
+        pc = ParagraphCollection()
+        pc.add_page_break()
+        body = pc._to_frozen_body()
+        assert isinstance(body[0], PageBreak)
+
+
 class TestParagraphCollectionTypeEnforcement:
     def test_rejects_frozen_paragraph(self):
         pc = ParagraphCollection()

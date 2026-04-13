@@ -235,6 +235,42 @@ class MutableParagraph:
     def alignment(self) -> str | None:
         return self._fmt.alignment
 
+    @property
+    def indent_left_pt(self) -> float:
+        return self._fmt.indent_left_pt
+
+    @property
+    def indent_right_pt(self) -> float:
+        return self._fmt.indent_right_pt
+
+    @property
+    def indent_first_line_pt(self) -> float:
+        return self._fmt.indent_first_line_pt
+
+    @property
+    def space_before_pt(self) -> float:
+        return self._fmt.space_before_pt
+
+    @property
+    def space_after_pt(self) -> float:
+        return self._fmt.space_after_pt
+
+    @property
+    def line_spacing_pt(self) -> float | None:
+        return self._fmt.line_spacing_pt
+
+    @property
+    def keep_together(self) -> bool:
+        return self._fmt.keep_together
+
+    @property
+    def keep_with_next(self) -> bool:
+        return self._fmt.keep_with_next
+
+    @property
+    def page_break_before(self) -> bool:
+        return self._fmt.page_break_before
+
     # ---- List info (internal use; MutableListItem provides nicer surface) ----
 
     @property

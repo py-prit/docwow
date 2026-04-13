@@ -74,9 +74,7 @@ doc.paragraphs.add_list_item("Germany: 8 new customers", num_id=num_id, level=1)
 ## 6. Page break before the next section
 
 ```python
-from docwow.models.paragraph import PageBreak
-
-doc.paragraphs.append(PageBreak())
+doc.paragraphs.add_page_break()
 ```
 
 In HTML this becomes `<div class="dw-page-break" data-dw-page="2">` — invisible but preserved for the round-trip.

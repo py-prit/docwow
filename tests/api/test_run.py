@@ -465,3 +465,64 @@ class TestRunCollectionHyperlink:
         frozen = Hyperlink(url="https://example.com", runs=(TextRun(text="x"),))
         with pytest.raises(TypeError, match="frozen Hyperlink"):
             rc.append(frozen)  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# MutableImageRun individual setters
+# ---------------------------------------------------------------------------
+
+class TestMutableImageRunSetters:
+    def _make_image_run(self) -> MutableImageRun:
+        img = InlineImage(
+            relationship_id="rId1",
+            content_type="image/png",
+            data=b"\x89PNG",
+            width_pt=100.0,
+            height_pt=80.0,
+            alt_text="original alt",
+        )
+        return MutableImageRun(img)
+
+    def test_set_width_pt(self):
+        run = self._make_image_run()
+        result = run.set_width_pt(200.0)
+        assert run.width_pt == 200.0
+        assert run.height_pt == 80.0   # unchanged
+        assert result is run           # chainable
+
+    def test_set_height_pt(self):
+        run = self._make_image_run()
+        result = run.set_height_pt(40.0)
+        assert run.height_pt == 40.0
+        assert run.width_pt == 100.0   # unchanged
+        assert result is run
+
+    def test_set_alt_text(self):
+        run = self._make_image_run()
+        result = run.set_alt_text("new description")
+        assert run.alt_text == "new description"
+        assert result is run
+
+    def test_set_width_preserves_data(self):
+        run = self._make_image_run()
+        run.set_width_pt(150.0)
+        assert run.get_image().data == b"\x89PNG"
+        assert run.content_type == "image/png"
+
+    def test_chaining(self):
+        run = self._make_image_run()
+        run.set_width_pt(300.0).set_height_pt(150.0).set_alt_text("chart")
+        assert run.width_pt == 300.0
+        assert run.height_pt == 150.0
+        assert run.alt_text == "chart"
+
+    def test_individual_setters_vs_replace_image(self):
+        """set_width_pt should produce the same result as replace_image with new width."""
+        run1 = self._make_image_run()
+        run1.set_width_pt(200.0)
+
+        run2 = self._make_image_run()
+        run2.replace_image(b"\x89PNG", "image/png", width_pt=200.0, height_pt=80.0)
+
+        assert run1.width_pt == run2.width_pt
+        assert run1.height_pt == run2.height_pt
