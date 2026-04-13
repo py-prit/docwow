@@ -49,7 +49,7 @@ doc.to_docx("output.docx")
 | Paragraphs | Text, alignment, indentation, spacing, keep-together/with-next, page-break-before |
 | Run formatting | Bold, italic, underline, strikethrough, font name/size, colour, highlight, superscript/subscript |
 | Inline images | PNG, JPEG, GIF, BMP, TIFF, WebP, SVG, EMF, WMF |
-| Tables | Column spans, row spans (vMerge), column/row widths, table-level styles |
+| Tables | Column spans, row spans (vMerge), column/row widths, table-level styles; fully editable via programmatic API |
 | Lists | Bullet and numbered, up to 9 nesting levels, decimal/lowerLetter/upperLetter/lowerRoman/upperRoman formats |
 | Hyperlinks | External URLs, mailto links |
 | Paragraph styles | Style ID round-trip, Heading 1–9 and custom styles |

@@ -12,7 +12,15 @@ from docwow.api.image import MutableImage
 from docwow.api.list_item import MutableListItem
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
 from docwow.api.run import MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, RunCollection
-from docwow.api.table import TableCellView, TableRowView, TableView
+from docwow.api.table import (
+    MutableTable,
+    MutableTableCell,
+    MutableTableRow,
+    # Backward-compatibility aliases
+    TableView,
+    TableRowView,
+    TableCellView,
+)
 
 __all__ = [
     "DocumentWrapper",
@@ -24,8 +32,12 @@ __all__ = [
     "MutablePageNumberField",
     "MutableParagraph",
     "MutableRun",
+    "MutableTable",
+    "MutableTableCell",
+    "MutableTableRow",
     "ParagraphCollection",
     "RunCollection",
+    # Backward-compatibility aliases
     "TableCellView",
     "TableRowView",
     "TableView",

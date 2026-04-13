@@ -130,12 +130,13 @@ class TestTableReadOnly:
         text = table[0][0].get_text()
         assert isinstance(text, str)
 
-    def test_table_has_no_mutation_methods(self):
+    def test_table_has_mutation_methods(self):
         doc = docwow.open(FIXTURES / "table_simple.docx")
         table = next(p for p in doc.paragraphs if isinstance(p, TableView))
-        assert not hasattr(table, "append")
-        assert not hasattr(table, "insert")
-        assert not hasattr(table, "remove")
+        assert hasattr(table, "append")
+        assert hasattr(table, "insert")
+        assert hasattr(table, "remove")
+        assert hasattr(table, "add_row")
 
     def test_table_preserved_in_roundtrip(self):
         doc = docwow.open(FIXTURES / "table_simple.docx")
