@@ -24,6 +24,7 @@ from docwow.writer._xml import (
 def build_content_types_xml(
     image_entries: list[tuple[str, str]],
     has_numbering: bool,
+    hf_entries: list[tuple[str, str, str]] | None = None,
 ) -> bytes:
     """Build ``[Content_Types].xml``.
 
@@ -31,6 +32,8 @@ def build_content_types_xml(
         image_entries: ``[(part_name, content_type), ...]`` e.g.
                        ``[("/word/media/image1.png", "image/png")]``
         has_numbering: True when the document contains list paragraphs.
+        hf_entries:    ``[(kind, hf_type, filename), ...]`` e.g.
+                       ``[("header", "default", "header1.xml")]``
     """
     root = etree.Element(f"{{{CT_NS}}}Types", nsmap={None: CT_NS})
 
@@ -65,6 +68,14 @@ def build_content_types_xml(
         )
     for part_name, ct in image_entries:
         _override(part_name, ct)
+
+    for kind, hf_type, filename in (hf_entries or []):
+        ct = (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"
+            if kind == "header"
+            else "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"
+        )
+        _override(f"/word/{filename}", ct)
 
     return to_bytes(root)
 

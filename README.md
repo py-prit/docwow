@@ -54,17 +54,51 @@ doc.to_docx("output.docx")
 | Hyperlinks | External URLs, mailto links |
 | Paragraph styles | Style ID round-trip, Heading 1–9 and custom styles |
 | Page geometry | Page size, margins |
+| Headers & footers | Text content, page number fields, default/first/even slots — see limitations below |
+| Page breaks | Explicit page breaks parsed, written, and round-tripped |
 | Programmatic API | Open, edit, and save documents in pure Python |
 
-### 🚧 In Progress
+### ⚠️ Headers, Footers & Page Numbers — Known Limitations
 
-Nothing currently — check back soon.
+Headers and footers are supported for DOCX round-trips and basic HTML rendering, but several aspects are incomplete. These are intentional deferments, not bugs.
+
+#### What works
+
+- **DOCX ↔ DOCX round-trip** — all six slots (default/first/even × header/footer), page number fields (`PAGE`, `NUMPAGES`, `SECTIONPAGES`), and the `title_pg` flag survive a full write → parse cycle with no data loss.
+- **HTML rendering** — headers and footers with real text content are rendered as `<header>` / `<footer>` elements visible in the browser.
+- **DOCX → HTML → DOCX round-trip** — page-number-only paragraphs (e.g. "Page N of M") are kept as hidden elements in the HTML (`display:none`) so the fields survive the HTML → DOCX leg. The output DOCX will have a working page-number footer in Word.
+- **Print / PDF export** — `render_document(doc, page_view=True)` injects `@media print` + `@page` CSS with the correct paper size and margins, so Cmd+P / browser PDF export paginates correctly.
+
+#### What does not work (and why)
+
+**1. Page numbers always show "1" in the browser**
+
+Page number fields render as a static placeholder `1`. Correct values require knowing which page each element lands on, which requires measuring rendered element heights — something only the browser layout engine can do after paint. Without a layout measurement API or a third-party pagination library, this cannot be solved in a pre-render Python step. *Possible approach for contributors:* use a small post-render JS snippet that walks `data-dw-field` spans and updates them after the browser has laid out the page, combined with `data-dw-page` markers on page-break divs.
+
+**2. No visual page separation in the browser**
+
+Explicit page breaks are preserved as hidden `<div class="dw-page-break" data-dw-page="N">` elements but produce no visible gap. Making pages visually discrete requires either CSS `@page` (print-only, not interactive) or JS that measures element heights to insert separators — again a layout-engine problem. *Possible approach:* a small inline JS block that reads the `dw-page-break` markers and inserts visual dividers, sizing each page section to the document's `data-dw-page-height`.
+
+**3. Header and footer appear once, not on every page**
+
+In Word, headers and footers repeat at the top/bottom of every page. In HTML there is a single `<header>` and `<footer>` element. Making them repeat requires knowing page boundaries (see point 2). *Possible approach:* same JS pagination pass — once page sections are created, clone the header/footer HTML into each section.
+
+**4. first-page and even-page slots not applied in HTML**
+
+The `title_pg` flag and even-page slots are preserved through DOCX round-trips but the HTML renderer emits all slots regardless. No CSS or JS selects the right slot per page. *Possible approach:* after the JS pagination pass, inspect the `data-dw-title-pg` attribute on the document div and apply `header-first` vs `header-default` to the appropriate page sections.
+
+**5. Single document section only**
+
+DOCX supports per-section headers/footers — a different header can appear after a manual section break mid-document. docwow parses only the last `w:sectPr` in `w:body` (the document-level section properties). Mid-document section changes are silently ignored. *Possible approach:* parse each `w:sectPr` in the body, associate it with the preceding paragraphs, and model sections explicitly in `Document`.
+
+**6. Page number start value not supported**
+
+DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other than 1. Not currently parsed or written. *Possible approach:* add `page_num_start: int = 1` to the `Document` model and read/write it from `w:sectPr`.
 
 ### 🗓 Planned
 
 | Feature | Notes |
 |---|---|
-| Headers & footers | Including page numbers |
 | Table of contents | Requires bookmark support |
 | Bookmarks | In-document anchor links and TOC targets |
 | Comments | Annotations / review marks |

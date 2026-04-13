@@ -17,7 +17,7 @@ from lxml import etree
 
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.parser.image_parser import extract_image
 from docwow.parser.style_parser import parse_para_fmt, parse_run_fmt
@@ -45,11 +45,38 @@ def parse_body(
     for child in body:
         tag = child.tag
         if tag == qn("w:p"):
-            elements.append(_parse_paragraph(child, zf, relationships, _style_num_map))
+            if _is_page_break_paragraph(child):
+                elements.append(PageBreak())
+            else:
+                elements.append(_parse_paragraph(child, zf, relationships, _style_num_map))
         elif tag == qn("w:tbl"):
             elements.append(_parse_table(child, zf, relationships, _style_num_map))
         # w:sectPr and unknown elements are intentionally skipped
     return tuple(elements)
+
+
+def _is_page_break_paragraph(p_el: etree._Element) -> bool:
+    """Return True if this paragraph contains only an explicit page break and nothing else."""
+    runs = []
+    for child in p_el:
+        if child.tag == qn("w:r"):
+            runs.append(child)
+        elif child.tag not in (qn("w:pPr"),):
+            # Any non-pPr, non-run child (e.g. hyperlink, bookmark) → not a bare page break
+            return False
+    if not runs:
+        return False
+    # All runs must contain only a <w:br w:type="page"/> and nothing else
+    for r in runs:
+        r_children = [c for c in r if c.tag != qn("w:rPr")]
+        if len(r_children) != 1:
+            return False
+        br = r_children[0]
+        if br.tag != qn("w:br"):
+            return False
+        if attrib(br, "w:type") != "page":
+            return False
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -70,10 +97,51 @@ def _parse_paragraph(
         list_info = _parse_list_info(pPr, style_num_map or {})
 
     runs: list[Run] = []
+    # State for complex field (fldChar begin…end sequences)
+    _field_state: dict | None = None
+
     for child in p_el:
-        if child.tag == qn("w:r"):
+        tag = child.tag
+
+        if tag == qn("w:r"):
+            # Check for complex field characters
+            fld_char_el = find(child, "w:fldChar")
+            instr_el = find(child, "w:instrText")
+
+            if fld_char_el is not None:
+                fld_char_type = attrib(fld_char_el, "w:fldCharType")
+                if fld_char_type == "begin":
+                    rPr = find(child, "w:rPr")
+                    _field_state = {"instr": "", "fmt": parse_run_fmt(rPr)}
+                elif fld_char_type == "end":
+                    if _field_state is not None:
+                        pf = _make_page_number_field(
+                            _field_state["instr"], _field_state["fmt"]
+                        )
+                        if pf is not None:
+                            runs.append(pf)
+                        _field_state = None
+                # "separate" and others: do nothing
+                continue
+
+            if instr_el is not None:
+                if _field_state is not None:
+                    _field_state["instr"] += instr_el.text or ""
+                continue
+
+            # Skip display-value runs between "separate" and "end"
+            if _field_state is not None:
+                continue
+
             runs.extend(_parse_run(child, zf, relationships))
-        elif child.tag == qn("w:hyperlink"):
+
+        elif tag == qn("w:fldSimple"):
+            # Simple field form: <w:fldSimple w:instr=" PAGE ">
+            pf = _parse_field_simple(child)
+            if pf is not None:
+                runs.append(pf)
+
+        elif tag == qn("w:hyperlink"):
             hyperlink = _parse_hyperlink(child, zf, relationships)
             if hyperlink is not None:
                 runs.append(hyperlink)
@@ -164,6 +232,32 @@ def _parse_hyperlink_runs(
 
 
 # ---------------------------------------------------------------------------
+# Page number fields
+# ---------------------------------------------------------------------------
+
+_KNOWN_FIELDS = ("PAGE", "NUMPAGES", "SECTIONPAGES")
+
+
+def _make_page_number_field(instr: str, fmt) -> PageNumberField | None:
+    """Return a PageNumberField for known field types, or None."""
+    from docwow.models.styles import RunFormatting
+    instr_upper = instr.strip().upper()
+    for field_type in _KNOWN_FIELDS:
+        if instr_upper.startswith(field_type):
+            return PageNumberField(
+                field_type=field_type,
+                formatting=fmt if fmt is not None else RunFormatting(),
+            )
+    return None
+
+
+def _parse_field_simple(el: etree._Element) -> PageNumberField | None:
+    """Parse a <w:fldSimple> element into a PageNumberField."""
+    instr = attrib(el, "w:instr") or ""
+    return _make_page_number_field(instr, None)
+
+
+# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
@@ -199,11 +293,10 @@ def _parse_run(
                 result.append(ImageRun(image=image, formatting=fmt))
 
         elif tag == qn("w:br"):
-            # Line break — represent as a newline TextRun
             br_type = attrib(child, "w:type")
             if br_type in (None, "textWrapping"):
                 result.append(TextRun(text="\n", formatting=fmt))
-            # Page/column breaks are skipped in v0.1
+            # Page breaks handled at paragraph level by _is_page_break_paragraph
 
     return result
 

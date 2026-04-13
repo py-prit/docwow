@@ -4,18 +4,20 @@ from __future__ import annotations
 
 import html
 
-from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
 
 
-def render_paragraph(p: Paragraph) -> str:
+def render_paragraph(p: Paragraph, extra_classes: list[str] | None = None) -> str:
     """Return a <p> HTML element for a paragraph."""
     fmt = p.formatting
     classes = ["dw-p"]
     if fmt.style_id:
         classes.append(f"dw-style-{_css_ident(fmt.style_id)}")
+    if extra_classes:
+        classes.extend(extra_classes)
 
     data_attrs = _para_data_attrs(fmt)
     if p.list_info is not None:
@@ -33,7 +35,19 @@ def _render_run(run: Run) -> str:
         return render_image(run.image)
     if isinstance(run, Hyperlink):
         return _render_hyperlink(run)
+    if isinstance(run, PageNumberField):
+        return _render_page_number_field(run)
     return _render_text_run(run)
+
+
+def _render_page_number_field(field: PageNumberField) -> str:
+    inline_style = _run_inline_style(field.formatting)
+    style_attr = f' style="{inline_style}"' if inline_style else ""
+    placeholder = "1"  # visual placeholder in HTML
+    return (
+        f'<span class="dw-field" data-dw-field="{field.field_type}"{style_attr}>'
+        f"{placeholder}</span>"
+    )
 
 
 def _render_hyperlink(link: Hyperlink) -> str:

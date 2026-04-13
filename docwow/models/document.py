@@ -3,13 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypeAlias
 
+from docwow.models.header_footer import HeaderFooter
 from docwow.models.lists import NumberingDefinition
-from docwow.models.paragraph import Paragraph
+from docwow.models.paragraph import PageBreak, Paragraph
 from docwow.models.styles import Style
 from docwow.models.table import Table
 
-# Top-level body elements (v0.1: paragraphs and tables only)
-BodyElement: TypeAlias = Paragraph | Table
+# Top-level body elements
+BodyElement: TypeAlias = Paragraph | Table | PageBreak
 
 
 @dataclass(frozen=True)
@@ -35,3 +36,12 @@ class Document:
     margin_bottom_pt: float = 72.0
     margin_left_pt: float = 72.0
     margin_right_pt: float = 72.0
+
+    # Headers and footers (optional)
+    header_default: HeaderFooter | None = None
+    header_first: HeaderFooter | None = None
+    header_even: HeaderFooter | None = None
+    footer_default: HeaderFooter | None = None
+    footer_first: HeaderFooter | None = None
+    footer_even: HeaderFooter | None = None
+    title_pg: bool = False  # True → different header/footer on first page

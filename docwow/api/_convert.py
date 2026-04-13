@@ -8,10 +8,12 @@ in the codebase where frozen models and mutable wrappers are coupled.
 from __future__ import annotations
 
 from docwow.models.document import Document
-from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
+from docwow.models.header_footer import HeaderFooter
+from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table
-from docwow.api.run import MutableHyperlink, MutableImageRun, MutableRun, RunCollection
+from docwow.api.run import MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, RunCollection
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
+from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.table import TableView
 
 
@@ -19,8 +21,8 @@ from docwow.api.table import TableView
 # Frozen → Wrapper  (used at docwow.open() time)
 # ---------------------------------------------------------------------------
 
-def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperlink:
-    """Convert a frozen TextRun, ImageRun, or Hyperlink to its mutable wrapper."""
+def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField:
+    """Convert a frozen run to its mutable wrapper."""
     if isinstance(frozen, TextRun):
         fmt = frozen.formatting
         return MutableRun(
@@ -41,7 +43,18 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperl
         # Flatten multi-run hyperlink text into a single string
         text = "".join(r.text for r in frozen.runs)
         return MutableHyperlink(text=text, url=frozen.url)
+    if isinstance(frozen, PageNumberField):
+        return MutablePageNumberField(field_type=frozen.field_type)
     raise TypeError(f"Unknown run type: {type(frozen).__name__}")
+
+
+def header_footer_from_frozen(frozen: HeaderFooter) -> MutableHeaderFooter:
+    """Convert a frozen HeaderFooter to a MutableHeaderFooter."""
+    from docwow.api.paragraph import ParagraphCollection
+    collection = ParagraphCollection()
+    for para in frozen.paragraphs:
+        collection._items.append(paragraph_from_frozen(para))
+    return MutableHeaderFooter(paragraphs=collection)
 
 
 def paragraph_from_frozen(frozen: Paragraph) -> MutableParagraph:
@@ -75,6 +88,11 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
             collection._items.append(paragraph_from_frozen(element))
         elif isinstance(element, Table):
             collection._items.append(TableView(element))
+        elif isinstance(element, PageBreak):
+            collection._items.append(element)  # already frozen, pass through
+
+    def _hf(hf: HeaderFooter | None) -> MutableHeaderFooter | None:
+        return header_footer_from_frozen(hf) if hf is not None else None
 
     return DocumentWrapper(
         paragraphs=collection,
@@ -86,6 +104,13 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
         margin_bottom_pt=frozen.margin_bottom_pt,
         margin_left_pt=frozen.margin_left_pt,
         margin_right_pt=frozen.margin_right_pt,
+        header_default=_hf(frozen.header_default),
+        header_first=_hf(frozen.header_first),
+        header_even=_hf(frozen.header_even),
+        footer_default=_hf(frozen.footer_default),
+        footer_first=_hf(frozen.footer_first),
+        footer_even=_hf(frozen.footer_even),
+        title_pg=frozen.title_pg,
     )
 
 
@@ -95,6 +120,9 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
 
 def document_to_frozen(wrapper: "DocumentWrapper") -> Document:
     """Convert a DocumentWrapper to a frozen Document for pipeline use."""
+    def _hf_frozen(hf: MutableHeaderFooter | None) -> HeaderFooter | None:
+        return hf._to_frozen() if hf is not None else None
+
     return Document(
         body=wrapper.paragraphs._to_frozen_body(),
         styles=wrapper._styles,
@@ -105,4 +133,11 @@ def document_to_frozen(wrapper: "DocumentWrapper") -> Document:
         margin_bottom_pt=wrapper.margin_bottom_pt,
         margin_left_pt=wrapper.margin_left_pt,
         margin_right_pt=wrapper.margin_right_pt,
+        header_default=_hf_frozen(wrapper._header_default),
+        header_first=_hf_frozen(wrapper._header_first),
+        header_even=_hf_frozen(wrapper._header_even),
+        footer_default=_hf_frozen(wrapper._footer_default),
+        footer_first=_hf_frozen(wrapper._footer_first),
+        footer_even=_hf_frozen(wrapper._footer_even),
+        title_pg=wrapper._title_pg,
     )

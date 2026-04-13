@@ -16,8 +16,9 @@ Edit::
 
 Convert::
 
-    html = docwow.to_html("report.docx")      # DOCX → HTML string
-    data = docwow.to_docx(html_string)        # HTML → DOCX bytes
+    html = docwow.to_html("report.docx")                   # DOCX → HTML string
+    html = docwow.to_html("report.docx", page_view=True)   # with page styling + @page print rules
+    data = docwow.to_docx(html_string)                     # HTML → DOCX bytes
     data = docwow.to_docx(html_string, target="out.docx")
 
 Low-level::
@@ -82,17 +83,20 @@ def open(source: str | Path | bytes) -> "DocumentWrapper":
     raise TypeError(f"Expected str, Path, or bytes; got {type(source).__name__}")
 
 
-def to_html(source: str | Path | bytes) -> str:
+def to_html(source: str | Path | bytes, page_view: bool = False) -> str:
     """Convert a DOCX file to a self-contained HTML string.
 
     Args:
-        source: Path to a ``.docx`` file, or raw DOCX bytes.
+        source:    Path to a ``.docx`` file, or raw DOCX bytes.
+        page_view: When True, styles the output as a physical page and adds
+                   ``@media print`` / ``@page`` rules for correct browser
+                   printing and PDF export.
 
     Returns:
         UTF-8 HTML string produced by :func:`render_document`.
     """
     doc = parse_docx(source)
-    return render_document(doc)
+    return render_document(doc, page_view=page_view)
 
 
 def to_docx(

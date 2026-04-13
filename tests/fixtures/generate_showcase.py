@@ -18,9 +18,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from docwow.models.document import Document
+from docwow.models.header_footer import HeaderFooter
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
-from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer.docx_writer import write_docx
@@ -300,8 +301,18 @@ def build_showcase() -> Document:
         formatting=ParagraphFormatting(),
     ))
 
+    # Explicit page break before the headers/footers section
+    body.append(PageBreak())
+
     # -----------------------------------------------------------------------
-    # Section 11: Mixed content
+    # Section 11: Headers and footers
+    # -----------------------------------------------------------------------
+    body.append(_p("Headers and Footers", style_id="Heading2"))
+    body.append(_p("This document has a default header and footer with page numbers."))
+    body.append(_p("The header shows the document title; the footer shows 'Page N of M'."))
+
+    # -----------------------------------------------------------------------
+    # Section 12: Mixed content
     # -----------------------------------------------------------------------
     body.append(_p("Mixed Content", style_id="Heading2"))
     body.append(_p("A paragraph before a table."))
@@ -335,6 +346,28 @@ def build_showcase() -> Document:
         ),
     )
 
+    # -----------------------------------------------------------------------
+    # Headers / footers
+    # -----------------------------------------------------------------------
+    header_default = HeaderFooter(paragraphs=(
+        Paragraph(
+            runs=(TextRun(text="docwow showcase document", formatting=RunFormatting(italic=True)),),
+            formatting=ParagraphFormatting(),
+        ),
+    ))
+
+    footer_default = HeaderFooter(paragraphs=(
+        Paragraph(
+            runs=(
+                TextRun(text="Page "),
+                PageNumberField(field_type="PAGE"),
+                TextRun(text=" of "),
+                PageNumberField(field_type="NUMPAGES"),
+            ),
+            formatting=ParagraphFormatting(),
+        ),
+    ))
+
     return Document(
         body=tuple(body),
         styles=styles,
@@ -345,6 +378,8 @@ def build_showcase() -> Document:
         margin_bottom_pt=72.0,
         margin_left_pt=72.0,
         margin_right_pt=72.0,
+        header_default=header_default,
+        footer_default=footer_default,
     )
 
 
