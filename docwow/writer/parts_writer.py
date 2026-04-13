@@ -88,19 +88,26 @@ def build_root_rels_xml() -> bytes:
 # ---------------------------------------------------------------------------
 
 def build_document_rels_xml(
-    rel_entries: list[tuple[str, str, str]],
+    rel_entries: list[tuple],
 ) -> bytes:
     """Build ``word/_rels/document.xml.rels``.
 
     Args:
-        rel_entries: ``[(rid, type_uri, target), ...]``
+        rel_entries: ``[(rid, type_uri, target), ...]`` or
+                     ``[(rid, type_uri, target, target_mode), ...]``.
+                     ``target_mode`` is written as ``TargetMode`` when present
+                     (e.g. ``"External"`` for hyperlinks).
     """
     root = etree.Element(f"{{{PKG_NS}}}Relationships", nsmap={None: PKG_NS})
-    for rid, type_uri, target in rel_entries:
+    for entry in rel_entries:
+        rid, type_uri, target = entry[0], entry[1], entry[2]
+        target_mode = entry[3] if len(entry) > 3 else None
         el = etree.SubElement(root, f"{{{PKG_NS}}}Relationship")
         el.set("Id", rid)
         el.set("Type", type_uri)
         el.set("Target", target)
+        if target_mode:
+            el.set("TargetMode", target_mode)
     return to_bytes(root)
 
 

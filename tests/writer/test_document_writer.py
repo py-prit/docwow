@@ -6,10 +6,15 @@ from lxml import etree
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import ImageRun, Paragraph, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer.document_writer import build_document_xml
+
+
+def _hyperlink_para(url="https://example.com", text="Click here"):
+    link = Hyperlink(url=url, runs=(TextRun(text=text),))
+    return Paragraph(runs=(link,), formatting=ParagraphFormatting())
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 50
 
@@ -44,12 +49,12 @@ def _img_para(rid="rId1"):
     return Paragraph(runs=(ImageRun(image=img),), formatting=ParagraphFormatting())
 
 
-def _xml(doc, image_rids=None) -> str:
-    return build_document_xml(doc, image_rids or {}).decode("utf-8")
+def _xml(doc, image_rids=None, hyperlink_rids=None) -> str:
+    return build_document_xml(doc, image_rids or {}, hyperlink_rids or {}).decode("utf-8")
 
 
-def _root(doc, image_rids=None) -> etree._Element:
-    return etree.fromstring(build_document_xml(doc, image_rids or {}))
+def _root(doc, image_rids=None, hyperlink_rids=None) -> etree._Element:
+    return etree.fromstring(build_document_xml(doc, image_rids or {}, hyperlink_rids or {}))
 
 
 # ---------------------------------------------------------------------------
@@ -349,3 +354,88 @@ class TestTableWriting:
         xml = _xml(_doc(body=(t,)))
         assert "<w:tc>" in xml
         assert "<w:p" in xml
+
+
+# ---------------------------------------------------------------------------
+# Hyperlink
+# ---------------------------------------------------------------------------
+
+class TestHyperlinkWriting:
+    def test_hyperlink_element_present(self):
+        doc = _doc(body=(_hyperlink_para(),))
+        xml = _xml(doc, hyperlink_rids={"https://example.com": "rId10"})
+        assert "hyperlink" in xml
+
+    def test_hyperlink_rid_in_output(self):
+        doc = _doc(body=(_hyperlink_para(),))
+        xml = _xml(doc, hyperlink_rids={"https://example.com": "rId10"})
+        assert "rId10" in xml
+
+    def test_hyperlink_text_in_output(self):
+        doc = _doc(body=(_hyperlink_para(text="Go here"),))
+        xml = _xml(doc, hyperlink_rids={"https://example.com": "rId10"})
+        assert "Go here" in xml
+
+    def test_hyperlink_run_inside_hyperlink(self):
+        doc = _doc(body=(_hyperlink_para(),))
+        xml = _xml(doc, hyperlink_rids={"https://example.com": "rId1"})
+        # <w:r> must appear (inside the hyperlink element)
+        assert "<w:r>" in xml
+
+    def test_hyperlink_no_rids_emits_empty_rid(self):
+        # No rids map provided → rid attribute should be empty string (not crash)
+        doc = _doc(body=(_hyperlink_para(),))
+        xml = _xml(doc)
+        assert "hyperlink" in xml
+
+    def test_multiple_hyperlinks_get_different_rids(self):
+        link1 = Hyperlink(url="https://a.com", runs=(TextRun(text="A"),))
+        link2 = Hyperlink(url="https://b.com", runs=(TextRun(text="B"),))
+        para = Paragraph(runs=(link1, link2), formatting=ParagraphFormatting())
+        doc = _doc(body=(para,))
+        xml = _xml(doc, hyperlink_rids={"https://a.com": "rId2", "https://b.com": "rId3"})
+        assert "rId2" in xml
+        assert "rId3" in xml
+
+    def test_hyperlink_with_multiple_inner_runs(self):
+        link = Hyperlink(url="https://example.com", runs=(
+            TextRun(text="Hello "), TextRun(text="world"),
+        ))
+        para = Paragraph(runs=(link,), formatting=ParagraphFormatting())
+        doc = _doc(body=(para,))
+        xml = _xml(doc, hyperlink_rids={"https://example.com": "rId1"})
+        assert "Hello " in xml
+        assert "world" in xml
+
+    def test_hyperlink_mixed_with_text_run(self):
+        link = Hyperlink(url="https://example.com", runs=(TextRun(text="link"),))
+        para = Paragraph(
+            runs=(TextRun(text="See "), link, TextRun(text=" here")),
+            formatting=ParagraphFormatting(),
+        )
+        doc = _doc(body=(para,))
+        xml = _xml(doc, hyperlink_rids={"https://example.com": "rId1"})
+        assert "See " in xml
+        assert "link" in xml
+        assert " here" in xml
+
+    def test_anchor_hyperlink_uses_w_anchor(self):
+        link = Hyperlink(url="#section1", runs=(TextRun(text="go"),))
+        para = Paragraph(runs=(link,), formatting=ParagraphFormatting())
+        doc = _doc(body=(para,))
+        xml = _xml(doc)
+        assert 'w:anchor="section1"' in xml
+
+    def test_anchor_hyperlink_no_r_id(self):
+        link = Hyperlink(url="#section1", runs=(TextRun(text="go"),))
+        para = Paragraph(runs=(link,), formatting=ParagraphFormatting())
+        doc = _doc(body=(para,))
+        xml = _xml(doc)
+        assert 'r:id' not in xml
+
+    def test_anchor_hyperlink_text_present(self):
+        link = Hyperlink(url="#intro", runs=(TextRun(text="Introduction"),))
+        para = Paragraph(runs=(link,), formatting=ParagraphFormatting())
+        doc = _doc(body=(para,))
+        xml = _xml(doc)
+        assert "Introduction" in xml

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Iterator
 
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import ImageRun, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Run, TextRun
 from docwow.models.styles import RunFormatting
 
 
@@ -229,33 +229,75 @@ class MutableImageRun:
         )
 
 
-class RunCollection:
-    """Ordered mutable collection of MutableRun and MutableImageRun instances."""
+class MutableHyperlink:
+    """A mutable hyperlink run with a single text string and a URL."""
 
-    _ALLOWED = (MutableRun, MutableImageRun)
+    def __init__(self, text: str = "", url: str = "") -> None:
+        self._text = text
+        self._url = url
+
+    # ---- Setters -------------------------------------------------------------
+
+    def set_text(self, text: str) -> "MutableHyperlink":
+        """Replace the link text."""
+        self._text = text
+        return self
+
+    def set_url(self, url: str) -> "MutableHyperlink":
+        """Replace the hyperlink URL."""
+        self._url = url
+        return self
+
+    # ---- Read-back -----------------------------------------------------------
+
+    def get_text(self) -> str:
+        """Return the link text."""
+        return self._text
+
+    @property
+    def url(self) -> str:
+        return self._url
+
+    # ---- Internal conversion -------------------------------------------------
+
+    def _to_frozen(self) -> Hyperlink:
+        """Convert to a frozen Hyperlink for pipeline use."""
+        return Hyperlink(
+            url=self._url,
+            runs=(TextRun(text=self._text),) if self._text else (),
+        )
+
+    def __repr__(self) -> str:
+        return f"MutableHyperlink({self._text!r}, url={self._url!r})"
+
+
+class RunCollection:
+    """Ordered mutable collection of MutableRun, MutableImageRun, and MutableHyperlink instances."""
+
+    _ALLOWED = (MutableRun, MutableImageRun, MutableHyperlink)
 
     def __init__(self) -> None:
-        self._items: list[MutableRun | MutableImageRun] = []
+        self._items: list[MutableRun | MutableImageRun | MutableHyperlink] = []
 
     # ---- Sequence protocol ---------------------------------------------------
 
     def __len__(self) -> int:
         return len(self._items)
 
-    def __iter__(self) -> Iterator[MutableRun | MutableImageRun]:
+    def __iter__(self) -> Iterator[MutableRun | MutableImageRun | MutableHyperlink]:
         return iter(self._items)
 
-    def __getitem__(self, index: int) -> MutableRun | MutableImageRun:
+    def __getitem__(self, index: int) -> MutableRun | MutableImageRun | MutableHyperlink:
         return self._items[index]
 
     # ---- Mutation ------------------------------------------------------------
 
-    def append(self, run: MutableRun | MutableImageRun) -> None:
+    def append(self, run: MutableRun | MutableImageRun | MutableHyperlink) -> None:
         """Append a run to the end of the collection."""
         self._check_type(run)
         self._items.append(run)
 
-    def insert(self, index: int, run: MutableRun | MutableImageRun) -> None:
+    def insert(self, index: int, run: MutableRun | MutableImageRun | MutableHyperlink) -> None:
         """Insert a run at the given index."""
         self._check_type(run)
         self._items.insert(index, run)
@@ -268,7 +310,7 @@ class RunCollection:
         """Remove all runs."""
         self._items.clear()
 
-    # ---- Convenience factory -------------------------------------------------
+    # ---- Convenience factories -----------------------------------------------
 
     def add_text(
         self,
@@ -299,6 +341,12 @@ class RunCollection:
         self._items.append(run)
         return run
 
+    def add_hyperlink(self, text: str, url: str) -> MutableHyperlink:
+        """Create a MutableHyperlink, append it, and return it."""
+        link = MutableHyperlink(text=text, url=url)
+        self._items.append(link)
+        return link
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen(self) -> tuple[Run, ...]:
@@ -309,13 +357,14 @@ class RunCollection:
 
     def _check_type(self, run: object) -> None:
         if not isinstance(run, self._ALLOWED):
-            if isinstance(run, (TextRun, ImageRun)):
+            if isinstance(run, (TextRun, ImageRun, Hyperlink)):
                 raise TypeError(
                     f"Cannot add a frozen {type(run).__name__} directly. "
-                    "Use MutableRun or call runs.add_text() instead."
+                    "Use MutableRun, MutableHyperlink, or the add_* factory methods instead."
                 )
             raise TypeError(
-                f"Expected MutableRun or MutableImageRun, got {type(run).__name__!r}"
+                f"Expected MutableRun, MutableImageRun, or MutableHyperlink, "
+                f"got {type(run).__name__!r}"
             )
 
     def __repr__(self) -> str:

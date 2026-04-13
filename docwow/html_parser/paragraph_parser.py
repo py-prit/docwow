@@ -6,7 +6,7 @@ import base64
 from docwow.html_parser._utils import has_class, pt_val
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import ImageRun, Paragraph, Run, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 
 
@@ -58,7 +58,19 @@ def _parse_runs(p_el) -> list[Run]:
             runs.append(_parse_text_run(child))
         elif child.tag == "img" and has_class(child, "dw-img"):
             runs.append(_parse_image_run(child))
+        elif child.tag == "a" and child.get("data-dw-href"):
+            runs.append(_parse_hyperlink(child))
     return runs
+
+
+def _parse_hyperlink(a_el) -> Hyperlink:
+    url = a_el.get("data-dw-href", "")
+    inner_runs = [
+        _parse_text_run(child)
+        for child in a_el
+        if child.tag == "span" and has_class(child, "dw-r")
+    ]
+    return Hyperlink(url=url, runs=tuple(inner_runs))
 
 
 def _parse_text_run(span_el) -> TextRun:

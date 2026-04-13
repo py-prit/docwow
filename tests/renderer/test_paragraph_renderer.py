@@ -2,7 +2,7 @@
 import pytest
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import ImageRun, Paragraph, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.renderer.paragraph_renderer import (
     render_paragraph,
@@ -328,3 +328,71 @@ class TestHighlightToCss:
 
     def test_unknown_highlight_defaults_to_yellow(self):
         assert _highlight_to_css("unknownColor") == "yellow"
+
+
+# ---------------------------------------------------------------------------
+# Hyperlink rendering
+# ---------------------------------------------------------------------------
+
+def _hyperlink(url="https://example.com", text="Click here"):
+    return Hyperlink(url=url, runs=(TextRun(text=text),))
+
+
+class TestRenderHyperlink:
+    def test_renders_anchor_tag(self):
+        para = _para(runs=(_hyperlink(),))
+        html = render_paragraph(para)
+        assert "<a " in html
+        assert "</a>" in html
+
+    def test_href_attribute(self):
+        para = _para(runs=(_hyperlink(url="https://example.com"),))
+        html = render_paragraph(para)
+        assert 'href="https://example.com"' in html
+
+    def test_data_dw_href_attribute(self):
+        para = _para(runs=(_hyperlink(url="https://example.com"),))
+        html = render_paragraph(para)
+        assert 'data-dw-href="https://example.com"' in html
+
+    def test_dw_hyperlink_class(self):
+        para = _para(runs=(_hyperlink(),))
+        html = render_paragraph(para)
+        assert 'class="dw-hyperlink"' in html
+
+    def test_link_text_in_inner_span(self):
+        para = _para(runs=(_hyperlink(text="Click here"),))
+        html = render_paragraph(para)
+        assert "Click here" in html
+        assert '<span class="dw-r">' in html
+
+    def test_url_special_chars_escaped(self):
+        url = 'https://example.com/search?q=hello&lang=en'
+        para = _para(runs=(_hyperlink(url=url),))
+        html = render_paragraph(para)
+        assert "https://example.com/search?q=hello&amp;lang=en" in html
+
+    def test_mailto_url(self):
+        para = _para(runs=(_hyperlink(url="mailto:test@example.com", text="email us"),))
+        html = render_paragraph(para)
+        assert 'href="mailto:test@example.com"' in html
+
+    def test_mixed_runs_and_hyperlink(self):
+        text_run = TextRun(text="See ")
+        link = _hyperlink(text="this link")
+        para = _para(runs=(text_run, link))
+        html = render_paragraph(para)
+        assert "See " in html
+        assert "this link" in html
+        assert "<a " in html
+
+    def test_hyperlink_with_multiple_inner_runs(self):
+        link = Hyperlink(
+            url="https://example.com",
+            runs=(TextRun(text="Hello "), TextRun(text="world")),
+        )
+        para = _para(runs=(link,))
+        html = render_paragraph(para)
+        assert "Hello " in html
+        assert "world" in html
+        assert 'href="https://example.com"' in html

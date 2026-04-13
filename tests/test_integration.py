@@ -19,9 +19,10 @@ from docwow.api.document import DocumentWrapper
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
-from docwow.models.paragraph import ImageRun, Paragraph, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
+from tests.fixtures.generate_showcase import build_showcase
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -397,3 +398,256 @@ class TestDocxRoundTrip:
             "word/settings.xml",
         }
         assert required.issubset(names)
+
+
+# ---------------------------------------------------------------------------
+# Hyperlink round-trips
+# ---------------------------------------------------------------------------
+
+def _hyperlink_doc(url="https://example.com", text="Click here"):
+    link = Hyperlink(url=url, runs=(TextRun(text=text),))
+    para = Paragraph(runs=(link,), formatting=ParagraphFormatting())
+    return _doc(body=(para,))
+
+
+class TestHyperlinkHtmlRoundTrip:
+    def test_hyperlink_survives_html_roundtrip(self):
+        rt = _roundtrip_html(_hyperlink_doc())
+        para = rt.body[0]
+        assert isinstance(para, Paragraph)
+        assert isinstance(para.runs[0], Hyperlink)
+
+    def test_hyperlink_url_preserved(self):
+        rt = _roundtrip_html(_hyperlink_doc(url="https://example.com"))
+        assert rt.body[0].runs[0].url == "https://example.com"
+
+    def test_hyperlink_text_preserved(self):
+        rt = _roundtrip_html(_hyperlink_doc(text="Click here"))
+        assert rt.body[0].runs[0].runs[0].text == "Click here"
+
+    def test_mailto_hyperlink_preserved(self):
+        rt = _roundtrip_html(_hyperlink_doc(url="mailto:hi@example.com", text="email us"))
+        assert rt.body[0].runs[0].url == "mailto:hi@example.com"
+
+    def test_multiple_hyperlinks_in_one_para(self):
+        link1 = Hyperlink(url="https://a.com", runs=(TextRun(text="A"),))
+        link2 = Hyperlink(url="https://b.com", runs=(TextRun(text="B"),))
+        para = Paragraph(runs=(link1, link2), formatting=ParagraphFormatting())
+        rt = _roundtrip_html(_doc(body=(para,)))
+        assert isinstance(rt.body[0].runs[0], Hyperlink)
+        assert isinstance(rt.body[0].runs[1], Hyperlink)
+        assert rt.body[0].runs[0].url == "https://a.com"
+        assert rt.body[0].runs[1].url == "https://b.com"
+
+    def test_mixed_text_and_hyperlink_preserved(self):
+        link = Hyperlink(url="https://example.com", runs=(TextRun(text="link"),))
+        para = Paragraph(
+            runs=(TextRun(text="See "), link, TextRun(text=" for info")),
+            formatting=ParagraphFormatting(),
+        )
+        rt = _roundtrip_html(_doc(body=(para,)))
+        assert isinstance(rt.body[0].runs[0], TextRun)
+        assert isinstance(rt.body[0].runs[1], Hyperlink)
+        assert isinstance(rt.body[0].runs[2], TextRun)
+
+
+class TestAnchorHyperlinkRoundTrip:
+    def _anchor_doc(self, anchor="section1", text="Jump"):
+        link = Hyperlink(url=f"#{anchor}", runs=(TextRun(text=text),))
+        para = Paragraph(runs=(link,), formatting=ParagraphFormatting())
+        return _doc(body=(para,))
+
+    def test_anchor_survives_docx_roundtrip(self):
+        rt = _roundtrip_model(self._anchor_doc())
+        assert isinstance(rt.body[0].runs[0], Hyperlink)
+        assert rt.body[0].runs[0].url == "#section1"
+
+    def test_anchor_survives_html_roundtrip(self):
+        rt = _roundtrip_html(self._anchor_doc())
+        assert isinstance(rt.body[0].runs[0], Hyperlink)
+        assert rt.body[0].runs[0].url == "#section1"
+
+    def test_anchor_not_in_rels(self):
+        data = docwow.write_docx(self._anchor_doc())
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            rels_xml = zf.read("word/_rels/document.xml.rels").decode("utf-8")
+        assert "#section1" not in rels_xml
+        assert "section1" not in rels_xml
+
+    def test_anchor_html_renders_hash_href(self):
+        doc = self._anchor_doc(anchor="intro", text="Go")
+        html = docwow.render_document(doc)
+        assert 'href="#intro"' in html
+
+
+class TestHyperlinkDocxRoundTrip:
+    def test_hyperlink_survives_docx_roundtrip(self):
+        rt = _roundtrip_model(_hyperlink_doc())
+        para = rt.body[0]
+        assert isinstance(para, Paragraph)
+        assert isinstance(para.runs[0], Hyperlink)
+
+    def test_hyperlink_url_preserved(self):
+        rt = _roundtrip_model(_hyperlink_doc(url="https://example.com"))
+        assert rt.body[0].runs[0].url == "https://example.com"
+
+    def test_hyperlink_text_preserved(self):
+        rt = _roundtrip_model(_hyperlink_doc(text="Click here"))
+        assert rt.body[0].runs[0].runs[0].text == "Click here"
+
+    def test_mailto_hyperlink_preserved(self):
+        rt = _roundtrip_model(_hyperlink_doc(url="mailto:hi@example.com", text="email"))
+        assert rt.body[0].runs[0].url == "mailto:hi@example.com"
+
+    def test_docx_rels_contains_hyperlink(self):
+        data = docwow.write_docx(_hyperlink_doc())
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            rels_xml = zf.read("word/_rels/document.xml.rels").decode("utf-8")
+        assert "hyperlink" in rels_xml.lower()
+        assert "https://example.com" in rels_xml
+
+    def test_docx_rels_targetmode_external(self):
+        data = docwow.write_docx(_hyperlink_doc())
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            rels_xml = zf.read("word/_rels/document.xml.rels").decode("utf-8")
+        assert "External" in rels_xml
+
+    def test_multiple_hyperlinks_unique_rids(self):
+        link1 = Hyperlink(url="https://a.com", runs=(TextRun(text="A"),))
+        link2 = Hyperlink(url="https://b.com", runs=(TextRun(text="B"),))
+        para = Paragraph(runs=(link1, link2), formatting=ParagraphFormatting())
+        data = docwow.write_docx(_doc(body=(para,)))
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            rels_xml = zf.read("word/_rels/document.xml.rels").decode("utf-8")
+        assert "https://a.com" in rels_xml
+        assert "https://b.com" in rels_xml
+
+
+# ---------------------------------------------------------------------------
+# Showcase: regenerated on every test run, used for round-trip checks
+# ---------------------------------------------------------------------------
+
+class TestShowcase:
+    """
+    Regenerates showcase.docx from build_showcase() on every run (so it
+    always reflects every feature currently supported), then verifies both
+    DOCX and HTML round-trips preserve all key feature types.
+    """
+
+    @pytest.fixture(autouse=True, scope="class")
+    def showcase_doc(self):
+        """Build the showcase Document, write showcase.docx and showcase.html."""
+        doc = build_showcase()
+        data = docwow.write_docx(doc)
+        (FIXTURES / "showcase.docx").write_bytes(data)
+        html = docwow.render_document(doc)
+        (FIXTURES / "showcase.html").write_text(html, encoding="utf-8")
+        return doc
+
+    # --- DOCX round-trip ---
+
+    def test_docx_roundtrip_is_valid_zip(self):
+        data = (FIXTURES / "showcase.docx").read_bytes()
+        assert _is_valid_zip(data)
+
+    def test_docx_roundtrip_has_paragraphs(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        paras = [el for el in doc.body if isinstance(el, Paragraph)]
+        assert len(paras) > 5
+
+    def test_docx_roundtrip_has_formatted_runs(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        runs = [
+            r for el in doc.body if isinstance(el, Paragraph)
+            for r in el.runs if isinstance(r, TextRun)
+        ]
+        assert any(r.formatting.bold for r in runs)
+        assert any(r.formatting.italic for r in runs)
+        assert any(r.formatting.color for r in runs)
+
+    def test_docx_roundtrip_has_image(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        images = [
+            r for el in doc.body if isinstance(el, Paragraph)
+            for r in el.runs if isinstance(r, ImageRun)
+        ]
+        assert len(images) >= 1
+        assert images[0].image.data != b""
+
+    def test_docx_roundtrip_has_list_items(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        list_paras = [
+            el for el in doc.body
+            if isinstance(el, Paragraph) and el.list_info is not None
+        ]
+        assert len(list_paras) >= 3
+
+    def test_docx_roundtrip_has_table(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        tables = [el for el in doc.body if isinstance(el, Table)]
+        assert len(tables) >= 1
+
+    def test_docx_roundtrip_has_hyperlinks(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        links = [
+            r for el in doc.body if isinstance(el, Paragraph)
+            for r in el.runs if isinstance(r, Hyperlink)
+        ]
+        assert len(links) >= 2
+        urls = {link.url for link in links}
+        assert any("docwow" in u or "github" in u or "mailto" in u for u in urls)
+
+    def test_docx_roundtrip_rels_contains_hyperlinks(self):
+        data = (FIXTURES / "showcase.docx").read_bytes()
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            rels_xml = zf.read("word/_rels/document.xml.rels").decode("utf-8")
+        assert "hyperlink" in rels_xml.lower()
+        assert "External" in rels_xml
+
+    # --- HTML round-trip ---
+
+    def test_html_roundtrip_produces_valid_html(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        html = docwow.render_document(doc)
+        assert "<!DOCTYPE html>" in html
+        assert "dw-document" in html
+
+    def test_html_roundtrip_preserves_paragraphs(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        html = docwow.render_document(doc)
+        rt = docwow.parse_html(html)
+        paras = [el for el in rt.body if isinstance(el, Paragraph)]
+        assert len(paras) > 5
+
+    def test_html_roundtrip_preserves_hyperlinks(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        html = docwow.render_document(doc)
+        rt = docwow.parse_html(html)
+        links = [
+            r for el in rt.body if isinstance(el, Paragraph)
+            for r in el.runs if isinstance(r, Hyperlink)
+        ]
+        assert len(links) >= 2
+
+    def test_html_roundtrip_preserves_tables(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        html = docwow.render_document(doc)
+        rt = docwow.parse_html(html)
+        tables = [el for el in rt.body if isinstance(el, Table)]
+        assert len(tables) >= 1
+
+    def test_html_roundtrip_preserves_list_items(self):
+        doc = docwow.parse_docx(FIXTURES / "showcase.docx")
+        html = docwow.render_document(doc)
+        rt = docwow.parse_html(html)
+        list_paras = [
+            el for el in rt.body
+            if isinstance(el, Paragraph) and el.list_info is not None
+        ]
+        assert len(list_paras) >= 3
+
+    def test_full_pipeline_showcase_docx(self):
+        """showcase.docx → HTML → DOCX must produce a valid ZIP."""
+        html = docwow.to_html(FIXTURES / "showcase.docx")
+        data = docwow.to_docx(html)
+        assert _is_valid_zip(data)

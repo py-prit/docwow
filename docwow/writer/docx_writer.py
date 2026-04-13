@@ -19,10 +19,10 @@ from pathlib import Path
 
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import ImageRun, Paragraph
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph
 from docwow.models.table import Table
 from docwow.writer._xml import (
-    REL_IMAGE, REL_STYLES, REL_NUMBERING, REL_SETTINGS,
+    REL_HYPERLINK, REL_IMAGE, REL_STYLES, REL_NUMBERING, REL_SETTINGS,
 )
 from docwow.writer.document_writer import build_document_xml
 from docwow.writer.numbering_writer import build_numbering_xml
@@ -99,26 +99,36 @@ def _build_zip(doc: Document) -> bytes:
     else:
         numbering_rid = None
 
-    # 4. Build image_rids map used by document_writer
+    # 4. Collect unique hyperlink URLs and assign rIds
+    #    hyperlink_rids: {url → new_rid}
+    hyperlink_rids: dict[str, str] = {}
+    for link in _collect_hyperlinks(doc):
+        if link.url not in hyperlink_rids and not link.url.startswith("#"):
+            hyperlink_rids[link.url] = f"rId{next_rid}"
+            next_rid += 1
+
+    # 5. Build image_rids map used by document_writer
     image_rids = {orig: info[0] for orig, info in image_info.items()}
 
-    # 5. Assemble document.xml.rels entries
-    rel_entries: list[tuple[str, str, str]] = []
+    # 6. Assemble document.xml.rels entries
+    rel_entries: list[tuple] = []
     for orig_rid, (new_rid, filename, ct, _) in image_info.items():
         rel_entries.append((new_rid, REL_IMAGE, f"media/{filename}"))
     rel_entries.append((styles_rid, REL_STYLES, "styles.xml"))
     rel_entries.append((settings_rid, REL_SETTINGS, "settings.xml"))
     if numbering_rid:
         rel_entries.append((numbering_rid, REL_NUMBERING, "numbering.xml"))
+    for url, rid in hyperlink_rids.items():
+        rel_entries.append((rid, REL_HYPERLINK, url, "External"))
 
-    # 6. Build image content-type entries for [Content_Types].xml
+    # 7. Build image content-type entries for [Content_Types].xml
     ct_image_entries = [
         (f"/word/media/{info[1]}", info[2])
         for info in image_info.values()
     ]
 
-    # 7. Build all XML parts
-    doc_xml       = build_document_xml(doc, image_rids)
+    # 8. Build all XML parts
+    doc_xml       = build_document_xml(doc, image_rids, hyperlink_rids)
     styles_xml    = build_styles_xml(doc.styles)
     settings_xml  = build_settings_xml()
     doc_rels_xml  = build_document_rels_xml(rel_entries)
@@ -160,7 +170,32 @@ def _walk_body(body, images: list[InlineImage]) -> None:
             for run in element.runs:
                 if isinstance(run, ImageRun):
                     images.append(run.image)
+                elif isinstance(run, Hyperlink):
+                    pass  # hyperlinks don't contribute images
         elif isinstance(element, Table):
             for row in element.rows:
                 for cell in row.cells:
                     _walk_body(cell.paragraphs, images)
+
+
+# ---------------------------------------------------------------------------
+# Hyperlink collection
+# ---------------------------------------------------------------------------
+
+def _collect_hyperlinks(doc: Document) -> list[Hyperlink]:
+    """Walk the entire body and return all Hyperlink objects in order."""
+    hyperlinks: list[Hyperlink] = []
+    _walk_body_hyperlinks(doc.body, hyperlinks)
+    return hyperlinks
+
+
+def _walk_body_hyperlinks(body, hyperlinks: list[Hyperlink]) -> None:
+    for element in body:
+        if isinstance(element, Paragraph):
+            for run in element.runs:
+                if isinstance(run, Hyperlink):
+                    hyperlinks.append(run)
+        elif isinstance(element, Table):
+            for row in element.rows:
+                for cell in row.cells:
+                    _walk_body_hyperlinks(cell.paragraphs, hyperlinks)

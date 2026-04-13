@@ -5,7 +5,7 @@ from dataclasses import FrozenInstanceError
 
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import ImageRun, Paragraph, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 
 PNG_HEADER = b"\x89PNG\r\n\x1a\n"
@@ -239,6 +239,81 @@ class TestParagraphHashable:
     def test_can_be_used_in_set(self, sample_paragraph):
         s = {sample_paragraph, sample_paragraph}
         assert len(s) == 1
+
+
+# ---------------------------------------------------------------------------
+# Hyperlink
+# ---------------------------------------------------------------------------
+
+class TestHyperlinkConstruction:
+    def test_url_and_runs_stored(self):
+        run = TextRun(text="Click here")
+        link = Hyperlink(url="https://example.com", runs=(run,))
+        assert link.url == "https://example.com"
+        assert len(link.runs) == 1
+        assert link.runs[0].text == "Click here"
+
+    def test_empty_runs(self):
+        link = Hyperlink(url="https://example.com", runs=())
+        assert link.runs == ()
+
+    def test_multiple_runs(self):
+        runs = (TextRun(text="Hello "), TextRun(text="world"))
+        link = Hyperlink(url="https://example.com", runs=runs)
+        assert len(link.runs) == 2
+
+    def test_mailto_url(self):
+        link = Hyperlink(url="mailto:test@example.com", runs=(TextRun(text="email"),))
+        assert link.url == "mailto:test@example.com"
+
+    def test_anchor_url(self):
+        link = Hyperlink(url="#section1", runs=(TextRun(text="jump"),))
+        assert link.url == "#section1"
+
+
+class TestHyperlinkImmutability:
+    def test_cannot_set_url(self):
+        link = Hyperlink(url="https://example.com", runs=())
+        with pytest.raises(FrozenInstanceError):
+            link.url = "https://other.com"  # type: ignore[misc]
+
+    def test_cannot_set_runs(self):
+        link = Hyperlink(url="https://example.com", runs=())
+        with pytest.raises(FrozenInstanceError):
+            link.runs = ()  # type: ignore[misc]
+
+
+class TestHyperlinkEquality:
+    def test_equal(self):
+        run = TextRun(text="x")
+        a = Hyperlink(url="https://example.com", runs=(run,))
+        b = Hyperlink(url="https://example.com", runs=(run,))
+        assert a == b
+
+    def test_not_equal_different_url(self):
+        run = TextRun(text="x")
+        a = Hyperlink(url="https://a.com", runs=(run,))
+        b = Hyperlink(url="https://b.com", runs=(run,))
+        assert a != b
+
+    def test_not_equal_different_runs(self):
+        a = Hyperlink(url="https://example.com", runs=(TextRun(text="a"),))
+        b = Hyperlink(url="https://example.com", runs=(TextRun(text="b"),))
+        assert a != b
+
+
+class TestHyperlinkInParagraph:
+    def test_paragraph_accepts_hyperlink_as_run(self):
+        link = Hyperlink(url="https://example.com", runs=(TextRun(text="link"),))
+        para = Paragraph(runs=(link,))
+        assert len(para.runs) == 1
+        assert isinstance(para.runs[0], Hyperlink)
+
+    def test_paragraph_with_mixed_runs_and_hyperlink(self):
+        text_run = TextRun(text="See ")
+        link = Hyperlink(url="https://example.com", runs=(TextRun(text="this"),))
+        para = Paragraph(runs=(text_run, link))
+        assert len(para.runs) == 2
 
 
 # ---------------------------------------------------------------------------

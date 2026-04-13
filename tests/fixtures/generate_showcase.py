@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
-from docwow.models.paragraph import ImageRun, Paragraph, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer.docx_writer import write_docx
@@ -272,7 +272,36 @@ def build_showcase() -> Document:
     ))
 
     # -----------------------------------------------------------------------
-    # Section 10: Mixed content
+    # Section 10: Hyperlinks
+    # -----------------------------------------------------------------------
+    body.append(_p("Hyperlinks", style_id="Heading2"))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Visit the "),
+            Hyperlink(url="https://docwow.readthedocs.io", runs=(TextRun(text="docwow documentation"),)),
+            TextRun(text=" for full details."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Report bugs on "),
+            Hyperlink(url="https://github.com/py-prit/docwow/issues", runs=(TextRun(text="GitHub Issues"),)),
+            TextRun(text="."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Contact us at "),
+            Hyperlink(url="mailto:hello@example.com", runs=(TextRun(text="hello@example.com"),)),
+            TextRun(text="."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+
+    # -----------------------------------------------------------------------
+    # Section 11: Mixed content
     # -----------------------------------------------------------------------
     body.append(_p("Mixed Content", style_id="Heading2"))
     body.append(_p("A paragraph before a table."))
