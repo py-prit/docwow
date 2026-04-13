@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypeAlias
 
+from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.lists import NumberingDefinition
 from docwow.models.paragraph import PageBreak, Paragraph
@@ -45,3 +46,7 @@ class Document:
     footer_first: HeaderFooter | None = None
     footer_even: HeaderFooter | None = None
     title_pg: bool = False  # True → different header/footer on first page
+
+    # Footnotes and endnotes (optional)
+    footnotes: tuple[Footnote, ...] = ()
+    endnotes: tuple[Footnote, ...] = ()

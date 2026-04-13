@@ -53,7 +53,8 @@ doc.save("updated.docx")
 - **Hyperlinks** — external URLs and mailto links, with full round-trip fidelity
 - **Headers & footers** — text content and page number fields across default, first-page, and even-page slots
 - **Page breaks** — explicit page breaks parsed, written, and round-tripped
-- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableTable`, and friends; build documents from scratch including tables; save to DOCX or render to HTML
+- **Footnotes & endnotes** — parse, render to HTML with anchor links, HTML→DOCX round-trip, and programmatic API
+- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableTable`, and friends; build documents from scratch including tables, footnotes, and lists; save to DOCX or render to HTML
 
 ## Design principles
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import html
 
-from docwow.models.paragraph import Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
@@ -37,7 +37,21 @@ def _render_run(run: Run) -> str:
         return _render_hyperlink(run)
     if isinstance(run, PageNumberField):
         return _render_page_number_field(run)
+    if isinstance(run, FootnoteRef):
+        return _render_footnote_ref(run)
     return _render_text_run(run)
+
+
+def _render_footnote_ref(ref: FootnoteRef) -> str:
+    """Render a footnote/endnote reference as a superscript anchor."""
+    css_class = "dw-footnote-ref" if ref.note_type == "footnote" else "dw-endnote-ref"
+    anchor = f"fn-{ref.note_id}" if ref.note_type == "footnote" else f"en-{ref.note_id}"
+    return (
+        f'<a href="#{anchor}" class="{css_class}" '
+        f'data-dw-note-type="{ref.note_type}" '
+        f'data-dw-note-id="{ref.note_id}">'
+        f"[{ref.note_id}]</a>"
+    )
 
 
 def _render_page_number_field(field: PageNumberField) -> str:

@@ -31,6 +31,8 @@ REL_IMAGE      = "http://schemas.openxmlformats.org/officeDocument/2006/relation
 REL_HYPERLINK  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 REL_HEADER     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header"
 REL_FOOTER     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer"
+REL_FOOTNOTES  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes"
+REL_ENDNOTES   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes"
 
 # Namespace maps for each XML part
 DOC_NSMAP = {"w": W, "r": R, "wp": WP, "a": A, "pic": PIC}

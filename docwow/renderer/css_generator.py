@@ -235,4 +235,39 @@ _BASE_CSS = """\
 .dw-field {
   color: #888888;
   font-style: italic;
+}
+
+/* Footnotes / endnotes */
+.dw-footnote-ref, .dw-endnote-ref {
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.dw-footnotes, .dw-endnotes {
+  max-width: var(--dw-page-width, 595.28pt);
+  margin: 24pt auto 0;
+  padding-top: 8pt;
+  border-top: 1px solid #cccccc;
+  font-size: 9pt;
+}
+
+.dw-footnotes-heading, .dw-endnotes-heading {
+  font-size: 9pt;
+  font-weight: bold;
+  margin-bottom: 4pt;
+}
+
+.dw-fn, .dw-en {
+  display: flex;
+  gap: 6pt;
+  margin-bottom: 4pt;
+}
+
+.dw-fn-marker, .dw-en-marker {
+  flex-shrink: 0;
+  font-size: 0.75em;
+  vertical-align: super;
 }"""

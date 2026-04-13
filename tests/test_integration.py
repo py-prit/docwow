@@ -20,7 +20,8 @@ from docwow.models.document import Document
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.header_footer import HeaderFooter
-from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
+from docwow.models.footnote import Footnote
+from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from tests.fixtures.generate_showcase import build_showcase
@@ -141,6 +142,7 @@ class TestFixtureParsing:
         "list_nested.docx",
         "image_inline.docx",
         "mixed.docx",
+        "footnotes.docx",
     ])
     def test_fixture_parses_without_error(self, filename):
         doc = docwow.parse_docx(FIXTURES / filename)
@@ -1031,3 +1033,162 @@ class TestDocxHtmlDocxRoundTrip:
         rt_docx = docwow.to_docx(html)
         rt = docwow.parse_docx(rt_docx)
         assert any(isinstance(el, PageBreak) for el in rt.body)
+
+
+# ---------------------------------------------------------------------------
+# Footnotes & endnotes integration
+# ---------------------------------------------------------------------------
+
+def _footnote_doc():
+    """Build a Document with a footnote reference and body content."""
+    fn = Footnote(
+        note_id=1,
+        paragraphs=(Paragraph(
+            runs=(TextRun(text="The footnote body."),),
+            formatting=ParagraphFormatting(),
+        ),),
+        note_type="footnote",
+    )
+    body_para = Paragraph(
+        runs=(
+            TextRun(text="Some text"),
+            FootnoteRef(note_id=1, note_type="footnote"),
+        ),
+        formatting=ParagraphFormatting(),
+    )
+    return Document(
+        body=(body_para,), styles=(), numbering=(),
+        page_width_pt=595.28, page_height_pt=841.89,
+        margin_top_pt=72.0, margin_bottom_pt=72.0,
+        margin_left_pt=72.0, margin_right_pt=72.0,
+        footnotes=(fn,),
+    )
+
+
+class TestFootnoteDocxRoundTrip:
+    """Footnote content survives DOCX write → parse round-trip."""
+
+    def test_footnote_count_preserved(self):
+        rt = _roundtrip_model(_footnote_doc())
+        assert len(rt.footnotes) == 1
+
+    def test_footnote_id_preserved(self):
+        rt = _roundtrip_model(_footnote_doc())
+        assert rt.footnotes[0].note_id == 1
+
+    def test_footnote_note_type_preserved(self):
+        rt = _roundtrip_model(_footnote_doc())
+        assert rt.footnotes[0].note_type == "footnote"
+
+    def test_footnote_text_preserved(self):
+        rt = _roundtrip_model(_footnote_doc())
+        text = "".join(
+            r.text for p in rt.footnotes[0].paragraphs
+            for r in p.runs if isinstance(r, TextRun)
+        )
+        assert "The footnote body." in text
+
+    def test_footnote_ref_in_body(self):
+        rt = _roundtrip_model(_footnote_doc())
+        refs = [
+            r for el in rt.body
+            if isinstance(el, Paragraph)
+            for r in el.runs
+            if isinstance(r, FootnoteRef)
+        ]
+        assert len(refs) >= 1
+
+    def test_separator_notes_not_in_output(self):
+        rt = _roundtrip_model(_footnote_doc())
+        ids = [n.note_id for n in rt.footnotes]
+        assert -1 not in ids
+        assert 0 not in ids
+
+
+class TestFootnoteHtmlRoundTrip:
+    """Footnote content survives Document → HTML → Document round-trip."""
+
+    def test_footnote_count_preserved(self):
+        rt = _roundtrip_html(_footnote_doc())
+        assert len(rt.footnotes) == 1
+
+    def test_footnote_id_preserved(self):
+        rt = _roundtrip_html(_footnote_doc())
+        assert rt.footnotes[0].note_id == 1
+
+    def test_footnote_note_type_preserved(self):
+        rt = _roundtrip_html(_footnote_doc())
+        assert rt.footnotes[0].note_type == "footnote"
+
+    def test_footnote_text_preserved(self):
+        rt = _roundtrip_html(_footnote_doc())
+        text = "".join(
+            r.text for p in rt.footnotes[0].paragraphs
+            for r in p.runs if isinstance(r, TextRun)
+        )
+        assert "The footnote body." in text
+
+    def test_footnote_ref_in_body(self):
+        rt = _roundtrip_html(_footnote_doc())
+        refs = [
+            r for el in rt.body
+            if isinstance(el, Paragraph)
+            for r in el.runs
+            if isinstance(r, FootnoteRef)
+        ]
+        assert len(refs) >= 1
+
+
+class TestFootnotesDocxFixtureIntegration:
+    """Full pipeline tests using tests/fixtures/footnotes.docx."""
+
+    @pytest.fixture(scope="class")
+    def doc(self):
+        return docwow.parse_docx(FIXTURES / "footnotes.docx")
+
+    def test_parse_footnotes(self, doc):
+        assert len(doc.footnotes) == 2
+
+    def test_parse_endnotes(self, doc):
+        assert len(doc.endnotes) == 1
+
+    def test_render_contains_footnote_section(self, doc):
+        html = docwow.render_document(doc)
+        assert "dw-footnotes" in html
+
+    def test_render_contains_endnote_section(self, doc):
+        html = docwow.render_document(doc)
+        assert "dw-endnotes" in html
+
+    def test_render_footnote_refs_in_body(self, doc):
+        html = docwow.render_document(doc)
+        assert "dw-footnote-ref" in html
+
+    def test_html_docx_pipeline_is_valid(self, doc):
+        html = docwow.render_document(doc)
+        data = docwow.to_docx(html)
+        assert _is_valid_zip(data)
+
+    def test_footnotes_fixture_parses_without_error(self):
+        doc = docwow.parse_docx(FIXTURES / "footnotes.docx")
+        assert isinstance(doc, Document)
+
+
+class TestApiFootnoteRoundTrip:
+    """Programmatic API: build a document with footnotes, save and re-parse."""
+
+    def test_api_footnote_survives_docx_roundtrip(self, tmp_path):
+        from docwow.api.document import DocumentWrapper
+        doc = DocumentWrapper()
+        note = doc.add_footnote()
+        note.paragraphs.add_paragraph("API footnote content")
+        para = doc.paragraphs.add_paragraph("Body text")
+        para.runs.add_footnote_ref(note_id=note.note_id)
+        data = doc.to_bytes()
+        rt = docwow.parse_docx(data)
+        assert len(rt.footnotes) == 1
+        text = "".join(
+            r.text for p in rt.footnotes[0].paragraphs
+            for r in p.runs if isinstance(r, TextRun)
+        )
+        assert "API footnote content" in text

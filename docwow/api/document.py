@@ -6,6 +6,7 @@ from pathlib import Path
 
 from docwow.models.lists import NumberingDefinition
 from docwow.models.styles import Style
+from docwow.api.footnote import MutableFootnote
 from docwow.api.paragraph import ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
 
@@ -37,6 +38,8 @@ class DocumentWrapper:
         footer_first: MutableHeaderFooter | None = None,
         footer_even: MutableHeaderFooter | None = None,
         title_pg: bool = False,
+        footnotes: list[MutableFootnote] | None = None,
+        endnotes: list[MutableFootnote] | None = None,
     ) -> None:
         self._paragraphs = paragraphs if paragraphs is not None else ParagraphCollection()
         self._styles = styles
@@ -54,6 +57,8 @@ class DocumentWrapper:
         self._footer_first = footer_first
         self._footer_even = footer_even
         self._title_pg = title_pg
+        self._footnotes: list[MutableFootnote] = list(footnotes) if footnotes else []
+        self._endnotes: list[MutableFootnote] = list(endnotes) if endnotes else []
 
     # ---- Body access ---------------------------------------------------------
 
@@ -182,6 +187,36 @@ class DocumentWrapper:
     def margin_right_pt(self) -> float:
         return self._margin_right_pt
 
+    # ---- Footnotes / endnotes ------------------------------------------------
+
+    @property
+    def footnotes(self) -> list[MutableFootnote]:
+        """All footnote bodies in the document."""
+        return self._footnotes
+
+    @property
+    def endnotes(self) -> list[MutableFootnote]:
+        """All endnote bodies in the document."""
+        return self._endnotes
+
+    def add_footnote(self, note_type: str = "footnote") -> MutableFootnote:
+        """Create a new footnote (or endnote) body, register it, and return it.
+
+        The returned :class:`~docwow.api.footnote.MutableFootnote` has an
+        auto-assigned sequential ``note_id``. Add content via its
+        ``paragraphs`` collection, then add a matching
+        :meth:`~docwow.api.run.RunCollection.add_footnote_ref` to the
+        body paragraph where the marker should appear.
+
+        Args:
+            note_type: ``'footnote'`` (default) or ``'endnote'``.
+        """
+        lst = self._footnotes if note_type == "footnote" else self._endnotes
+        note_id = len(lst) + 1
+        note = MutableFootnote(note_id=note_id, note_type=note_type)
+        lst.append(note)
+        return note
+
     # ---- Numbering -----------------------------------------------------------
 
     def add_numbering_definition(self, num_fmt: str = "bullet") -> str:
@@ -229,6 +264,14 @@ class DocumentWrapper:
         """Convert the wrapper tree to a frozen Document."""
         from docwow.api._convert import document_to_frozen
         return document_to_frozen(self)
+
+    @property
+    def _footnotes_frozen(self):
+        return tuple(n._to_frozen() for n in self._footnotes)
+
+    @property
+    def _endnotes_frozen(self):
+        return tuple(n._to_frozen() for n in self._endnotes)
 
     def to_bytes(self) -> bytes:
         """Serialise the document to DOCX bytes."""

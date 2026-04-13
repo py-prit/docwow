@@ -253,6 +253,60 @@ Always `display:none`. Preserved for round-trip only.
 
 ---
 
+## Footnote and endnote references (`<a class="dw-footnote-ref">`)
+
+```html
+<a class="dw-footnote-ref"
+   href="#fn-1"
+   data-dw-note-type="footnote"
+   data-dw-note-id="1">[1]</a>
+```
+
+| Attribute | Type | Description |
+|---|---|---|
+| `class` | string | `dw-footnote-ref` for footnotes, `dw-endnote-ref` for endnotes |
+| `href` | string | Anchor link to the note body (`#fn-N` for footnotes, `#en-N` for endnotes) |
+| `data-dw-note-type` | string | `footnote` \| `endnote` |
+| `data-dw-note-id` | integer (as string) | The note ID (matches the body section entry) |
+
+---
+
+## Footnote and endnote sections (`<section>`)
+
+```html
+<section class="dw-footnotes" data-dw-note-section="footnotes">
+  <div class="dw-fn" id="fn-1" data-dw-note-id="1" data-dw-note-type="footnote">
+    <span class="dw-fn-marker">[1]</span>
+    <div class="dw-fn-body">
+      <p class="dw-p">Footnote content.</p>
+    </div>
+  </div>
+</section>
+
+<section class="dw-endnotes" data-dw-note-section="endnotes">
+  <div class="dw-en" id="en-1" data-dw-note-id="1" data-dw-note-type="endnote">
+    <span class="dw-en-marker">[1]</span>
+    <div class="dw-fn-body">
+      <p class="dw-p">Endnote content.</p>
+    </div>
+  </div>
+</section>
+```
+
+| Element / Attribute | Description |
+|---|---|
+| `<section class="dw-footnotes">` | Container for all footnote bodies |
+| `<section class="dw-endnotes">` | Container for all endnote bodies |
+| `data-dw-note-section` | `footnotes` \| `endnotes` |
+| `<div class="dw-fn">` / `<div class="dw-en">` | Individual note body container |
+| `id` | `fn-N` (footnotes) or `en-N` (endnotes) — anchored from body references |
+| `data-dw-note-id` | Integer note ID as string |
+| `data-dw-note-type` | `footnote` \| `endnote` |
+| `<span class="dw-fn-marker">` / `<span class="dw-en-marker">` | Visual marker (e.g. `[1]`) |
+| `<div class="dw-fn-body">` | Container for note paragraph content |
+
+---
+
 ## Attribute presence rules
 
 - **Omitted = default.** Attributes are only written when their value differs from the Word default (e.g. `data-dw-align` is omitted for left-aligned paragraphs).

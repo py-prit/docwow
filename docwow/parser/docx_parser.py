@@ -22,8 +22,10 @@ import zipfile
 from pathlib import Path
 
 from docwow.models.document import Document
+from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.parser.body_parser import parse_body
+from docwow.parser.footnote_parser import parse_footnotes
 from docwow.parser.header_footer_parser import parse_header_footer
 from docwow.parser.image_parser import parse_relationships
 from docwow.parser.numbering_parser import parse_numbering
@@ -102,12 +104,29 @@ def _parse_zip(zf: zipfile.ZipFile) -> Document:
     # -----------------------------------------------------------------------
     hf = _parse_headers_footers(doc_root, zf, relationships, names)
 
+    # -----------------------------------------------------------------------
+    # Footnotes and endnotes
+    # -----------------------------------------------------------------------
+    footnotes: tuple[Footnote, ...] = ()
+    if "word/footnotes.xml" in names:
+        footnotes = parse_footnotes(
+            zf.read("word/footnotes.xml"), zf, relationships, note_type="footnote"
+        )
+
+    endnotes: tuple[Footnote, ...] = ()
+    if "word/endnotes.xml" in names:
+        endnotes = parse_footnotes(
+            zf.read("word/endnotes.xml"), zf, relationships, note_type="endnote"
+        )
+
     return Document(
         body=body,
         styles=styles,
         numbering=numbering,
         page_width_pt=page_width_pt,
         page_height_pt=page_height_pt,
+        footnotes=footnotes,
+        endnotes=endnotes,
         **margins,
         **hf,
     )
