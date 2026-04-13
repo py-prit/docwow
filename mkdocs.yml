@@ -52,6 +52,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - User Guide:
+    - Tutorial: user-guide/tutorial.md
     - Converting to HTML: user-guide/to-html.md
     - Round-tripping to DOCX: user-guide/to-docx.md
     - Programmatic API: user-guide/open-api.md

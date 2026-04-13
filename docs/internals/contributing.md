@@ -46,6 +46,22 @@ python tests/fixtures/generate_showcase.py
 python -c "import docwow; open('tests/fixtures/showcase.html','w').write(docwow.to_html('tests/fixtures/showcase.docx'))"
 ```
 
+## Versioning
+
+docwow follows [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`.
+
+| Bump | When | Examples |
+|---|---|---|
+| `PATCH` | Bug fix, no API or feature change | Parser crash on edge-case DOCX, wrong CSS emitted, incorrect XML written |
+| `MINOR` | New DOCX feature added, fully backward compatible | Each new feature: footnotes, bookmarks, table editing, comments |
+| `MAJOR` | Breaking public API change, or graduation to stable 1.0 | Renaming a public method, changing a model field type, dropping a Python version |
+
+**Pre-1.0 rule:** The library stays on `0.x.y` until the core feature set is complete enough to call production-stable. The jump to `1.0.0` is a deliberate decision — not automatic on the next feature. A reasonable trigger: the Planned section of the README is mostly complete and the public API has been stable across several MINOR releases without breaking changes.
+
+**Patch releases** can be cut at any time from `main` for confirmed bugs. They do not require a feature branch — a direct commit with a test reproducing the bug is sufficient.
+
+**Minor releases** follow the standard branch workflow: one branch per DOCX feature (`feat/<feature-name>`), containing conversion (parser + renderer + html_parser + writer), API, tests, and documentation all together.
+
 ## Code style
 
 - Python 3.10+, type annotations on all public functions

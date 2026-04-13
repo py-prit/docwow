@@ -42,7 +42,7 @@ doc.paragraphs.add_paragraph("Added paragraph.")
 doc.save("updated.docx")
 ```
 
-## What's supported (v0.2)
+## What's supported
 
 - **Paragraphs** — alignment, indentation (left/right/first-line/hanging), spacing (before/after/line), page-break-before, keep-together, keep-with-next
 - **Run formatting** — bold, italic, underline, strikethrough, font name, font size, color, highlight, superscript/subscript
@@ -50,6 +50,9 @@ doc.save("updated.docx")
 - **Tables** — column widths, row heights, colspan, rowspan (vertical merge), cell borders
 - **Lists** — bullet and numbered, nested up to any depth, multiple list instances per document
 - **Inline images** — embedded as base64 data URIs in HTML, restored as binary data in DOCX
+- **Hyperlinks** — external URLs and mailto links, with full round-trip fidelity
+- **Headers & footers** — text content and page number fields across default, first-page, and even-page slots
+- **Page breaks** — explicit page breaks parsed, written, and round-tripped
 - **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, and friends; build documents from scratch; save to DOCX or render to HTML
 
 ## Design principles
