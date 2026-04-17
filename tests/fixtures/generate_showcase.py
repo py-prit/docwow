@@ -30,7 +30,7 @@ from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import (
     BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun,
-    PageBreak, PageNumberField, Paragraph, TextRun,
+    PageBreak, PageNumberField, Paragraph, TextRun, TrackedChange,
 )
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.models.table import Table, TableCell, TableRow
@@ -126,6 +126,7 @@ BM = {
     "bookmarks":   "showcase-bookmarks",
     "footnotes":   "showcase-footnotes",
     "comments":    "showcase-comments",
+    "track":       "showcase-track-changes",
     "pagebreaks":  "showcase-pagebreaks",
     "pagefields":  "showcase-pagefields",
     "hf":          "showcase-hf",
@@ -169,6 +170,7 @@ def build_showcase() -> Document:
             TocEntry("Bookmarks",                   f"#{BM['bookmarks']}",  1),
             TocEntry("Footnotes and Endnotes",      f"#{BM['footnotes']}",  1),
             TocEntry("Comments",                    f"#{BM['comments']}",   1),
+            TocEntry("Track Changes",               f"#{BM['track']}",      1),
             TocEntry("Page Breaks",                 f"#{BM['pagebreaks']}", 1),
             TocEntry("Page Number Fields",          f"#{BM['pagefields']}", 1),
             TocEntry("Headers and Footers",         f"#{BM['hf']}",         1),
@@ -521,7 +523,59 @@ def build_showcase() -> Document:
     ))
 
     # -----------------------------------------------------------------------
-    # 10. Page Breaks
+    # 10. Track Changes
+    # -----------------------------------------------------------------------
+    body.append(_ph("Track Changes", BM["track"], style_id="Heading1"))
+    body.append(_p(
+        "Track changes records insertions and deletions made by reviewers. "
+        "In HTML, insertions render as green underlined text and deletions as "
+        "red strikethrough text. In DOCX they appear in Word's review pane."
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="The original revenue figure was "),
+            TrackedChange(
+                change_type="delete",
+                runs=(TextRun(text="$3.8 M"),),
+                author="Alice",
+                date="2026-04-17T09:00:00Z",
+                change_id=10,
+            ),
+            TrackedChange(
+                change_type="insert",
+                runs=(TextRun(text="$4.2 M"),),
+                author="Alice",
+                date="2026-04-17T09:00:00Z",
+                change_id=11,
+            ),
+            TextRun(text=" for the quarter."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Please "),
+            TrackedChange(
+                change_type="delete",
+                runs=(TextRun(text="review"),),
+                author="Bob",
+                date="2026-04-17T10:00:00Z",
+                change_id=12,
+            ),
+            TrackedChange(
+                change_type="insert",
+                runs=(TextRun(text="approve"),),
+                author="Bob",
+                date="2026-04-17T10:00:00Z",
+                change_id=13,
+            ),
+            TextRun(text=" this change before the deadline."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+
+    # -----------------------------------------------------------------------
+    # 11. Page Breaks
     # -----------------------------------------------------------------------
     body.append(_ph("Page Breaks", BM["pagebreaks"], style_id="Heading1"))
     body.append(_p(

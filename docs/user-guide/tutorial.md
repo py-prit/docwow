@@ -304,7 +304,31 @@ for comment in doc.comments:
     print(f"[{comment.comment_id}] {comment.author}: {comment.get_text()}")
 ```
 
-## 13. Table of Contents
+## 13. Track Changes
+
+Track changes records reviewer insertions and deletions. In HTML, insertions render as green underlined text and deletions as red strikethrough. In DOCX they appear in Word's review pane.
+
+```python
+para = doc.paragraphs.add_paragraph()
+para.runs.add_text("The revenue figure was ")
+para.runs.add_deletion("$3.8 M", author="Alice", date="2025-07-10T09:00:00Z")
+para.runs.add_insertion("$4.2 M", author="Alice", date="2025-07-10T09:00:00Z")
+para.runs.add_text(" for the quarter.")
+```
+
+To read track changes from an existing document:
+
+```python
+from docwow.api import MutableTrackedChange
+
+for item in doc.paragraphs:
+    for run in item.runs:
+        if isinstance(run, MutableTrackedChange):
+            action = "inserted" if run.change_type == "insert" else "deleted"
+            print(f"{run.author} {action}: {run.get_text()!r}")
+```
+
+## 14. Table of Contents
 
 Build a TOC manually or point it at existing bookmark anchors. Each entry carries a display level (1–9) matching the heading depth.
 
@@ -324,7 +348,7 @@ intro_heading.runs.add_bookmark("intro")
 
 In HTML the TOC renders as a `<nav class="dw-toc">` element with clickable `<a>` links. In DOCX it becomes a `w:sdt` structured document tag with `TOC1`–`TOC9` styled paragraphs.
 
-## 14. Save to DOCX
+## 15. Save to DOCX
 
 ```python
 doc.save("q2_report.docx")
@@ -340,7 +364,7 @@ Open `q2_report.docx` in Word and verify:
 - The footnote appears at the bottom of the relevant page
 - TOC entries link to headings when clicked
 
-## 15. Convert to HTML
+## 16. Convert to HTML
 
 ```python
 # Standard HTML — for browser viewing or embedding in a web app
@@ -361,7 +385,7 @@ Open `q2_report.html` in a browser and verify:
 - Body text, lists, and hyperlink all render correctly
 - The page break div is invisible
 
-## 16. Round-trip HTML → DOCX
+## 17. Round-trip HTML → DOCX
 
 ```python
 # Read the HTML back and convert to DOCX
@@ -396,6 +420,8 @@ Open `q2_report_restored.docx` in Word and verify that the header, footer page n
 | Endnote | `doc.add_footnote(note_type="endnote")` + `add_footnote_ref(..., note_type="endnote")` |
 | Bookmark | `para.runs.add_bookmark(name)` |
 | Comment | `doc.add_comment(author, text)` + `para.runs.add_comment_ref(comment_id)` |
+| Track changes (insert) | `para.runs.add_insertion(text, author, date)` |
+| Track changes (delete) | `para.runs.add_deletion(text, author, date)` |
 | Table of Contents | `toc = doc.paragraphs.add_toc("Contents")` + `toc.add_entry(text, url, level)` |
 | Save DOCX | `doc.save("file.docx")` or `doc.to_bytes()` |
 | Convert to HTML | `doc.to_html()` or `docwow.to_html("file.docx")` |

@@ -162,6 +162,21 @@
   text-decoration: underline;
 }
 
+/* Track changes */
+ins.dw-ins {
+  color: #1B5E20;
+  text-decoration: underline;
+  background-color: rgba(46, 125, 50, 0.08);
+  text-decoration-color: #1B5E20;
+}
+
+del.dw-del {
+  color: #B71C1C;
+  text-decoration: line-through;
+  background-color: rgba(183, 28, 28, 0.08);
+  text-decoration-color: #B71C1C;
+}
+
 /* Comments — inline hover popup */
 .dw-comment-ref {
   position: relative;
@@ -256,6 +271,7 @@
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-bookmarks">Bookmarks</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-footnotes">Footnotes and Endnotes</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-comments">Comments</a></li>
+<li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-track-changes">Track Changes</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-pagebreaks">Page Breaks</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-pagefields">Page Number Fields</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-hf">Headers and Footers</a></li>
@@ -379,6 +395,10 @@
 <p class="dw-p"><span class="dw-r">Comments are annotations attached to specific points in the document text. In HTML they render as superscript reference markers (orange brackets) and a comment section at the bottom of the page. In DOCX they appear in the Word review pane.</span></p>
 <p class="dw-p"><span class="dw-r">This sentence has a comment from Alice</span><a href="#comment-1" class="dw-comment-ref" data-dw-comment-id="1">[1]<span class="dw-comment-popup"><span class="dw-comment-popup-author">Alice <span class="dw-comment-popup-date">· 2026-04-17T09:00:00Z</span></span><span class="dw-comment-popup-text">This is a great example!</span></span></a><span class="dw-r"> attached at the end.</span></p>
 <p class="dw-p"><span class="dw-r">This sentence has a comment from Bob</span><a href="#comment-2" class="dw-comment-ref" data-dw-comment-id="2">[2]<span class="dw-comment-popup"><span class="dw-comment-popup-author">Bob <span class="dw-comment-popup-date">· 2026-04-17T10:00:00Z</span></span><span class="dw-comment-popup-text">Consider adding more detail here.</span></span></a><span class="dw-r"> for review.</span></p>
+<p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-track-changes" class="dw-bookmark" data-dw-bookmark="showcase-track-changes"></a><span class="dw-r">Track Changes</span></p>
+<p class="dw-p"><span class="dw-r">Track changes records insertions and deletions made by reviewers. In HTML, insertions render as green underlined text and deletions as red strikethrough text. In DOCX they appear in Word&#x27;s review pane.</span></p>
+<p class="dw-p"><span class="dw-r">The original revenue figure was </span><del class="dw-del" data-dw-author="Alice" data-dw-date="2026-04-17T09:00:00Z" data-dw-change-id="10"><span class="dw-r">$3.8 M</span></del><ins class="dw-ins" data-dw-author="Alice" data-dw-date="2026-04-17T09:00:00Z" data-dw-change-id="11"><span class="dw-r">$4.2 M</span></ins><span class="dw-r"> for the quarter.</span></p>
+<p class="dw-p"><span class="dw-r">Please </span><del class="dw-del" data-dw-author="Bob" data-dw-date="2026-04-17T10:00:00Z" data-dw-change-id="12"><span class="dw-r">review</span></del><ins class="dw-ins" data-dw-author="Bob" data-dw-date="2026-04-17T10:00:00Z" data-dw-change-id="13"><span class="dw-r">approve</span></ins><span class="dw-r"> this change before the deadline.</span></p>
 <p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-pagebreaks" class="dw-bookmark" data-dw-bookmark="showcase-pagebreaks"></a><span class="dw-r">Page Breaks</span></p>
 <p class="dw-p"><span class="dw-r">An explicit page break element follows. In HTML it renders as &lt;div class=&quot;dw-page-break&quot;&gt; (invisible, preserved for round-trip). In Word / LibreOffice it forces a new page.</span></p>
 <div class="dw-page-break" data-dw-page="2"></div>

@@ -6,7 +6,7 @@ import base64
 from docwow.html_parser._utils import has_class, pt_val
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 
 
@@ -74,7 +74,38 @@ def _parse_runs(p_el) -> list[Run]:
             cr = _parse_comment_ref(child)
             if cr is not None:
                 runs.append(cr)
+        elif child.tag == "ins" and has_class(child, "dw-ins"):
+            tc = _parse_tracked_change(child, "insert")
+            if tc is not None:
+                runs.append(tc)
+        elif child.tag == "del" and has_class(child, "dw-del"):
+            tc = _parse_tracked_change(child, "delete")
+            if tc is not None:
+                runs.append(tc)
     return runs
+
+
+def _parse_tracked_change(el, change_type: str) -> TrackedChange | None:
+    author = el.get("data-dw-author", "")
+    date = el.get("data-dw-date", "")
+    try:
+        change_id = int(el.get("data-dw-change-id", "0"))
+    except ValueError:
+        change_id = 0
+    inner: list[TextRun | ImageRun] = [
+        _parse_text_run(child)
+        for child in el
+        if child.tag == "span" and has_class(child, "dw-r")
+    ]
+    if not inner:
+        return None
+    return TrackedChange(
+        change_type=change_type,
+        runs=tuple(inner),
+        author=author,
+        date=date,
+        change_id=change_id,
+    )
 
 
 def _parse_comment_ref(a_el) -> CommentRef | None:

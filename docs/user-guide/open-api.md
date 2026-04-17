@@ -423,6 +423,36 @@ comment.set_author("Carol").set_date("2025-07-11T08:00:00Z").set_initials("C")
 
 In HTML, comment references render as superscript `[N]` anchors with a CSS-only hover popup showing the author, date, and comment text — similar to how Word shows comments in a side pane when you hover. The comment bodies are also stored in a hidden `<section class="dw-comments">` block (invisible in the browser) that the HTML parser reads when round-tripping back to DOCX. In DOCX they are stored in `word/comments.xml` with matching `w:commentRangeStart`, `w:commentRangeEnd`, and `w:commentReference` elements.
 
+## Track Changes
+
+Use `para.runs.add_insertion()` and `para.runs.add_deletion()` to record reviewer edits, or read them from a parsed DOCX that has tracked changes enabled.
+
+```python
+from docwow.api import MutableTrackedChange
+
+# Build tracked changes programmatically
+para = doc.paragraphs.add_paragraph()
+para.runs.add_text("The figure was ")
+para.runs.add_deletion("$3.8 M", author="Alice", date="2025-07-10T09:00:00Z")
+para.runs.add_insertion("$4.2 M", author="Alice", date="2025-07-10T09:00:00Z")
+
+# Read tracked changes from an existing document
+for item in doc.paragraphs:
+    for run in item.runs:
+        if isinstance(run, MutableTrackedChange):
+            action = "inserted" if run.change_type == "insert" else "deleted"
+            print(f"{run.author} {action}: {run.get_text()!r}")
+```
+
+In HTML, insertions render as `<ins class="dw-ins">` (green underline) and deletions as `<del class="dw-del">` (red strikethrough) with `data-dw-author`, `data-dw-date`, and `data-dw-change-id` attributes for lossless round-trip. In DOCX they are stored as `w:ins` / `w:del` elements visible in Word's review pane.
+
+`MutableTrackedChange` supports chainable setters:
+
+```python
+tc = para.runs.add_insertion("new text")
+tc.set_author("Bob").set_date("2025-07-11T08:00:00Z")
+```
+
 ## Table of Contents
 
 Use `paragraphs.add_toc()` to insert a Table of Contents block, or read one from a parsed DOCX:
@@ -525,6 +555,8 @@ doc.set_margins(top_pt=72.0, bottom_pt=72.0, left_pt=72.0, right_pt=72.0)
 | `add_hyperlink(text, url)` | Create and append a `MutableHyperlink`, return it |
 | `add_bookmark(name)` | Create and append a `MutableBookmark` anchor, return it |
 | `add_comment_ref(comment_id)` | Create and append a `MutableCommentRef` marker, return it |
+| `add_insertion(text, author, date)` | Create and append a `MutableTrackedChange` insertion, return it |
+| `add_deletion(text, author, date)` | Create and append a `MutableTrackedChange` deletion, return it |
 | `add_footnote_ref(note_id, note_type)` | Create and append a `MutableFootnoteRef` marker, return it |
 | `add_page_number(field_type)` | Create and append a `MutablePageNumberField`, return it |
 | `append(run)` | Append an existing run |

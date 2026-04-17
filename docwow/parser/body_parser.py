@@ -17,7 +17,7 @@ from lxml import etree
 
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.parser.image_parser import extract_image
@@ -155,6 +155,16 @@ def _parse_paragraph(
                 for r_el in child.findall(qn("w:r")):
                     runs.extend(_parse_run(r_el, zf, relationships))
 
+        elif tag == qn("w:ins"):
+            tc = _parse_tracked_change(child, "insert", zf, relationships)
+            if tc is not None:
+                runs.append(tc)
+
+        elif tag == qn("w:del"):
+            tc = _parse_tracked_change(child, "delete", zf, relationships)
+            if tc is not None:
+                runs.append(tc)
+
         elif tag == qn("w:bookmarkStart"):
             name = attrib(child, "w:name")
             # Skip only the Word-internal navigation bookmark; preserve everything
@@ -169,6 +179,53 @@ def _parse_paragraph(
         runs=tuple(runs),
         formatting=formatting if formatting is not None else ParagraphFormatting(),
         list_info=list_info,
+    )
+
+
+def _parse_tracked_change(
+    el: etree._Element,
+    change_type: str,
+    zf: zipfile.ZipFile,
+    relationships: dict[str, str],
+) -> TrackedChange | None:
+    """Parse a ``<w:ins>`` or ``<w:del>`` element into a TrackedChange.
+
+    For deletions the inner runs use ``w:delText`` instead of ``w:t``; we
+    normalise these to plain TextRun objects so the rest of the pipeline is
+    uniform.
+    """
+    author = attrib(el, "w:author") or ""
+    date = attrib(el, "w:date") or ""
+    try:
+        change_id = int(attrib(el, "w:id") or "0")
+    except ValueError:
+        change_id = 0
+
+    inner: list[TextRun | ImageRun] = []
+    for r_el in el.findall(qn("w:r")):
+        rPr = find(r_el, "w:rPr")
+        from docwow.models.styles import RunFormatting
+        fmt = parse_run_fmt(rPr) or RunFormatting()
+
+        if change_type == "delete":
+            # Deleted text lives in w:delText, not w:t
+            for dt in r_el.findall(qn("w:delText")):
+                text = dt.text or ""
+                inner.append(TextRun(text=text, formatting=fmt))
+        else:
+            # Insertions use normal w:r children
+            for run in _parse_run(r_el, zf, relationships):
+                if isinstance(run, (TextRun, ImageRun)):
+                    inner.append(run)
+
+    if not inner:
+        return None
+    return TrackedChange(
+        change_type=change_type,
+        runs=tuple(inner),
+        author=author,
+        date=date,
+        change_id=change_id,
     )
 
 

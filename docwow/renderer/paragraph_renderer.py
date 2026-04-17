@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 
 from docwow.models.comment import Comment
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
@@ -49,6 +49,8 @@ def _render_run(run: Run, comments: dict[int, Comment] | None = None) -> str:
     if isinstance(run, CommentRef):
         comment = comments.get(run.comment_id) if comments else None
         return _render_comment_ref(run, comment)
+    if isinstance(run, TrackedChange):
+        return _render_tracked_change(run)
     return _render_text_run(run)
 
 
@@ -92,6 +94,25 @@ def _render_comment_ref(ref: CommentRef, comment: Comment | None = None) -> str:
         f'<a href="#comment-{ref.comment_id}" class="dw-comment-ref" '
         f'data-dw-comment-id="{ref.comment_id}">'
         f"[{ref.comment_id}]{popup}</a>"
+    )
+
+
+def _render_tracked_change(tc: TrackedChange) -> str:
+    """Render a tracked change as an HTML <ins> or <del> element."""
+    tag = "ins" if tc.change_type == "insert" else "del"
+    css_class = "dw-ins" if tc.change_type == "insert" else "dw-del"
+    author = html.escape(tc.author, quote=True)
+    date = html.escape(tc.date, quote=True)
+    inner = "".join(
+        _render_text_run(r) if isinstance(r, TextRun) else render_image(r.image)
+        for r in tc.runs
+    )
+    return (
+        f'<{tag} class="{css_class}"'
+        f' data-dw-author="{author}"'
+        f' data-dw-date="{date}"'
+        f' data-dw-change-id="{tc.change_id}">'
+        f"{inner}</{tag}>"
     )
 
 

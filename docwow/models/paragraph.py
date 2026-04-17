@@ -84,8 +84,25 @@ class CommentRef:
     comment_id: int
 
 
+@dataclass(frozen=True)
+class TrackedChange:
+    """An inline tracked change (insertion or deletion).
+
+    Represents a ``w:ins`` (insertion) or ``w:del`` (deletion) element from
+    Word's track-changes feature.  ``change_type`` is either ``"insert"`` or
+    ``"delete"``.  The inner ``runs`` hold the affected text; for deletions
+    these were parsed from ``w:delText`` elements.
+    """
+
+    change_type: str                          # "insert" or "delete"
+    runs: tuple[TextRun | ImageRun, ...]
+    author: str = ""
+    date: str = ""
+    change_id: int = 0
+
+
 # A paragraph's content is a sequence of runs.
-Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | FootnoteRef | BookmarkStart | CommentRef
+Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | FootnoteRef | BookmarkStart | CommentRef | TrackedChange
 
 
 @dataclass(frozen=True)
