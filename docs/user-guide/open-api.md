@@ -340,6 +340,40 @@ para2.runs.add_footnote_ref(note_id=en.note_id, note_type="endnote")
 
 Footnote IDs are assigned automatically and sequentially within each note type. Footnote and endnote IDs are independent — both start at 1.
 
+## Bookmarks
+
+### Reading bookmarks from an existing document
+
+```python
+from docwow.api import MutableBookmark
+
+for item in doc.paragraphs:
+    for run in item.runs:
+        if isinstance(run, MutableBookmark):
+            print(run.name)  # e.g. "introduction", "chapter2"
+```
+
+### Adding bookmarks programmatically
+
+```python
+# Place a named anchor at the start of a paragraph
+heading = doc.paragraphs.add_paragraph()
+heading.runs.add_bookmark("introduction")
+heading.runs.add_text("Introduction", bold=True)
+
+# Add an in-document hyperlink pointing to the bookmark
+body = doc.paragraphs.add_paragraph()
+body.runs.add_text("Jump to ")
+body.runs.add_hyperlink("Introduction", "#introduction")
+```
+
+`add_bookmark()` returns the `MutableBookmark` so you can rename it later:
+
+```python
+bm = heading.runs.add_bookmark("temp-name")
+bm.set_name("introduction")
+```
+
 ## Images
 
 ```python
@@ -408,6 +442,7 @@ doc.set_margins(top_pt=72.0, bottom_pt=72.0, left_pt=72.0, right_pt=72.0)
 |---|---|
 | `add_text(text, bold, italic, ...)` | Create and append a `MutableRun`, return it |
 | `add_hyperlink(text, url)` | Create and append a `MutableHyperlink`, return it |
+| `add_bookmark(name)` | Create and append a `MutableBookmark` anchor, return it |
 | `add_page_number(field_type)` | Create and append a `MutablePageNumberField`, return it |
 | `append(run)` | Append an existing run |
 | `insert(index, run)` | Insert at index |

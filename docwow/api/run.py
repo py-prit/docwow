@@ -361,6 +361,7 @@ class MutableBookmark:
 
     @property
     def name(self) -> str:
+        """The bookmark name used as the HTML ``id`` and OOXML ``w:name``."""
         return self._name
 
     # ---- Internal conversion -------------------------------------------------
