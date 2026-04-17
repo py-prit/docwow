@@ -60,7 +60,7 @@ doc.to_docx("output.docx")
 | Bookmarks | Parse `w:bookmarkStart`, render as `<a id="…">` anchors, full round-trip, `MutableBookmark` API |
 | Table of Contents | Parse `w:sdt` TOC blocks, render as `<nav class="dw-toc">`, full round-trip, `MutableTableOfContents` API |
 | Comments | Parse `word/comments.xml`, render as superscript markers with CSS hover popups in HTML, full round-trip, `MutableComment` API |
-| Track changes | Parse `w:ins`/`w:del`, render as green underline / red strikethrough in HTML, full round-trip, `MutableTrackedChange` API |
+| Track changes | Parse `w:ins`/`w:del`, render as green underline / red strikethrough with hover popup (author, date, Accept/Reject buttons) in HTML, full round-trip, `MutableTrackedChange` API |
 | Programmatic API | Open, edit, and save documents in pure Python |
 
 ### ⚠️ Headers, Footers & Page Numbers — Known Limitations
@@ -104,7 +104,6 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 
 | Feature | Notes |
 |---|---|
-| Track changes | Accept/reject revision marks |
 | General HTML → DOCX | Best-effort conversion of arbitrary HTML (not just docwow HTML) |
 
 ## Documentation

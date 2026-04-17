@@ -98,21 +98,38 @@ def _render_comment_ref(ref: CommentRef, comment: Comment | None = None) -> str:
 
 
 def _render_tracked_change(tc: TrackedChange) -> str:
-    """Render a tracked change as an HTML <ins> or <del> element."""
+    """Render a tracked change as an HTML <ins> or <del> element with a
+    hover popup showing author, date, and Accept / Reject buttons."""
     tag = "ins" if tc.change_type == "insert" else "del"
     css_class = "dw-ins" if tc.change_type == "insert" else "dw-del"
-    author = html.escape(tc.author, quote=True)
-    date = html.escape(tc.date, quote=True)
+    label = "Inserted" if tc.change_type == "insert" else "Deleted"
+    author_attr = html.escape(tc.author, quote=True)
+    author_display = html.escape(tc.author)
+    date_attr = html.escape(tc.date, quote=True)
+    # Show only the date part of the ISO timestamp (e.g. "2025-07-10")
+    date_display = html.escape(tc.date[:10]) if tc.date else ""
     inner = "".join(
         _render_text_run(r) if isinstance(r, TextRun) else render_image(r.image)
         for r in tc.runs
     )
+    popup = (
+        '<span class="dw-tc-popup">'
+        f'<span class="dw-tc-popup-label">{label}</span>'
+        f'<span class="dw-tc-popup-meta">{author_display}'
+        + (f' \u00b7 {date_display}' if date_display else '')
+        + '</span>'
+        '<span class="dw-tc-popup-actions">'
+        '<button class="dw-tc-accept" onclick="dwTcAccept(this)">&#10003; Accept</button>'
+        '<button class="dw-tc-reject" onclick="dwTcReject(this)">&#10007; Reject</button>'
+        '</span>'
+        '</span>'
+    )
     return (
         f'<{tag} class="{css_class}"'
-        f' data-dw-author="{author}"'
-        f' data-dw-date="{date}"'
+        f' data-dw-author="{author_attr}"'
+        f' data-dw-date="{date_attr}"'
         f' data-dw-change-id="{tc.change_id}">'
-        f"{inner}</{tag}>"
+        f"{popup}{inner}</{tag}>"
     )
 
 

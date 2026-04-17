@@ -319,17 +319,113 @@ _BASE_CSS = """\
 
 /* Track changes */
 ins.dw-ins {
+  position: relative;
   color: #1B5E20;
   text-decoration: underline;
   background-color: rgba(46, 125, 50, 0.08);
   text-decoration-color: #1B5E20;
+  cursor: pointer;
 }
 
 del.dw-del {
+  position: relative;
   color: #B71C1C;
   text-decoration: line-through;
   background-color: rgba(183, 28, 28, 0.08);
   text-decoration-color: #B71C1C;
+  cursor: pointer;
+}
+
+.dw-tc-popup {
+  display: none;
+  position: absolute;
+  bottom: 1.5em;
+  left: 0;
+  z-index: 100;
+  min-width: 170px;
+  background: #ffffff;
+  border-radius: 4px;
+  border-top: 3px solid transparent;
+  padding: 7px 10px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  font-size: 9pt;
+  font-weight: normal;
+  font-style: normal;
+  vertical-align: baseline;
+  white-space: nowrap;
+  color: #333333;
+  text-decoration: none;
+  line-height: 1.4;
+}
+
+ins.dw-ins .dw-tc-popup {
+  border-top-color: #1B5E20;
+}
+
+del.dw-del .dw-tc-popup {
+  border-top-color: #B71C1C;
+}
+
+ins.dw-ins:hover .dw-tc-popup,
+del.dw-del:hover .dw-tc-popup {
+  display: block;
+}
+
+.dw-tc-popup-label {
+  display: block;
+  font-weight: bold;
+  font-size: 8pt;
+  margin-bottom: 2px;
+}
+
+ins.dw-ins .dw-tc-popup-label {
+  color: #1B5E20;
+}
+
+del.dw-del .dw-tc-popup-label {
+  color: #B71C1C;
+}
+
+.dw-tc-popup-meta {
+  display: block;
+  font-size: 8pt;
+  color: #666666;
+  margin-bottom: 7px;
+}
+
+.dw-tc-popup-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dw-tc-accept,
+.dw-tc-reject {
+  border-radius: 3px;
+  padding: 3px 9px;
+  font-size: 8pt;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.dw-tc-accept {
+  background: #E8F5E9;
+  color: #1B5E20;
+  border: 1px solid #A5D6A7;
+}
+
+.dw-tc-accept:hover {
+  background: #C8E6C9;
+}
+
+.dw-tc-reject {
+  background: #FFEBEE;
+  color: #B71C1C;
+  border: 1px solid #FFCDD2;
+}
+
+.dw-tc-reject:hover {
+  background: #FFCDD2;
 }
 
 /* Comments — inline hover popup */
