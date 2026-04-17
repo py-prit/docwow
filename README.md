@@ -95,19 +95,45 @@ In Word, headers and footers repeat at the top/bottom of every page. In HTML the
 
 The `title_pg` flag and even-page slots are preserved through DOCX round-trips but the HTML renderer emits all slots regardless. No CSS or JS selects the right slot per page. *Possible approach:* after the JS pagination pass, inspect the `data-dw-title-pg` attribute on the document div and apply `header-first` vs `header-default` to the appropriate page sections.
 
-**5. Single document section only**
-
-DOCX supports per-section headers/footers — a different header can appear after a manual section break mid-document. docwow parses only the last `w:sectPr` in `w:body` (the document-level section properties). Mid-document section changes are silently ignored. *Possible approach:* parse each `w:sectPr` in the body, associate it with the preceding paragraphs, and model sections explicitly in `Document`.
-
-**6. Page number start value not supported**
+**5. Page number start value not supported**
 
 DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other than 1. Not currently parsed or written. *Possible approach:* add `page_num_start: int = 1` to the `Document` model and read/write it from `w:sectPr`.
 
-### 🗓 Planned
+### 🗓 Roadmap
 
-| Feature | Notes |
-|---|---|
-| General HTML → DOCX | Best-effort conversion of arbitrary HTML (not just docwow HTML) |
+The project follows a phased plan. Contributors are welcome at any level.
+
+#### Phase 2 — General HTML → DOCX (next)
+
+Best-effort conversion of **arbitrary HTML** (not just docwow HTML) into DOCX. This makes docwow useful as a general-purpose HTML-to-Word exporter.
+
+Scope: `h1`–`h6`, `p`, `b`/`strong`, `i`/`em`, `u`, `s`, `span[style]`, `table`, `ul`/`ol`/`li`, `img`, `a`, `br`. Map inline CSS properties (font-size, color, font-weight, etc.) to Word run formatting. Nested structures and reasonable edge cases.
+
+Estimated effort: 1–2 days. Entry point: `docwow/html_parser/`.
+
+#### Phase 2b — Floating images and text boxes
+
+`wp:anchor` positioned images, text wrapping modes, and `w:txbx` inline text boxes. Currently anchored images are silently skipped.
+
+Estimated effort: 4–6 hours.
+
+#### Phase 3 — Tier 2 Word features
+
+Individual features, each ~1–3 hours, all following the same 5-layer pattern (parser → renderer → html_parser → writer → API):
+
+| Feature | OOXML element | Notes |
+|---|---|---|
+| Paragraph borders | `w:pBdr` | Box, shadow, bar borders |
+| Columns | `w:cols` in `w:sectPr` | Multi-column layouts |
+| Field codes | `w:instrText` | DATE, AUTHOR, TITLE fields |
+| Bidi / RTL text | `w:bidi`, `w:rtl` | Right-to-left paragraphs |
+| Hidden text | `w:vanish` | `display:none` in HTML |
+| Per-section headers/footers | `w:headerReference` in inline `w:sectPr` | Different header after section break |
+| Page number start | `w:pgNumType w:start` | Section-level page number reset |
+
+#### How to contribute
+
+Every feature follows the same 5-layer pattern — read `CLAUDE.md` for the full contributor guide. One branch per feature, all layers in one PR (parser + renderer + html_parser + writer + API + tests + docs).
 
 ## Documentation
 
