@@ -363,6 +363,9 @@ def _parse_run(
             if image is not None:
                 result.append(ImageRun(image=image, formatting=fmt))
 
+        elif tag == qn("w:tab"):
+            result.append(TextRun(text="\t", formatting=fmt))
+
         elif tag == qn("w:br"):
             br_type = attrib(child, "w:type")
             if br_type in (None, "textWrapping"):

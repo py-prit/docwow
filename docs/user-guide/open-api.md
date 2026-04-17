@@ -149,6 +149,12 @@ para.set_keep_together(True)
 para.set_keep_with_next(True)
 para.set_page_break_before(True)
 para.set_shading("4472C4")   # solid background color (hex RGB)
+
+from docwow.models.styles import TabStop
+para.set_tab_stops((
+    TabStop(position_pt=72.0, alignment="left"),
+    TabStop(position_pt=216.0, alignment="right", leader="dot"),
+))
 ```
 
 ## Building a document from scratch

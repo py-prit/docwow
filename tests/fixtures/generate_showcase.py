@@ -32,7 +32,7 @@ from docwow.models.paragraph import (
     BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun,
     PageBreak, PageNumberField, Paragraph, TextRun, TrackedChange,
 )
-from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
+from docwow.models.styles import ParagraphFormatting, RunFormatting, Style, TabStop
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.writer.docx_writer import write_docx
@@ -674,7 +674,39 @@ def build_showcase() -> Document:
     ))
 
     # -----------------------------------------------------------------------
-    # 12. Headers and Footers
+    # 12. Tab Stops
+    # -----------------------------------------------------------------------
+    body.append(_p(
+        "Tab stops define custom horizontal positions for the tab character. "
+        "The paragraph below has left (72pt), center (216pt), and right (360pt) stops."
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Left"),
+            TextRun(text="\t"),
+            TextRun(text="Center"),
+            TextRun(text="\t"),
+            TextRun(text="Right"),
+        ),
+        formatting=ParagraphFormatting(tab_stops=(
+            TabStop(position_pt=72.0, alignment="left"),
+            TabStop(position_pt=216.0, alignment="center"),
+            TabStop(position_pt=360.0, alignment="right"),
+        )),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="TOC entry"),
+            TextRun(text="\t"),
+            TextRun(text="42"),
+        ),
+        formatting=ParagraphFormatting(tab_stops=(
+            TabStop(position_pt=360.0, alignment="right", leader="dot"),
+        )),
+    ))
+
+    # -----------------------------------------------------------------------
+    # 13. Headers and Footers
     # -----------------------------------------------------------------------
     body.append(_ph("Headers and Footers", BM["hf"], style_id="Heading1"))
     body.append(_p(

@@ -46,6 +46,7 @@ doc.save("updated.docx")
 
 - **Paragraphs** — alignment, indentation (left/right/first-line/hanging), spacing (before/after/line), page-break-before, keep-together, keep-with-next
 - **Run formatting** — bold, italic, underline, strikethrough, small caps, all caps, font name, font size, color, highlight, superscript/subscript
+- **Tab stops** — custom paragraph tab stops (`w:tabs`), tab character runs (`w:tab`), full round-trip via `data-dw-tab-stops`
 - **Named styles** — Heading 1–9, Normal, and any custom styles defined in the document
 - **Tables** — column widths, row heights, colspan, rowspan (vertical merge), cell borders
 - **Lists** — bullet and numbered, nested up to any depth, multiple list instances per document
