@@ -745,7 +745,9 @@ def build_showcase() -> Document:
     )))
     body.append(_p(
         "This paragraph is in Section B (landscape A4, 54pt top/bottom margins). "
-        "Section breaks are invisible in HTML but round-trip losslessly to DOCX."
+        "In Word, the section above uses portrait A4 and this one uses landscape A4. "
+        "Section break metadata (page size, margins) has no browser equivalent, so it "
+        "is stored as a hidden data-dw-section-break element and restores on HTML→DOCX."
     ))
 
     # -----------------------------------------------------------------------
