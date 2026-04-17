@@ -11,7 +11,7 @@ This tutorial covers two things:
 
 ```python
 import docwow
-from docwow.api import MutableParagraph, MutableRun, MutableImageRun, MutableHyperlink, MutableBookmark, MutableTable
+from docwow.api import MutableParagraph, MutableRun, MutableImageRun, MutableHyperlink, MutableBookmark, MutableTable, MutableTableOfContents
 
 doc = docwow.open("report.docx")
 
@@ -328,6 +328,7 @@ Open `q2_report_restored.docx` in Word and verify that the header, footer page n
 | Footnote | `doc.add_footnote()` + `para.runs.add_footnote_ref(note_id)` |
 | Endnote | `doc.add_footnote(note_type="endnote")` + `add_footnote_ref(..., note_type="endnote")` |
 | Bookmark | `para.runs.add_bookmark(name)` |
+| Table of Contents | `toc = doc.paragraphs.add_toc("Contents")` + `toc.add_entry(text, url, level)` |
 | Save DOCX | `doc.save("file.docx")` or `doc.to_bytes()` |
 | Convert to HTML | `doc.to_html()` or `docwow.to_html("file.docx")` |
 | Round-trip | `docwow.to_docx(html)` |

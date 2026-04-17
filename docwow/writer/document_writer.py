@@ -8,6 +8,7 @@ from docwow.models.image import InlineImage
 from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
+from docwow.models.toc import TableOfContents, TocEntry
 from docwow.writer._xml import (
     DOC_NSMAP, W, R, WP, A, PIC, XML_SPACE,
     sub, to_bytes, pt_tw, pt_emu, pt_hp,
@@ -64,6 +65,8 @@ def build_document_xml(
             _write_paragraph(body, element, image_rids, _draw_counter, _hyperlink_rids, _bookmark_counter)
         elif isinstance(element, Table):
             _write_table(body, element, image_rids, _draw_counter, _hyperlink_rids, _bookmark_counter)
+        elif isinstance(element, TableOfContents):
+            _write_toc(body, element)
         elif isinstance(element, PageBreak):
             _write_page_break(body)
 
@@ -83,6 +86,65 @@ def _write_page_break(parent: etree._Element) -> None:
     r_el = etree.SubElement(p_el, f"{{{W}}}r")
     br_el = etree.SubElement(r_el, f"{{{W}}}br")
     br_el.set(f"{{{W}}}type", "page")
+
+
+# ---------------------------------------------------------------------------
+# Table of Contents  (w:sdt)
+# ---------------------------------------------------------------------------
+
+def _write_toc(parent: etree._Element, toc: TableOfContents) -> None:
+    """Write a :class:`TableOfContents` as a ``w:sdt`` structured document tag."""
+    sdt = etree.SubElement(parent, f"{{{W}}}sdt")
+
+    # w:sdtPr — identifies this as a TOC
+    sdt_pr = etree.SubElement(sdt, f"{{{W}}}sdtPr")
+    tag_el = etree.SubElement(sdt_pr, f"{{{W}}}tag")
+    tag_el.set(f"{{{W}}}val", "Table of Contents")
+    doc_part_obj = etree.SubElement(sdt_pr, f"{{{W}}}docPartObj")
+    gallery = etree.SubElement(doc_part_obj, f"{{{W}}}docPartGallery")
+    gallery.set(f"{{{W}}}val", "Table of Contents")
+    etree.SubElement(doc_part_obj, f"{{{W}}}docPartUnique")
+
+    # w:sdtContent
+    sdt_content = etree.SubElement(sdt, f"{{{W}}}sdtContent")
+
+    # TOC heading paragraph
+    if toc.title:
+        _write_toc_heading(sdt_content, toc.title)
+
+    # TOC entry paragraphs
+    for entry in toc.entries:
+        _write_toc_entry(sdt_content, entry)
+
+
+def _write_toc_heading(parent: etree._Element, title: str) -> None:
+    p_el = etree.SubElement(parent, f"{{{W}}}p")
+    ppr = etree.SubElement(p_el, f"{{{W}}}pPr")
+    sub(ppr, "pStyle", val="TOCHeading")
+    r_el = etree.SubElement(p_el, f"{{{W}}}r")
+    t_el = etree.SubElement(r_el, f"{{{W}}}t")
+    t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    t_el.text = title
+
+
+def _write_toc_entry(parent: etree._Element, entry: TocEntry) -> None:
+    p_el = etree.SubElement(parent, f"{{{W}}}p")
+    ppr = etree.SubElement(p_el, f"{{{W}}}pPr")
+    sub(ppr, "pStyle", val=f"TOC{entry.level}")
+
+    if entry.url and entry.url.startswith("#"):
+        anchor = entry.url[1:]
+        hl = etree.SubElement(p_el, f"{{{W}}}hyperlink")
+        hl.set(f"{{{W}}}anchor", anchor)
+        r_el = etree.SubElement(hl, f"{{{W}}}r")
+        t_el = etree.SubElement(r_el, f"{{{W}}}t")
+        t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+        t_el.text = entry.text
+    else:
+        r_el = etree.SubElement(p_el, f"{{{W}}}r")
+        t_el = etree.SubElement(r_el, f"{{{W}}}t")
+        t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+        t_el.text = entry.text
 
 
 # ---------------------------------------------------------------------------

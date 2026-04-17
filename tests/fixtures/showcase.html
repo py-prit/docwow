@@ -120,6 +120,47 @@
   font-size: 0.75em;
   vertical-align: super;
 }
+
+/* Table of Contents */
+.dw-toc {
+  margin: 12pt 0;
+  padding: 0;
+}
+
+.dw-toc-title {
+  font-size: 12pt;
+  font-weight: bold;
+  margin: 0 0 6pt 0;
+}
+
+.dw-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dw-toc-entry {
+  margin: 2pt 0;
+}
+
+.dw-toc-level-1 { padding-left: 0; }
+.dw-toc-level-2 { padding-left: 1.5em; }
+.dw-toc-level-3 { padding-left: 3em; }
+.dw-toc-level-4 { padding-left: 4.5em; }
+.dw-toc-level-5 { padding-left: 6em; }
+.dw-toc-level-6 { padding-left: 7.5em; }
+.dw-toc-level-7 { padding-left: 9em; }
+.dw-toc-level-8 { padding-left: 10.5em; }
+.dw-toc-level-9 { padding-left: 12em; }
+
+.dw-toc-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.dw-toc-link:hover {
+  text-decoration: underline;
+}
 .dw-document {
   max-width:595.28pt;
   padding:72pt 72pt 72pt 72pt;
@@ -242,6 +283,18 @@
 <p class="dw-p"><span class="dw-r">This sentence has a footnote reference</span><a href="#fn-1" class="dw-footnote-ref" data-dw-note-type="footnote" data-dw-note-id="1">[1]</a><span class="dw-r"> at the end.</span></p>
 <p class="dw-p"><span class="dw-r">A second sentence with another footnote</span><a href="#fn-2" class="dw-footnote-ref" data-dw-note-type="footnote" data-dw-note-id="2">[2]</a><span class="dw-r"> and an endnote reference</span><a href="#en-1" class="dw-endnote-ref" data-dw-note-type="endnote" data-dw-note-id="1">[1]</a><span class="dw-r">.</span></p>
 <div class="dw-page-break" data-dw-page="2"></div>
+<p class="dw-p dw-style-Heading2" data-dw-style="Heading2"><span class="dw-r">Table of Contents</span></p>
+<p class="dw-p"><span class="dw-r">The block below is a structured document tag (w:sdt) TOC:</span></p>
+<nav class="dw-toc" data-dw-toc="true" data-dw-toc-title="Contents">
+<p class="dw-toc-title">Contents</p>
+<ul class="dw-toc-list">
+<li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#_TocShowcase1">Plain paragraphs</a></li>
+<li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#_TocShowcase2">Paragraph Formatting</a></li>
+<li class="dw-toc-entry dw-toc-level-2" data-dw-toc-level="2"><a class="dw-toc-link" href="#_TocShowcase3">Indentation</a></li>
+<li class="dw-toc-entry dw-toc-level-2" data-dw-toc-level="2"><a class="dw-toc-link" href="#_TocShowcase4">Spacing</a></li>
+<li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#_TocShowcase5">Run (Character) Formatting</a></li>
+</ul>
+</nav>
 <p class="dw-p dw-style-Heading2" data-dw-style="Heading2"><span class="dw-r">Headers and Footers</span></p>
 <p class="dw-p"><span class="dw-r">This document has a default header and footer with page numbers.</span></p>
 <p class="dw-p"><span class="dw-r">The header shows the document title; the footer shows &#x27;Page N of M&#x27;.</span></p>

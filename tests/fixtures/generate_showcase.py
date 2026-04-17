@@ -25,6 +25,7 @@ from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.models.table import Table, TableCell, TableRow
+from docwow.models.toc import TableOfContents, TocEntry
 from docwow.writer.docx_writer import write_docx
 
 # ---------------------------------------------------------------------------
@@ -373,6 +374,22 @@ def build_showcase() -> Document:
 
     # Explicit page break before the headers/footers section
     body.append(PageBreak())
+
+    # -----------------------------------------------------------------------
+    # Section 14: Table of Contents
+    # -----------------------------------------------------------------------
+    body.append(_p("Table of Contents", style_id="Heading2"))
+    body.append(_p("The block below is a structured document tag (w:sdt) TOC:"))
+    body.append(TableOfContents(
+        title="Contents",
+        entries=(
+            TocEntry(text="Plain paragraphs", url="#_TocShowcase1", level=1),
+            TocEntry(text="Paragraph Formatting", url="#_TocShowcase2", level=1),
+            TocEntry(text="Indentation", url="#_TocShowcase3", level=2),
+            TocEntry(text="Spacing", url="#_TocShowcase4", level=2),
+            TocEntry(text="Run (Character) Formatting", url="#_TocShowcase5", level=1),
+        ),
+    ))
 
     # -----------------------------------------------------------------------
     # Section 12: Headers and footers

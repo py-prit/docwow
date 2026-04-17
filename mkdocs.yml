@@ -58,6 +58,7 @@ nav:
     - Programmatic API: user-guide/open-api.md
     - Hyperlinks: user-guide/hyperlinks.md
     - Bookmarks: user-guide/bookmarks.md
+    - Table of Contents: user-guide/table-of-contents.md
     - Headers, Footers & Page Numbers: user-guide/headers-footers.md
   - HTML Format:
     - Overview: html-format/overview.md

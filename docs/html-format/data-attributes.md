@@ -327,6 +327,40 @@ The element is always empty (no text content). Anchor hyperlinks pointing to `#n
 
 ---
 
+## Table of Contents (`<nav class="dw-toc">`)
+
+```html
+<nav class="dw-toc"
+     data-dw-toc="true"
+     data-dw-toc-title="Contents">
+  <p class="dw-toc-title">Contents</p>
+  <ul class="dw-toc-list">
+    <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1">
+      <a class="dw-toc-link" href="#_Toc123456789">Introduction</a>
+    </li>
+    <li class="dw-toc-entry dw-toc-level-2" data-dw-toc-level="2">
+      <span class="dw-toc-text">Background</span>
+    </li>
+  </ul>
+</nav>
+```
+
+Represents a Word `w:sdt` structured document tag that contains a table of contents.
+
+| Element / Attribute | Description |
+|---|---|
+| `<nav class="dw-toc">` | Container for the whole TOC block |
+| `data-dw-toc` | Always `"true"` — marks the element as a TOC for the HTML parser |
+| `data-dw-toc-title` | The TOC heading text — used to reconstruct the model on round-trip |
+| `<p class="dw-toc-title">` | Visible heading paragraph — omitted when the title is empty |
+| `<ul class="dw-toc-list">` | Ordered list of TOC entries |
+| `<li class="dw-toc-entry dw-toc-level-N">` | One TOC entry; `N` is 1–9 |
+| `data-dw-toc-level` | Integer level of this entry (1–9) |
+| `<a class="dw-toc-link" href="…">` | Clickable link to the heading anchor (when a URL is available) |
+| `<span class="dw-toc-text">` | Non-linked entry text (when no anchor URL is available) |
+
+---
+
 ## Attribute presence rules
 
 - **Omitted = default.** Attributes are only written when their value differs from the Word default (e.g. `data-dw-align` is omitted for left-aligned paragraphs).

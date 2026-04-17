@@ -67,6 +67,6 @@ Bookmarks survive a full DOCX → HTML → DOCX round-trip. The `w:bookmarkStart
 
 ## Limitations
 
-- **Internal Word bookmarks are skipped.** Word silently inserts bookmarks whose names start with `_` (such as `_GoBack`) for its own navigation purposes. docwow discards these on parse.
+- **`_GoBack` is skipped.** Word inserts a `_GoBack` bookmark for its own navigation (Go Back keyboard shortcut). docwow discards this specific bookmark on parse; all other bookmarks — including `_Toc…` anchors used by tables of contents — are preserved.
 - **Bookmark ranges are not preserved.** A Word bookmark can span a range of text, but docwow models it as a single point anchor (the start position). The range end is synthesised immediately after the start on write, making all docwow bookmarks zero-width.
 - **Duplicate bookmark names.** Word allows duplicate bookmark names in theory; docwow preserves all of them, but in-browser anchor resolution will jump to the first matching `id`.

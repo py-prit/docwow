@@ -14,6 +14,7 @@ import lxml.html
 from docwow.html_parser._utils import has_class, pt_val
 from docwow.html_parser.paragraph_parser import parse_paragraph
 from docwow.html_parser.table_parser import parse_table
+from docwow.html_parser.toc_parser import parse_toc
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
@@ -21,6 +22,7 @@ from docwow.models.lists import ListLevel, NumberingDefinition
 from docwow.models.paragraph import PageBreak, Paragraph
 from docwow.models.styles import Style
 from docwow.models.table import Table
+from docwow.models.toc import TableOfContents
 
 
 def parse_html(source: str | bytes) -> Document:
@@ -150,6 +152,9 @@ def _parse_body(
 
         elif tag in ("ul", "ol") and has_class(child, "dw-list"):
             _collect_list(child, body, style_ids, numbering_levels)
+
+        elif tag == "nav" and has_class(child, "dw-toc"):
+            body.append(parse_toc(child))
 
         elif tag == "div" and has_class(child, "dw-page-break"):
             body.append(PageBreak())

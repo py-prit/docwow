@@ -274,4 +274,45 @@ _BASE_CSS = """\
   flex-shrink: 0;
   font-size: 0.75em;
   vertical-align: super;
+}
+
+/* Table of Contents */
+.dw-toc {
+  margin: 12pt 0;
+  padding: 0;
+}
+
+.dw-toc-title {
+  font-size: 12pt;
+  font-weight: bold;
+  margin: 0 0 6pt 0;
+}
+
+.dw-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dw-toc-entry {
+  margin: 2pt 0;
+}
+
+.dw-toc-level-1 { padding-left: 0; }
+.dw-toc-level-2 { padding-left: 1.5em; }
+.dw-toc-level-3 { padding-left: 3em; }
+.dw-toc-level-4 { padding-left: 4.5em; }
+.dw-toc-level-5 { padding-left: 6em; }
+.dw-toc-level-6 { padding-left: 7.5em; }
+.dw-toc-level-7 { padding-left: 9em; }
+.dw-toc-level-8 { padding-left: 10.5em; }
+.dw-toc-level-9 { padding-left: 12em; }
+
+.dw-toc-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.dw-toc-link:hover {
+  text-decoration: underline;
 }"""

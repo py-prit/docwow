@@ -418,10 +418,26 @@ class ParagraphCollection:
         self._items.append(table)
         return table
 
+    def add_toc(
+        self,
+        title: str = "Contents",
+    ) -> "MutableTableOfContents":
+        """Create and append a new Table of Contents, returning it.
+
+        Args:
+            title: Heading text shown above the TOC list.  Defaults to
+                   ``"Contents"``.
+        """
+        from docwow.api.toc import MutableTableOfContents
+        toc = MutableTableOfContents(title=title)
+        self._items.append(toc)
+        return toc
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen_body(self) -> tuple:
         """Convert all items to frozen body elements."""
+        from docwow.api.toc import MutableTableOfContents
         result = []
         for item in self._items:
             if isinstance(item, PageBreak):
@@ -434,14 +450,16 @@ class ParagraphCollection:
 
     def _check_type(self, item: object) -> None:
         from docwow.api.table import MutableTable as MT
-        if not isinstance(item, (MutableParagraph, MT, PageBreak)):
+        from docwow.api.toc import MutableTableOfContents as MTOC
+        if not isinstance(item, (MutableParagraph, MT, PageBreak, MTOC)):
             if isinstance(item, Paragraph):
                 raise TypeError(
                     "Cannot add a frozen Paragraph directly. "
                     "Use MutableParagraph or call paragraphs.add_paragraph() instead."
                 )
             raise TypeError(
-                f"Expected MutableParagraph, MutableTable, or PageBreak; got {type(item).__name__!r}"
+                f"Expected MutableParagraph, MutableTable, MutableTableOfContents, "
+                f"or PageBreak; got {type(item).__name__!r}"
             )
 
     def __repr__(self) -> str:

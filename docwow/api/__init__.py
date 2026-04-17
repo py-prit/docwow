@@ -22,6 +22,7 @@ from docwow.api.table import (
     TableRowView,
     TableCellView,
 )
+from docwow.api.toc import MutableTableOfContents, MutableTocEntry
 
 __all__ = [
     "DocumentWrapper",
@@ -38,7 +39,9 @@ __all__ = [
     "MutableRun",
     "MutableTable",
     "MutableTableCell",
+    "MutableTableOfContents",
     "MutableTableRow",
+    "MutableTocEntry",
     "ParagraphCollection",
     "RunCollection",
     # Backward-compatibility aliases
