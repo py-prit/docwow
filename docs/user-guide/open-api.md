@@ -145,6 +145,7 @@ para.set_spacing(before_pt=6.0, after_pt=6.0, line_pt=14.0)
 para.set_keep_together(True)
 para.set_keep_with_next(True)
 para.set_page_break_before(True)
+para.set_shading("4472C4")   # solid background color (hex RGB)
 ```
 
 ## Building a document from scratch
@@ -281,10 +282,11 @@ for item in doc.paragraphs:
 
 ```python
 cell = tbl[0][0]
-cell.set_width_pt(150.0)   # cell width
-cell.set_col_span(2)       # merge across 2 columns
-cell.set_row_span(1)       # row span
-print(cell.col_span, cell.row_span, cell.width_pt)
+cell.set_width_pt(150.0)      # cell width
+cell.set_col_span(2)          # merge across 2 columns
+cell.set_row_span(1)          # row span
+cell.set_shading("ED7D31")    # background color (hex RGB); None to clear
+print(cell.col_span, cell.row_span, cell.width_pt, cell.shading)
 ```
 
 ### Table properties

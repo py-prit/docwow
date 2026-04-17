@@ -97,6 +97,13 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
     keep_with_next = find(pPr, "w:keepNext") is not None
     page_break_before = find(pPr, "w:pageBreakBefore") is not None
 
+    shading: str | None = None
+    shd_el = find(pPr, "w:shd")
+    if shd_el is not None:
+        fill = attrib(shd_el, "w:fill")
+        if fill and fill.upper() not in ("AUTO", "FFFFFF", ""):
+            shading = fill.upper()
+
     return ParagraphFormatting(
         style_id=style_id,
         alignment=alignment,
@@ -109,6 +116,7 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
         keep_together=keep_together,
         keep_with_next=keep_with_next,
         page_break_before=page_break_before,
+        shading=shading,
     )
 
 

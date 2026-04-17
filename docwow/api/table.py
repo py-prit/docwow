@@ -18,6 +18,7 @@ class MutableTableCell:
         width_pt: float | None = None,
         v_merge_start: bool = False,
         v_merge_continue: bool = False,
+        shading: str | None = None,
     ) -> None:
         from docwow.api.paragraph import ParagraphCollection
         self._paragraphs = paragraphs if paragraphs is not None else ParagraphCollection()
@@ -26,6 +27,7 @@ class MutableTableCell:
         self._width_pt = width_pt
         self._v_merge_start = v_merge_start
         self._v_merge_continue = v_merge_continue
+        self._shading = shading
 
     # ---- Content access ------------------------------------------------------
 
@@ -87,6 +89,16 @@ class MutableTableCell:
         """True if this cell continues a vertical merge (visually spanned by the cell above)."""
         return self._v_merge_continue
 
+    @property
+    def shading(self) -> str | None:
+        """Cell background shading color as a 6-digit hex RGB string (e.g. ``'ED7D31'``), or ``None``."""
+        return self._shading
+
+    def set_shading(self, hex_rgb: str | None) -> "MutableTableCell":
+        """Set the cell background shading color (6-digit hex RGB, e.g. ``'ED7D31'``) or ``None`` to clear."""
+        self._shading = hex_rgb.upper() if hex_rgb else None
+        return self
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen(self) -> TableCell:
@@ -104,6 +116,7 @@ class MutableTableCell:
             width_pt=self._width_pt,
             v_merge_start=self._v_merge_start,
             v_merge_continue=self._v_merge_continue,
+            shading=self._shading,
         )
 
     def __repr__(self) -> str:

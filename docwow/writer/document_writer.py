@@ -590,6 +590,12 @@ def _write_cell(
     elif cell.v_merge_continue:
         etree.SubElement(tcpr, f"{{{W}}}vMerge")
 
+    if cell.shading:
+        shd = etree.SubElement(tcpr, f"{{{W}}}shd")
+        shd.set(f"{{{W}}}val", "clear")
+        shd.set(f"{{{W}}}color", "auto")
+        shd.set(f"{{{W}}}fill", cell.shading)
+
     # Each cell must have at least one paragraph
     if cell.paragraphs:
         for para in cell.paragraphs:

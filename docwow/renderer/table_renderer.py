@@ -69,6 +69,10 @@ def _render_cell(cell: TableCell) -> str:
         # Continuation cells are visually hidden (content is in the start cell)
         style_parts.append("display:none")
 
+    if cell.shading:
+        attrs.append(f'data-dw-shading="{cell.shading}"')
+        style_parts.append(f"background-color:#{cell.shading}")
+
     attrs.append(f'style="{";".join(style_parts)}"')
 
     content = "\n".join(render_paragraph(p) for p in cell.paragraphs)

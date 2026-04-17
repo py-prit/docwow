@@ -137,6 +137,7 @@ def table_cell_from_frozen(frozen: TableCell) -> MutableTableCell:
         width_pt=frozen.width_pt,
         v_merge_start=frozen.v_merge_start,
         v_merge_continue=frozen.v_merge_continue,
+        shading=frozen.shading,
     )
 
 
