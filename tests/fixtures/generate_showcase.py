@@ -78,6 +78,14 @@ def _p(text: str, **fmt_kw) -> Paragraph:
     )
 
 
+def _ph(text: str, bookmark: str, **fmt_kw) -> Paragraph:
+    """Heading paragraph with a BookmarkStart anchor — makes TOC links work."""
+    return Paragraph(
+        runs=(BookmarkStart(name=bookmark), TextRun(text=text)),
+        formatting=ParagraphFormatting(**fmt_kw),
+    )
+
+
 def _rp(*runs, **fmt_kw) -> Paragraph:
     return Paragraph(runs=tuple(runs), formatting=ParagraphFormatting(**fmt_kw))
 
@@ -100,14 +108,14 @@ def build_showcase() -> Document:
     # -----------------------------------------------------------------------
     # Section 1: Plain paragraphs
     # -----------------------------------------------------------------------
-    body.append(_p("docwow Showcase Document", style_id="Heading1"))
+    body.append(_ph("docwow Showcase Document", "_TocShowcase1", style_id="Heading1"))
     body.append(_p("This document is generated entirely by the docwow writer layer. "
                    "It exercises every feature implemented in the library."))
 
     # -----------------------------------------------------------------------
     # Section 2: Paragraph alignment
     # -----------------------------------------------------------------------
-    body.append(_p("Paragraph Formatting", style_id="Heading2"))
+    body.append(_ph("Paragraph Formatting", "_TocShowcase2", style_id="Heading2"))
     body.append(_p("Left-aligned paragraph (default)", alignment="left"))
     body.append(_p("Centre-aligned paragraph", alignment="center"))
     body.append(_p("Right-aligned paragraph", alignment="right"))
@@ -120,7 +128,7 @@ def build_showcase() -> Document:
     # -----------------------------------------------------------------------
     # Section 3: Indentation
     # -----------------------------------------------------------------------
-    body.append(_p("Indentation", style_id="Heading2"))
+    body.append(_ph("Indentation", "_TocShowcase3", style_id="Heading2"))
     body.append(_p("Normal paragraph — no indent"))
     body.append(_p("Left indent 36pt", indent_left_pt=36.0))
     body.append(_p("Left indent 72pt", indent_left_pt=72.0))
@@ -132,7 +140,7 @@ def build_showcase() -> Document:
     # -----------------------------------------------------------------------
     # Section 4: Spacing
     # -----------------------------------------------------------------------
-    body.append(_p("Spacing", style_id="Heading2"))
+    body.append(_ph("Spacing", "_TocShowcase4", style_id="Heading2"))
     body.append(_p("Space before 24pt", space_before_pt=24.0))
     body.append(_p("Space after 24pt", space_after_pt=24.0))
     body.append(_p("Line spacing 20pt", line_spacing_pt=20.0))
@@ -141,7 +149,7 @@ def build_showcase() -> Document:
     # -----------------------------------------------------------------------
     # Section 5: Run formatting
     # -----------------------------------------------------------------------
-    body.append(_p("Run (Character) Formatting", style_id="Heading2"))
+    body.append(_ph("Run (Character) Formatting", "_TocShowcase5", style_id="Heading2"))
 
     body.append(_rp(
         _run("Bold ", bold=True),
