@@ -1,20 +1,25 @@
 """
-Generate showcase.docx — a single DOCX produced by our writer that exercises
-every feature implemented so far.
+Generate showcase.docx — a single DOCX produced by the docwow writer that
+demonstrates every supported feature end-to-end.
+
+This file is the source of truth for manual testing.  Open showcase.docx in
+Word / LibreOffice and showcase.html in a browser after any feature change to
+verify both outputs look correct.
 
 Run from the project root::
 
     python tests/fixtures/generate_showcase.py
 
-Open showcase.docx in Word / LibreOffice to verify visual output.
+The test suite also regenerates showcase.docx / showcase.html automatically
+on every run (see tests/test_integration.py::TestShowcase).
 """
 from __future__ import annotations
 
-import base64
+import struct as _struct
 import sys
+import zlib as _zlib
 from pathlib import Path
 
-# Make sure we can import docwow from the project root
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from docwow.models.document import Document
@@ -22,43 +27,27 @@ from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
-from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
+from docwow.models.paragraph import (
+    BookmarkStart, FootnoteRef, Hyperlink, ImageRun,
+    PageBreak, PageNumberField, Paragraph, TextRun,
+)
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.writer.docx_writer import write_docx
 
+
 # ---------------------------------------------------------------------------
-# Colored PNG for image demo (visible on white background)
+# Minimal 16×16 4-quadrant PNG (red/yellow/green/blue)
 # ---------------------------------------------------------------------------
-# 16x16 red/green/blue/yellow 4-quadrant PNG generated with:
-#   python -c "
-#     import struct, zlib
-#     def png(w,h,rows):
-#         def chunk(t,d): s=struct.pack('>I',len(d))+t+d; return s+struct.pack('>I',zlib.crc32(s[4:])&0xffffffff)
-#         raw=b''.join(b'\x00'+r for r in rows)
-#         return b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(raw))+chunk(b'IEND',b'')
-#     row_r=bytes([255,0,0]*8+[255,255,0]*8)
-#     row_g=bytes([0,128,0]*8+[0,0,255]*8)
-#     import base64; print(base64.b64encode(png(16,16,[row_r]*8+[row_g]*8)).decode())
-#   "
-_PNG_B64 = (
-    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAKklEQVQoz2P8z8Cwno"
-    "GBgYmBCkCsgYmBiYEKQKyBiYGJgQpArIGJgQkAr+QCi5aGjNUAAAAASUVORK5CYII="
-)
-PNG_DATA = base64.b64decode(_PNG_B64)
-# Fallback: generate a simple colored PNG programmatically if the above doesn't decode well
-import struct as _struct, zlib as _zlib
 
 def _make_color_png() -> bytes:
-    """Generate a 16x16 4-quadrant colored PNG (red/yellow/green/blue)."""
     def _chunk(tag: bytes, data: bytes) -> bytes:
         s = _struct.pack(">I", len(data)) + tag + data
         return s + _struct.pack(">I", _zlib.crc32(s[4:]) & 0xFFFFFFFF)
-
     w, h = 16, 16
-    row_top = bytes([255, 0, 0] * 8 + [255, 255, 0] * 8)    # red | yellow
-    row_bot = bytes([0, 160, 0] * 8 + [0, 80, 200] * 8)     # green | blue
+    row_top = bytes([255, 0, 0] * 8 + [255, 255, 0] * 8)
+    row_bot = bytes([0, 160, 0] * 8 + [0, 80, 200] * 8)
     raw = b"".join(b"\x00" + (row_top if y < h // 2 else row_bot) for y in range(h))
     ihdr = _struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)
     return (
@@ -68,10 +57,16 @@ def _make_color_png() -> bytes:
         + _chunk(b"IEND", b"")
     )
 
+
 PNG_DATA = _make_color_png()
 
 
+# ---------------------------------------------------------------------------
+# Paragraph helpers
+# ---------------------------------------------------------------------------
+
 def _p(text: str, **fmt_kw) -> Paragraph:
+    """Plain paragraph with a single text run."""
     return Paragraph(
         runs=(TextRun(text=text),),
         formatting=ParagraphFormatting(**fmt_kw),
@@ -79,7 +74,7 @@ def _p(text: str, **fmt_kw) -> Paragraph:
 
 
 def _ph(text: str, bookmark: str, **fmt_kw) -> Paragraph:
-    """Heading paragraph with a BookmarkStart anchor — makes TOC links work."""
+    """Heading paragraph with a BookmarkStart anchor so TOC links resolve."""
     return Paragraph(
         runs=(BookmarkStart(name=bookmark), TextRun(text=text)),
         formatting=ParagraphFormatting(**fmt_kw),
@@ -87,6 +82,7 @@ def _ph(text: str, bookmark: str, **fmt_kw) -> Paragraph:
 
 
 def _rp(*runs, **fmt_kw) -> Paragraph:
+    """Paragraph with arbitrary run objects."""
     return Paragraph(runs=tuple(runs), formatting=ParagraphFormatting(**fmt_kw))
 
 
@@ -102,112 +98,189 @@ def _list_para(text: str, num_id: str, level: int = 0) -> Paragraph:
     )
 
 
+def _cell(*texts, col_span=1, row_span=1, v_merge_start=False,
+          v_merge_continue=False, width_pt=None) -> TableCell:
+    return TableCell(
+        paragraphs=tuple(_p(t) for t in texts),
+        col_span=col_span,
+        row_span=row_span,
+        v_merge_start=v_merge_start,
+        v_merge_continue=v_merge_continue,
+        width_pt=width_pt,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Bookmark names (TOC targets — all must match TocEntry urls below)
+# ---------------------------------------------------------------------------
+
+BM = {
+    "title":       "showcase-title",
+    "para_fmt":    "showcase-para-fmt",
+    "run_fmt":     "showcase-run-fmt",
+    "images":      "showcase-images",
+    "lists":       "showcase-lists",
+    "tables":      "showcase-tables",
+    "hyperlinks":  "showcase-hyperlinks",
+    "bookmarks":   "showcase-bookmarks",
+    "footnotes":   "showcase-footnotes",
+    "pagebreaks":  "showcase-pagebreaks",
+    "pagefields":  "showcase-pagefields",
+    "hf":          "showcase-hf",
+    "toc":         "showcase-toc",
+}
+
+
+# ---------------------------------------------------------------------------
+# build_showcase
+# ---------------------------------------------------------------------------
+
 def build_showcase() -> Document:
     body = []
 
     # -----------------------------------------------------------------------
-    # Section 1: Plain paragraphs
+    # Title
     # -----------------------------------------------------------------------
-    body.append(_ph("docwow Showcase Document", "_TocShowcase1", style_id="Heading1"))
-    body.append(_p("This document is generated entirely by the docwow writer layer. "
-                   "It exercises every feature implemented in the library."))
+    body.append(_ph("docwow Showcase Document", BM["title"], style_id="Heading1"))
+    body.append(_p(
+        "This document is generated entirely by the docwow writer layer. "
+        "It demonstrates every supported feature. "
+        "Open showcase.html in a browser and showcase.docx in Word to verify "
+        "that all features render correctly."
+    ))
 
     # -----------------------------------------------------------------------
-    # Section 2: Paragraph alignment
+    # Table of Contents  — functional, clickable, at the top
     # -----------------------------------------------------------------------
-    body.append(_ph("Paragraph Formatting", "_TocShowcase2", style_id="Heading2"))
-    body.append(_p("Left-aligned paragraph (default)", alignment="left"))
-    body.append(_p("Centre-aligned paragraph", alignment="center"))
-    body.append(_p("Right-aligned paragraph", alignment="right"))
+    body.append(_ph("Table of Contents", BM["toc"], style_id="Heading2"))
+    body.append(TableOfContents(
+        title="Contents",
+        entries=(
+            TocEntry("docwow Showcase Document",    f"#{BM['title']}",      1),
+            TocEntry("Table of Contents",           f"#{BM['toc']}",        1),
+            TocEntry("Paragraph Formatting",        f"#{BM['para_fmt']}",   1),
+            TocEntry("Run (Character) Formatting",  f"#{BM['run_fmt']}",    1),
+            TocEntry("Inline Images",               f"#{BM['images']}",     1),
+            TocEntry("Lists",                       f"#{BM['lists']}",      1),
+            TocEntry("Tables",                      f"#{BM['tables']}",     1),
+            TocEntry("Hyperlinks",                  f"#{BM['hyperlinks']}",  1),
+            TocEntry("Bookmarks",                   f"#{BM['bookmarks']}",  1),
+            TocEntry("Footnotes and Endnotes",      f"#{BM['footnotes']}",  1),
+            TocEntry("Page Breaks",                 f"#{BM['pagebreaks']}", 1),
+            TocEntry("Page Number Fields",          f"#{BM['pagefields']}", 1),
+            TocEntry("Headers and Footers",         f"#{BM['hf']}",         1),
+        ),
+    ))
+
+    # -----------------------------------------------------------------------
+    # 1. Paragraph Formatting
+    # -----------------------------------------------------------------------
+    body.append(_ph("Paragraph Formatting", BM["para_fmt"], style_id="Heading1"))
+
+    body.append(_p("Alignment", style_id="Heading2"))
+    body.append(_p("Left-aligned paragraph (default).", alignment="left"))
+    body.append(_p("Centre-aligned paragraph.", alignment="center"))
+    body.append(_p("Right-aligned paragraph.", alignment="right"))
     body.append(_p(
         "Justified paragraph. Lorem ipsum dolor sit amet, consectetur "
-        "adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore.",
+        "adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
         alignment="justify",
     ))
 
-    # -----------------------------------------------------------------------
-    # Section 3: Indentation
-    # -----------------------------------------------------------------------
-    body.append(_ph("Indentation", "_TocShowcase3", style_id="Heading2"))
-    body.append(_p("Normal paragraph — no indent"))
-    body.append(_p("Left indent 36pt", indent_left_pt=36.0))
-    body.append(_p("Left indent 72pt", indent_left_pt=72.0))
-    body.append(_p("Right indent 36pt", indent_right_pt=36.0))
-    body.append(_p("First-line indent 36pt", indent_first_line_pt=36.0))
-    body.append(_p("Hanging indent 36pt (first line protrudes left)",
-                   indent_left_pt=72.0, indent_first_line_pt=-36.0))
+    body.append(_p("Indentation", style_id="Heading2"))
+    body.append(_p("No indent (normal)."))
+    body.append(_p("Left indent 36pt.", indent_left_pt=36.0))
+    body.append(_p("Left indent 72pt.", indent_left_pt=72.0))
+    body.append(_p("Right indent 36pt.", indent_right_pt=36.0))
+    body.append(_p("First-line indent 36pt.", indent_first_line_pt=36.0))
+    body.append(_p(
+        "Hanging indent: first line protrudes left by 36pt.",
+        indent_left_pt=72.0, indent_first_line_pt=-36.0,
+    ))
+
+    body.append(_p("Spacing", style_id="Heading2"))
+    body.append(_p("Space-before 24pt.", space_before_pt=24.0))
+    body.append(_p("Space-after 24pt.", space_after_pt=24.0))
+    body.append(_p("Line-spacing 20pt.", line_spacing_pt=20.0))
+
+    body.append(_p("Pagination flags", style_id="Heading2"))
+    body.append(_p(
+        "keep_together=True: Word keeps all lines of this paragraph on the same page.",
+        keep_together=True,
+    ))
+    body.append(_p(
+        "keep_with_next=True: Word keeps this paragraph on the same page as the one after it.",
+        keep_with_next=True,
+    ))
+    body.append(_p("This paragraph follows the keep_with_next paragraph."))
+    body.append(_p(
+        "page_break_before=True: Word starts this paragraph on a new page.",
+        page_break_before=True,
+    ))
 
     # -----------------------------------------------------------------------
-    # Section 4: Spacing
+    # 2. Run (Character) Formatting
     # -----------------------------------------------------------------------
-    body.append(_ph("Spacing", "_TocShowcase4", style_id="Heading2"))
-    body.append(_p("Space before 24pt", space_before_pt=24.0))
-    body.append(_p("Space after 24pt", space_after_pt=24.0))
-    body.append(_p("Line spacing 20pt", line_spacing_pt=20.0))
-    body.append(_p("Page break before this paragraph", page_break_before=True))
-
-    # -----------------------------------------------------------------------
-    # Section 5: Run formatting
-    # -----------------------------------------------------------------------
-    body.append(_ph("Run (Character) Formatting", "_TocShowcase5", style_id="Heading2"))
+    body.append(_ph("Run (Character) Formatting", BM["run_fmt"], style_id="Heading1"))
 
     body.append(_rp(
-        _run("Bold ", bold=True),
-        _run("Italic ", italic=True),
-        _run("Underline ", underline=True),
-        _run("Strikethrough ", strike=True),
-        _run("Bold+Italic", bold=True, italic=True),
+        _run("Bold  ", bold=True),
+        _run("Italic  ", italic=True),
+        _run("Underline  ", underline=True),
+        _run("Strikethrough  ", strike=True),
+        _run("Bold + Italic", bold=True, italic=True),
     ))
     body.append(_rp(
-        _run("Arial 10pt ", font_name="Arial", font_size_pt=10.0),
-        _run("Courier New 12pt ", font_name="Courier New", font_size_pt=12.0),
+        _run("Arial 10pt  ", font_name="Arial", font_size_pt=10.0),
+        _run("Courier New 12pt  ", font_name="Courier New", font_size_pt=12.0),
         _run("Times New Roman 14pt", font_name="Times New Roman", font_size_pt=14.0),
     ))
     body.append(_rp(
-        _run("Red text ", color="FF0000"),
-        _run("Green text ", color="00AA00"),
-        _run("Blue text", color="0000FF"),
+        _run("Red  ", color="FF0000"),
+        _run("Green  ", color="00AA00"),
+        _run("Blue", color="0000FF"),
     ))
     body.append(_rp(
-        _run("Yellow highlight ", highlight="yellow"),
-        _run("Cyan highlight ", highlight="cyan"),
+        _run("Yellow highlight  ", highlight="yellow"),
+        _run("Cyan highlight  ", highlight="cyan"),
         _run("Red highlight", highlight="red"),
     ))
     body.append(_rp(
         _run("Normal "),
         _run("Superscript", vertical_align="superscript"),
-        _run(" Normal "),
+        _run("  Normal  "),
         _run("Subscript", vertical_align="subscript"),
-        _run(" Normal"),
+        _run("  Normal"),
     ))
-    body.append(_rp(_run("Line 1\nLine 2 (newline in same run)\nLine 3")))
+    body.append(_rp(_run("Line 1\nLine 2 (newline inside one run)\nLine 3")))
 
     # -----------------------------------------------------------------------
-    # Section 6: Inline image
+    # 3. Inline Images
     # -----------------------------------------------------------------------
-    body.append(_p("Inline Image", style_id="Heading2"))
-    body.append(_p("The paragraph below contains an inline image (8×8 white PNG):"))
+    body.append(_ph("Inline Images", BM["images"], style_id="Heading1"))
+    body.append(_p("A 16×16 4-quadrant PNG embedded as an inline image run:"))
     img = InlineImage(
         relationship_id="imgRId1",
         content_type="image/png",
         data=PNG_DATA,
         width_pt=72.0,
         height_pt=72.0,
-        alt_text="Sample 8x8 PNG",
+        alt_text="16×16 4-quadrant colour PNG",
     )
     body.append(Paragraph(
         runs=(
             TextRun(text="Before image — "),
             ImageRun(image=img),
-            TextRun(text=" — After image"),
+            TextRun(text=" — after image."),
         ),
         formatting=ParagraphFormatting(),
     ))
 
     # -----------------------------------------------------------------------
-    # Section 7: Bullet list
+    # 4. Lists
     # -----------------------------------------------------------------------
-    body.append(_p("Bullet List", style_id="Heading2"))
+    body.append(_ph("Lists", BM["lists"], style_id="Heading1"))
+
     nd_bullet = NumberingDefinition(
         abstract_num_id="1",
         levels=(
@@ -216,41 +289,32 @@ def build_showcase() -> Document:
             ListLevel(level=2, num_fmt="bullet"),
         ),
     )
-    for text in ("First bullet item", "Second bullet item", "Third bullet item"):
-        body.append(_list_para(text, num_id="1", level=0))
-    body.append(_list_para("Nested level 1", num_id="1", level=1))
-    body.append(_list_para("Nested level 1 second item", num_id="1", level=1))
-    body.append(_list_para("Nested level 2", num_id="1", level=2))
-    body.append(_list_para("Back to level 0", num_id="1", level=0))
-
-    # -----------------------------------------------------------------------
-    # Section 8: Numbered list
-    # -----------------------------------------------------------------------
-    body.append(_p("Numbered List", style_id="Heading2"))
     nd_decimal = NumberingDefinition(
         abstract_num_id="2",
         levels=(ListLevel(level=0, num_fmt="decimal"),),
     )
-    for text in ("First numbered item", "Second numbered item", "Third numbered item"):
-        body.append(_list_para(text, num_id="2", level=0))
+    nd_misc = NumberingDefinition(
+        abstract_num_id="3",
+        levels=(ListLevel(level=0, num_fmt="bullet"),),
+    )
+
+    body.append(_p("Bullet list (3 levels):", style_id="Heading2"))
+    for t in ("First bullet", "Second bullet", "Third bullet"):
+        body.append(_list_para(t, num_id="1", level=0))
+    body.append(_list_para("Nested level 1 — first", num_id="1", level=1))
+    body.append(_list_para("Nested level 1 — second", num_id="1", level=1))
+    body.append(_list_para("Nested level 2", num_id="1", level=2))
+    body.append(_list_para("Back to level 0", num_id="1", level=0))
+
+    body.append(_p("Numbered list:", style_id="Heading2"))
+    for t in ("First item", "Second item", "Third item"):
+        body.append(_list_para(t, num_id="2", level=0))
 
     # -----------------------------------------------------------------------
-    # Section 9: Table
+    # 5. Tables
     # -----------------------------------------------------------------------
-    body.append(_p("Table", style_id="Heading2"))
-
-    def _cell(*texts, col_span=1, row_span=1, v_merge_start=False,
-              v_merge_continue=False, width_pt=None):
-        paras = tuple(_p(t) for t in texts)
-        return TableCell(
-            paragraphs=paras,
-            col_span=col_span,
-            row_span=row_span,
-            v_merge_start=v_merge_start,
-            v_merge_continue=v_merge_continue,
-            width_pt=width_pt,
-        )
-
+    body.append(_ph("Tables", BM["tables"], style_id="Heading1"))
+    body.append(_p("3-column table with colspan and rowspan:"))
     body.append(Table(
         rows=(
             TableRow(cells=(
@@ -259,16 +323,16 @@ def build_showcase() -> Document:
                 _cell("Header 3", width_pt=120.0),
             )),
             TableRow(cells=(
-                _cell("Row 1, Col 1"),
-                _cell("Row 1, Col 2"),
-                _cell("Row 1, Col 3"),
+                _cell("Row 1 Col 1"),
+                _cell("Row 1 Col 2"),
+                _cell("Row 1 Col 3"),
             )),
             TableRow(cells=(
-                _cell("Colspan 2", col_span=2),
+                _cell("colspan=2", col_span=2),
                 _cell("Normal"),
             )),
             TableRow(cells=(
-                _cell("Row span start", row_span=2, v_merge_start=True),
+                _cell("rowspan start", row_span=2, v_merge_start=True),
                 _cell("Row 3 Col 2"),
                 _cell("Row 3 Col 3"),
             )),
@@ -277,69 +341,94 @@ def build_showcase() -> Document:
                 _cell("Row 4 Col 2"),
                 _cell("Row 4 Col 3"),
             )),
+            TableRow(cells=(
+                _cell("Row span start", width_pt=120.0),
+                _cell("Row 5 Col 2"),
+                _cell("Row 5 Col 3"),
+            )),
         ),
         width_pt=360.0,
         col_widths_pt=(120.0, 120.0, 120.0),
     ))
 
     # -----------------------------------------------------------------------
-    # Section 10: Hyperlinks
+    # 6. Hyperlinks
     # -----------------------------------------------------------------------
-    body.append(_p("Hyperlinks", style_id="Heading2"))
+    body.append(_ph("Hyperlinks", BM["hyperlinks"], style_id="Heading1"))
     body.append(Paragraph(
         runs=(
-            TextRun(text="Visit the "),
-            Hyperlink(url="https://docwow.readthedocs.io", runs=(TextRun(text="docwow documentation"),)),
-            TextRun(text=" for full details."),
-        ),
-        formatting=ParagraphFormatting(),
-    ))
-    body.append(Paragraph(
-        runs=(
-            TextRun(text="Report bugs on "),
-            Hyperlink(url="https://github.com/py-prit/docwow/issues", runs=(TextRun(text="GitHub Issues"),)),
+            TextRun(text="External URL: "),
+            Hyperlink(url="https://docwow.readthedocs.io",
+                      runs=(TextRun(text="docwow documentation"),)),
             TextRun(text="."),
         ),
         formatting=ParagraphFormatting(),
     ))
     body.append(Paragraph(
         runs=(
-            TextRun(text="Contact us at "),
-            Hyperlink(url="mailto:hello@example.com", runs=(TextRun(text="hello@example.com"),)),
+            TextRun(text="Bug reports: "),
+            Hyperlink(url="https://github.com/py-prit/docwow/issues",
+                      runs=(TextRun(text="GitHub Issues"),)),
             TextRun(text="."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Mailto: "),
+            Hyperlink(url="mailto:hello@example.com",
+                      runs=(TextRun(text="hello@example.com"),)),
+            TextRun(text="."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Internal anchor: "),
+            Hyperlink(url=f"#{BM['bookmarks']}",
+                      runs=(TextRun(text="jump to Bookmarks section"),)),
+            TextRun(text=" (should scroll to the Bookmarks heading above)."),
         ),
         formatting=ParagraphFormatting(),
     ))
 
     # -----------------------------------------------------------------------
-    # Section 11: Bookmarks
+    # 7. Bookmarks
     # -----------------------------------------------------------------------
-    body.append(_p("Bookmarks", style_id="Heading2"))
+    body.append(_ph("Bookmarks", BM["bookmarks"], style_id="Heading1"))
     body.append(Paragraph(
         runs=(
             BookmarkStart(name="bookmark-demo"),
-            TextRun(text="This paragraph has a named bookmark anchor ('bookmark-demo') at its start."),
+            TextRun(
+                text="This paragraph carries the named bookmark anchor 'bookmark-demo'. "
+                     "The anchor is a zero-width invisible marker."
+            ),
         ),
         formatting=ParagraphFormatting(),
     ))
     body.append(Paragraph(
         runs=(
-            TextRun(text="This hyperlink jumps to the bookmark above: "),
-            Hyperlink(url="#bookmark-demo", runs=(TextRun(text="go to bookmark-demo"),)),
+            TextRun(text="This hyperlink jumps to the anchor above: "),
+            Hyperlink(url="#bookmark-demo",
+                      runs=(TextRun(text="go to bookmark-demo"),)),
             TextRun(text="."),
         ),
         formatting=ParagraphFormatting(),
     ))
+    body.append(_p(
+        "The TOC at the top of this document also uses bookmarks — each section heading "
+        "carries a BookmarkStart run that the TOC hyperlinks resolve to."
+    ))
 
     # -----------------------------------------------------------------------
-    # Section 12: Footnotes and endnotes
+    # 8. Footnotes and Endnotes
     # -----------------------------------------------------------------------
-    body.append(_p("Footnotes and Endnotes", style_id="Heading2"))
+    body.append(_ph("Footnotes and Endnotes", BM["footnotes"], style_id="Heading1"))
 
     fn1 = Footnote(
         note_id=1,
         paragraphs=(Paragraph(
-            runs=(TextRun(text="This is the first footnote. It demonstrates the footnote body."),),
+            runs=(TextRun(text="First footnote body — rendered at the bottom of the page in Word."),),
             formatting=ParagraphFormatting(),
         ),),
         note_type="footnote",
@@ -347,7 +436,7 @@ def build_showcase() -> Document:
     fn2 = Footnote(
         note_id=2,
         paragraphs=(Paragraph(
-            runs=(TextRun(text="Second footnote — attached to the second sentence."),),
+            runs=(TextRun(text="Second footnote body — attached to the second sentence."),),
             formatting=ParagraphFormatting(),
         ),),
         note_type="footnote",
@@ -355,7 +444,7 @@ def build_showcase() -> Document:
     en1 = Footnote(
         note_id=1,
         paragraphs=(Paragraph(
-            runs=(TextRun(text="This is an endnote. It appears at the end of the document."),),
+            runs=(TextRun(text="Endnote body — rendered at the very end of the document in Word."),),
             formatting=ParagraphFormatting(),
         ),),
         note_type="endnote",
@@ -380,51 +469,61 @@ def build_showcase() -> Document:
         formatting=ParagraphFormatting(),
     ))
 
-    # Explicit page break before the headers/footers section
+    # -----------------------------------------------------------------------
+    # 9. Page Breaks
+    # -----------------------------------------------------------------------
+    body.append(_ph("Page Breaks", BM["pagebreaks"], style_id="Heading1"))
+    body.append(_p(
+        "An explicit page break element follows. In HTML it renders as "
+        "<div class=\"dw-page-break\"> (invisible, preserved for round-trip). "
+        "In Word / LibreOffice it forces a new page."
+    ))
     body.append(PageBreak())
+    body.append(_p(
+        "This paragraph is immediately after the explicit page break. "
+        "In Word it should appear at the top of a new page."
+    ))
 
     # -----------------------------------------------------------------------
-    # Section 14: Table of Contents
+    # 10. Page Number Fields
     # -----------------------------------------------------------------------
-    body.append(_p("Table of Contents", style_id="Heading2"))
-    body.append(_p("The block below is a structured document tag (w:sdt) TOC:"))
-    body.append(TableOfContents(
-        title="Contents",
-        entries=(
-            TocEntry(text="Plain paragraphs", url="#_TocShowcase1", level=1),
-            TocEntry(text="Paragraph Formatting", url="#_TocShowcase2", level=1),
-            TocEntry(text="Indentation", url="#_TocShowcase3", level=2),
-            TocEntry(text="Spacing", url="#_TocShowcase4", level=2),
-            TocEntry(text="Run (Character) Formatting", url="#_TocShowcase5", level=1),
+    body.append(_ph("Page Number Fields", BM["pagefields"], style_id="Heading1"))
+    body.append(_p(
+        "Page number fields can appear anywhere in the body, not just headers/footers. "
+        "The paragraph below uses PAGE and NUMPAGES fields:"
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="You are on page "),
+            PageNumberField(field_type="PAGE"),
+            TextRun(text=" of "),
+            PageNumberField(field_type="NUMPAGES"),
+            TextRun(text=" total pages."),
         ),
+        formatting=ParagraphFormatting(alignment="center"),
+    ))
+    body.append(_p(
+        "In HTML these render as <span class=\"dw-field\" data-dw-field=\"PAGE\">1</span> "
+        "placeholders (static). In Word they update to the actual page number."
     ))
 
     # -----------------------------------------------------------------------
-    # Section 12: Headers and footers
+    # 11. Headers and Footers
     # -----------------------------------------------------------------------
-    body.append(_p("Headers and Footers", style_id="Heading2"))
-    body.append(_p("This document has a default header and footer with page numbers."))
-    body.append(_p("The header shows the document title; the footer shows 'Page N of M'."))
-
-    # -----------------------------------------------------------------------
-    # Section 13: Mixed content
-    # -----------------------------------------------------------------------
-    body.append(_p("Mixed Content", style_id="Heading2"))
-    body.append(_p("A paragraph before a table."))
-    body.append(Table(
-        rows=(TableRow(cells=(
-            TableCell(paragraphs=(_p("Inside table"),), width_pt=200.0),
-        )),),
-        width_pt=200.0,
-        col_widths_pt=(200.0,),
+    body.append(_ph("Headers and Footers", BM["hf"], style_id="Heading1"))
+    body.append(_p(
+        "This document has a default header and footer defined at the Document level. "
+        "The header (top of each page in Word) shows the document title in italics. "
+        "The footer (bottom of each page) shows 'Page N of M'."
     ))
-    body.append(_p("A paragraph after the table."))
-    for text in ("List after table item 1", "List after table item 2"):
-        body.append(_list_para(text, num_id="3", level=0))
-    body.append(_p("Normal paragraph after list."))
+    body.append(_p(
+        "In HTML, headers and footers are rendered as <header> and <footer> elements. "
+        "Page-number-only footer paragraphs are hidden (display:none) in the browser "
+        "but survive the HTML → DOCX round-trip so Word can display the correct values."
+    ))
 
     # -----------------------------------------------------------------------
-    # Styles and numbering
+    # Numbering, styles, headers/footers, footnotes/endnotes
     # -----------------------------------------------------------------------
     styles = (
         Style(style_id="Heading1", name="heading 1", style_type="paragraph",
@@ -432,25 +531,17 @@ def build_showcase() -> Document:
         Style(style_id="Heading2", name="heading 2", style_type="paragraph",
               run_fmt=RunFormatting(bold=True, font_size_pt=14.0)),
     )
-    numbering = (
-        nd_bullet,
-        nd_decimal,
-        NumberingDefinition(
-            abstract_num_id="3",
-            levels=(ListLevel(level=0, num_fmt="bullet"),),
-        ),
-    )
+    numbering = (nd_bullet, nd_decimal, nd_misc)
 
-    # -----------------------------------------------------------------------
-    # Headers / footers
-    # -----------------------------------------------------------------------
     header_default = HeaderFooter(paragraphs=(
         Paragraph(
-            runs=(TextRun(text="docwow showcase document", formatting=RunFormatting(italic=True)),),
+            runs=(TextRun(
+                text="docwow Showcase Document",
+                formatting=RunFormatting(italic=True),
+            ),),
             formatting=ParagraphFormatting(),
         ),
     ))
-
     footer_default = HeaderFooter(paragraphs=(
         Paragraph(
             runs=(
@@ -459,7 +550,7 @@ def build_showcase() -> Document:
                 TextRun(text=" of "),
                 PageNumberField(field_type="NUMPAGES"),
             ),
-            formatting=ParagraphFormatting(),
+            formatting=ParagraphFormatting(alignment="center"),
         ),
     ))
 
@@ -467,9 +558,9 @@ def build_showcase() -> Document:
         body=tuple(body),
         styles=styles,
         numbering=numbering,
-        page_width_pt=595.28,
+        page_width_pt=595.28,    # A4
         page_height_pt=841.89,
-        margin_top_pt=72.0,
+        margin_top_pt=72.0,      # 1 inch
         margin_bottom_pt=72.0,
         margin_left_pt=72.0,
         margin_right_pt=72.0,

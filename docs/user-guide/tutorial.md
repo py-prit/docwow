@@ -258,7 +258,44 @@ para.runs.add_footnote_ref(note_id=fn.note_id)
 para.runs.add_text(".")
 ```
 
-## 11. Save to DOCX
+## 11. Bookmarks
+
+Bookmarks mark a named location in the document body. Other elements (hyperlinks, TOC entries) can reference them as anchor targets.
+
+```python
+heading = doc.paragraphs.add_paragraph("Appendix A", style_id="Heading2")
+heading.runs.add_bookmark("appendix-a")
+
+# Internal anchor hyperlink pointing to that bookmark
+para = doc.paragraphs.add_paragraph()
+para.runs.add_text("See ")
+para.runs.add_hyperlink("Appendix A", "#appendix-a")
+para.runs.add_text(" for full details.")
+```
+
+In HTML the bookmark renders as `<a class="dw-bookmark" id="appendix-a"></a>` and the internal hyperlink becomes `<a href="#appendix-a">`.
+
+## 12. Table of Contents
+
+Build a TOC manually or point it at existing bookmark anchors. Each entry carries a display level (1–9) matching the heading depth.
+
+```python
+# Add TOC near the top of the document (before the body headings)
+toc = doc.paragraphs.add_toc("Contents")
+toc.add_entry("Introduction",        url="#intro",       level=1)
+toc.add_entry("Highlights",          url="#highlights",  level=1)
+toc.add_entry("  EMEA",              url="#emea",        level=2)
+toc.add_entry("Regional Breakdown",  url="#regional",    level=1)
+toc.add_entry("Next Steps",          url="#next-steps",  level=1)
+
+# Then add matching bookmark anchors on the actual headings
+intro_heading = doc.paragraphs.add_paragraph("Introduction", style_id="Heading1")
+intro_heading.runs.add_bookmark("intro")
+```
+
+In HTML the TOC renders as a `<nav class="dw-toc">` element with clickable `<a>` links. In DOCX it becomes a `w:sdt` structured document tag with `TOC1`–`TOC9` styled paragraphs.
+
+## 13. Save to DOCX
 
 ```python
 doc.save("q2_report.docx")
@@ -272,8 +309,9 @@ Open `q2_report.docx` in Word and verify:
 - Bullet and numbered lists are formatted correctly
 - The image is embedded
 - The footnote appears at the bottom of the relevant page
+- TOC entries link to headings when clicked
 
-## 12. Convert to HTML
+## 14. Convert to HTML
 
 ```python
 # Standard HTML — for browser viewing or embedding in a web app
@@ -294,7 +332,7 @@ Open `q2_report.html` in a browser and verify:
 - Body text, lists, and hyperlink all render correctly
 - The page break div is invisible
 
-## 13. Round-trip HTML → DOCX
+## 15. Round-trip HTML → DOCX
 
 ```python
 # Read the HTML back and convert to DOCX

@@ -102,10 +102,8 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 
 | Feature | Notes |
 |---|---|
-| Table of contents | Requires bookmark support (bookmarks now done) |
 | Comments | Annotations / review marks |
 | Track changes | Accept/reject revision marks |
-| Footnotes (superscript numbering only) | Marker position is preserved; custom footnote styles and symbols not yet supported |
 | General HTML → DOCX | Best-effort conversion of arbitrary HTML (not just docwow HTML) |
 
 ## Documentation
