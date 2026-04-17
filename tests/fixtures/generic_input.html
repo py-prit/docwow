@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>docwow Generic HTML→DOCX Showcase</title>
+  <style>
+    .highlight { background-color: #FFF2CC; }
+    .indented  { margin-left: 36pt; }
+    .right     { text-align: right; }
+    .spaced    { margin-top: 12pt; margin-bottom: 12pt; }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       1. HEADINGS (h1–h6)
+       Expected in Word: visually distinct sizes, bold, with spacing
+       ============================================================ -->
+  <h1>Heading 1 — docwow Generic HTML Showcase</h1>
+  <h2>Heading 2 — 16pt bold</h2>
+  <h3>Heading 3 — 14pt bold</h3>
+  <h4>Heading 4 — 13pt bold</h4>
+  <h5>Heading 5 — 12pt bold</h5>
+  <h6>Heading 6 — 11pt bold italic</h6>
+
+  <!-- ============================================================
+       2. PARAGRAPHS — alignment and CSS
+       ============================================================ -->
+  <h2>Paragraphs</h2>
+
+  <p>Plain paragraph — no special formatting.</p>
+
+  <p style="text-align: center;">Centre-aligned via inline style.</p>
+
+  <p style="text-align: right;">Right-aligned via inline style.</p>
+
+  <p style="text-align: justify;">Justified paragraph. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.</p>
+
+  <p class="highlight">Yellow background from CSS class rule (.highlight → background-color: #FFF2CC).</p>
+
+  <p class="indented">Indented 36pt via .indented class rule.</p>
+
+  <p class="spaced">Extra spacing — 12pt above and below via .spaced class.</p>
+
+  <p style="margin-left: 54pt; background-color: #E2EFDA;">Inline style: 54pt left indent + green background.</p>
+
+  <!-- ============================================================
+       3. DIVS
+       Expected: div with text = paragraph; div with block children = transparent
+       ============================================================ -->
+  <h2>Divs</h2>
+
+  <div>A div containing only text — treated as a normal paragraph.</div>
+
+  <div style="text-align: right;">A div right-aligned via inline style.</div>
+
+  <div>
+    <p>Div as transparent container. First paragraph inside.</p>
+    <p>Second paragraph inside the same div.</p>
+  </div>
+
+  <!-- ============================================================
+       4. BLOCKQUOTES
+       Expected: each nesting level adds 36pt left indent
+       ============================================================ -->
+  <h2>Blockquotes</h2>
+
+  <blockquote>
+    <p>First-level blockquote — 36pt left indent.</p>
+  </blockquote>
+
+  <blockquote>
+    <p>Outer blockquote — 36pt indent.</p>
+    <blockquote>
+      <p>Nested blockquote — 72pt indent (36pt × 2).</p>
+    </blockquote>
+  </blockquote>
+
+  <!-- ============================================================
+       5. SEMANTIC CONTAINERS (section, article, main)
+       Expected: transparent — paragraphs inside are preserved normally
+       ============================================================ -->
+  <h2>Semantic Containers</h2>
+
+  <section>
+    <p>Inside a &lt;section&gt; — transparent, paragraph preserved.</p>
+  </section>
+
+  <article>
+    <p>Inside an &lt;article&gt; — transparent, paragraph preserved.</p>
+  </article>
+
+  <!-- ============================================================
+       6. PREFORMATTED TEXT
+       Expected: Courier New monospace, whitespace preserved
+       ============================================================ -->
+  <h2>Preformatted Text</h2>
+
+  <pre>def hello(name):
+    print(f"Hello, {name}!")
+
+hello("docwow")</pre>
+
+  <!-- ============================================================
+       7. HORIZONTAL RULE
+       Expected: empty paragraph separator between the two paragraphs
+       ============================================================ -->
+  <h2>Horizontal Rule</h2>
+
+  <p>Paragraph before the rule.</p>
+  <hr>
+  <p>Paragraph after the rule.</p>
+
+  <!-- ============================================================
+       8. CSS FROM &lt;style&gt; BLOCK AND INLINE STYLES
+       Expected: classes and inline styles both applied correctly
+       ============================================================ -->
+  <h2>CSS Resolution</h2>
+
+  <p class="right">Right-aligned via .right class defined in &lt;style&gt; block.</p>
+  <p class="highlight spaced">Multiple classes: yellow background + extra spacing.</p>
+  <p style="margin-left: 36pt; text-align: center;">Inline style: centred + 36pt indent.</p>
+
+</body>
+</html>
