@@ -69,6 +69,19 @@ _DEFAULT_PAGE_WIDTH_PT = 595.28
 _DEFAULT_MARGINS_PT = 72.0
 _BLOCKQUOTE_INDENT_PT = 36.0
 
+# Word built-in style IDs that must NOT be defined in styles.xml.
+# Defining them with an empty body overrides Word's own formatting
+# (bold fonts, spacing, etc.) with a blank style.  Omitting them
+# lets Word apply its built-in definitions automatically.
+_BUILTIN_WORD_STYLES = frozenset({
+    "Normal", "DefaultParagraphFont",
+    "Heading1", "Heading2", "Heading3", "Heading4",
+    "Heading5", "Heading6", "Heading7", "Heading8", "Heading9",
+    "Title", "Subtitle", "Caption",
+    "ListParagraph", "Quote", "IntenseQuote",
+    "TableGrid", "TableNormal",
+})
+
 
 # ---------------------------------------------------------------------------
 # Public entry point
@@ -105,11 +118,16 @@ class ElementParser:
 
         body_elements = list(self._walk(body_el, resolver, blockquote_depth=0))
 
-        # Collect style IDs used by paragraphs for the styles tuple
+        # Collect style IDs used by paragraphs — but skip Word built-in styles.
+        # If we write an empty definition for e.g. "Heading1", it overrides
+        # Word's built-in "Heading 1" formatting (bold, large font, spacing)
+        # with a blank style.  Omitting them lets Word use its own definitions.
         style_ids: set[str] = set()
         for el in body_elements:
             if isinstance(el, Paragraph) and el.formatting.style_id:
-                style_ids.add(el.formatting.style_id)
+                sid = el.formatting.style_id
+                if sid not in _BUILTIN_WORD_STYLES:
+                    style_ids.add(sid)
 
         styles = tuple(
             Style(style_id=sid, name=sid, style_type="paragraph")
