@@ -669,6 +669,14 @@ def _parse_cell(
             else:
                 v_merge_continue = True
 
+    shading: str | None = None
+    if tcPr is not None:
+        shd_el = find(tcPr, "w:shd")
+        if shd_el is not None:
+            fill = attrib(shd_el, "w:fill")
+            if fill and fill.upper() not in ("AUTO", "FFFFFF", ""):
+                shading = fill.upper()
+
     paragraphs = tuple(
         _parse_paragraph(p_el, zf, relationships, style_num_map)
         for p_el in tc_el.findall(qn("w:p"))
@@ -681,4 +689,5 @@ def _parse_cell(
         width_pt=width_pt,
         v_merge_start=v_merge_start,
         v_merge_continue=v_merge_continue,
+        shading=shading,
     )

@@ -15,6 +15,7 @@ class TableCell:
     width_pt: float | None = None
     v_merge_start: bool = False  # True when this cell is the top of a vertical merge group
     v_merge_continue: bool = False  # True when this cell is a continuation of a vertical merge
+    shading: str | None = None  # hex RGB background e.g. "ED7D31"; None = none
 
 
 @dataclass(frozen=True)

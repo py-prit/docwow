@@ -37,6 +37,7 @@ def _parse_para_formatting(p_el) -> ParagraphFormatting:
         keep_together=g("data-dw-keep-together") == "true",
         keep_with_next=g("data-dw-keep-with-next") == "true",
         page_break_before=g("data-dw-page-break-before") == "true",
+        shading=g("data-dw-shading") or None,
     )
 
 

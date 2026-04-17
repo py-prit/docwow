@@ -33,6 +33,7 @@ class ParagraphFormatting:
     keep_together: bool = False
     keep_with_next: bool = False
     page_break_before: bool = False
+    shading: str | None = None          # hex RGB background e.g. "4472C4"; None = none
 
 
 @dataclass(frozen=True)

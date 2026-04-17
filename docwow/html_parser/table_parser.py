@@ -42,4 +42,5 @@ def _parse_cell(td_el) -> TableCell:
         width_pt=pt_val(td_el.get("data-dw-width")),
         v_merge_start=td_el.get("data-dw-v-merge-start") == "true",
         v_merge_continue=td_el.get("data-dw-v-merge-continue") == "true",
+        shading=td_el.get("data-dw-shading") or None,
     )

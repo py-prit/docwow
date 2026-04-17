@@ -49,6 +49,7 @@ class MutableParagraph:
             keep_together=self._fmt.keep_together,
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
+            shading=self._fmt.shading,
         )
         return self
 
@@ -71,6 +72,7 @@ class MutableParagraph:
             keep_together=self._fmt.keep_together,
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
+            shading=self._fmt.shading,
         )
         return self
 
@@ -93,6 +95,7 @@ class MutableParagraph:
             keep_together=self._fmt.keep_together,
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
+            shading=self._fmt.shading,
         )
         return self
 
@@ -115,6 +118,7 @@ class MutableParagraph:
             keep_together=self._fmt.keep_together,
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
+            shading=self._fmt.shading,
         )
         return self
 
@@ -132,6 +136,7 @@ class MutableParagraph:
             keep_together=value,
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
+            shading=self._fmt.shading,
         )
         return self
 
@@ -149,6 +154,7 @@ class MutableParagraph:
             keep_together=self._fmt.keep_together,
             keep_with_next=value,
             page_break_before=self._fmt.page_break_before,
+            shading=self._fmt.shading,
         )
         return self
 
@@ -166,6 +172,7 @@ class MutableParagraph:
             keep_together=self._fmt.keep_together,
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=value,
+            shading=self._fmt.shading,
         )
         return self
 
@@ -281,6 +288,29 @@ class MutableParagraph:
     def page_break_before(self) -> bool:
         """Whether a page break is forced before this paragraph."""
         return self._fmt.page_break_before
+
+    @property
+    def shading(self) -> str | None:
+        """Background shading color as a 6-digit hex RGB string (e.g. ``'4472C4'``), or ``None``."""
+        return self._fmt.shading
+
+    def set_shading(self, hex_rgb: str | None) -> "MutableParagraph":
+        """Set the paragraph background shading color (6-digit hex RGB, e.g. ``'4472C4'``) or ``None`` to clear."""
+        self._fmt = ParagraphFormatting(
+            style_id=self._fmt.style_id,
+            alignment=self._fmt.alignment,
+            indent_left_pt=self._fmt.indent_left_pt,
+            indent_right_pt=self._fmt.indent_right_pt,
+            indent_first_line_pt=self._fmt.indent_first_line_pt,
+            space_before_pt=self._fmt.space_before_pt,
+            space_after_pt=self._fmt.space_after_pt,
+            line_spacing_pt=self._fmt.line_spacing_pt,
+            keep_together=self._fmt.keep_together,
+            keep_with_next=self._fmt.keep_with_next,
+            page_break_before=self._fmt.page_break_before,
+            shading=hex_rgb.upper() if hex_rgb else None,
+        )
+        return self
 
     # ---- List info (internal use; MutableListItem provides nicer surface) ----
 

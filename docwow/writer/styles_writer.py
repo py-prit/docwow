@@ -125,6 +125,12 @@ def _write_para_fmt(ppr: etree._Element, fmt: ParagraphFormatting, *, skip_keep_
     if fmt.alignment and fmt.alignment in _JC:
         sub(ppr, "jc", val=_JC[fmt.alignment])
 
+    if fmt.shading:
+        shd = etree.SubElement(ppr, f"{{{W}}}shd")
+        shd.set(f"{{{W}}}val", "clear")
+        shd.set(f"{{{W}}}color", "auto")
+        shd.set(f"{{{W}}}fill", fmt.shading)
+
 
 def _write_run_fmt(rpr: etree._Element, fmt: RunFormatting) -> None:
     """Emit run formatting children inside a w:rPr element."""

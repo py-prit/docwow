@@ -127,6 +127,7 @@ BM = {
     "footnotes":   "showcase-footnotes",
     "comments":    "showcase-comments",
     "track":       "showcase-track-changes",
+    "shading":     "showcase-shading",
     "pagebreaks":  "showcase-pagebreaks",
     "pagefields":  "showcase-pagefields",
     "hf":          "showcase-hf",
@@ -171,6 +172,7 @@ def build_showcase() -> Document:
             TocEntry("Footnotes and Endnotes",      f"#{BM['footnotes']}",  1),
             TocEntry("Comments",                    f"#{BM['comments']}",   1),
             TocEntry("Track Changes",               f"#{BM['track']}",      1),
+            TocEntry("Shading",                     f"#{BM['shading']}",    1),
             TocEntry("Page Breaks",                 f"#{BM['pagebreaks']}", 1),
             TocEntry("Page Number Fields",          f"#{BM['pagefields']}", 1),
             TocEntry("Headers and Footers",         f"#{BM['hf']}",         1),
@@ -613,7 +615,56 @@ def build_showcase() -> Document:
     ))
 
     # -----------------------------------------------------------------------
-    # 11. Headers and Footers
+    # 11. Shading
+    # -----------------------------------------------------------------------
+    body.append(_ph("Shading", BM["shading"], style_id="Heading1"))
+    body.append(_p(
+        "Paragraph and table cell shading sets a solid background color. "
+        "The three paragraphs below show blue, orange, and no shading."
+    ))
+    body.append(Paragraph(
+        runs=(TextRun(text="Blue shaded paragraph (4472C4)"),),
+        formatting=ParagraphFormatting(shading="4472C4"),
+    ))
+    body.append(Paragraph(
+        runs=(TextRun(text="Orange shaded paragraph (ED7D31)"),),
+        formatting=ParagraphFormatting(shading="ED7D31"),
+    ))
+    body.append(Paragraph(
+        runs=(TextRun(text="No shading (plain paragraph)"),),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(_p("Table with shaded cells:"))
+    body.append(Table(
+        rows=(
+            TableRow(cells=(
+                TableCell(
+                    paragraphs=(Paragraph(
+                        runs=(TextRun(text="Blue cell"),),
+                        formatting=ParagraphFormatting(),
+                    ),),
+                    shading="4472C4",
+                ),
+                TableCell(
+                    paragraphs=(Paragraph(
+                        runs=(TextRun(text="Orange cell"),),
+                        formatting=ParagraphFormatting(),
+                    ),),
+                    shading="ED7D31",
+                ),
+                TableCell(
+                    paragraphs=(Paragraph(
+                        runs=(TextRun(text="Plain cell"),),
+                        formatting=ParagraphFormatting(),
+                    ),),
+                ),
+            )),
+        ),
+        width_pt=450.0,
+    ))
+
+    # -----------------------------------------------------------------------
+    # 12. Headers and Footers
     # -----------------------------------------------------------------------
     body.append(_ph("Headers and Footers", BM["hf"], style_id="Heading1"))
     body.append(_p(

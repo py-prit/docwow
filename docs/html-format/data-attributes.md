@@ -68,6 +68,7 @@ All dimension values are in **points (pt)**.
 | `data-dw-page-break-before` | `"true"` | Forces a page break before this paragraph |
 | `data-dw-keep-together` | `"true"` | Keep all lines of paragraph on same page |
 | `data-dw-keep-with-next` | `"true"` | Keep this paragraph on same page as the next |
+| `data-dw-shading` | hex RGB string | Paragraph background shading color (e.g. `4472C4`). Absent = no shading |
 
 ### List paragraph attributes
 
@@ -145,6 +146,7 @@ Newlines within a run are represented as literal `\n` characters in the text con
 | `data-dw-width` | float (pt) | Cell width |
 | `data-dw-v-merge-start` | `"true"` | This cell starts a vertical merge group |
 | `data-dw-v-merge-continue` | `"true"` | This cell continues a vertical merge (is a continuation row) |
+| `data-dw-shading` | hex RGB string | Cell background shading color (e.g. `ED7D31`). Absent = no shading |
 
 !!! note
     Vertically merged cells use the standard HTML `rowspan` attribute for visual rendering,

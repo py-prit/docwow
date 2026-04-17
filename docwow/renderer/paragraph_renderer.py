@@ -191,6 +191,8 @@ def _para_data_attrs(fmt: ParagraphFormatting) -> dict[str, str]:
         attrs["data-dw-keep-with-next"] = "true"
     if fmt.page_break_before:
         attrs["data-dw-page-break-before"] = "true"
+    if fmt.shading:
+        attrs["data-dw-shading"] = fmt.shading
     return attrs
 
 
@@ -237,6 +239,8 @@ def _para_inline_style(fmt: ParagraphFormatting) -> str:
         rules.append(f"margin-bottom:{pt_to_css(fmt.space_after_pt)}")
     if fmt.line_spacing_pt is not None:
         rules.append(f"line-height:{pt_to_css(fmt.line_spacing_pt)}")
+    if fmt.shading:
+        rules.append(f"background-color:#{fmt.shading}")
     return ";".join(rules)
 
 
