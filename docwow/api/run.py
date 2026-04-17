@@ -24,6 +24,7 @@ class MutableRun:
         color: str | None = None,
         highlight: str | None = None,
         vertical_align: str | None = None,
+        char_style_id: str | None = None,
     ) -> None:
         self._text = text
         self._bold = bold
@@ -35,6 +36,7 @@ class MutableRun:
         self._color = color
         self._highlight = highlight
         self._vertical_align = vertical_align
+        self._char_style_id = char_style_id
 
     # ---- Text ----------------------------------------------------------------
 
@@ -104,6 +106,13 @@ class MutableRun:
         self._vertical_align = value
         return self
 
+    # ---- Character style -----------------------------------------------------
+
+    def set_char_style(self, style_id: str | None) -> "MutableRun":
+        """Apply a named Word character style (e.g. ``'Strong'``, ``'Emphasis'``) or ``None`` to clear."""
+        self._char_style_id = style_id
+        return self
+
     # ---- Read-back properties ------------------------------------------------
 
     @property
@@ -151,6 +160,11 @@ class MutableRun:
         """Vertical alignment: ``'superscript'``, ``'subscript'``, or None."""
         return self._vertical_align
 
+    @property
+    def char_style_id(self) -> str | None:
+        """Named Word character style ID (e.g. ``'Strong'``, ``'Emphasis'``), or None."""
+        return self._char_style_id
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen(self) -> TextRun:
@@ -167,6 +181,7 @@ class MutableRun:
                 color=self._color,
                 highlight=self._highlight,
                 vertical_align=self._vertical_align,
+                char_style_id=self._char_style_id,
             ),
         )
 
@@ -532,6 +547,7 @@ class RunCollection:
         color: str | None = None,
         highlight: str | None = None,
         vertical_align: str | None = None,
+        char_style_id: str | None = None,
     ) -> MutableRun:
         """Create a MutableRun, append it, and return it."""
         run = MutableRun(
@@ -545,6 +561,7 @@ class RunCollection:
             color=color,
             highlight=highlight,
             vertical_align=vertical_align,
+            char_style_id=char_style_id,
         )
         self._items.append(run)
         return run

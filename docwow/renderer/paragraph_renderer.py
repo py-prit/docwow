@@ -157,6 +157,8 @@ def _render_hyperlink(link: Hyperlink) -> str:
 def _render_text_run(run: TextRun) -> str:
     fmt = run.formatting
     classes = ["dw-r"]
+    if fmt.char_style_id:
+        classes.append(f"dw-cstyle-{_css_ident(fmt.char_style_id)}")
     data_attrs = _run_data_attrs(fmt)
     inline_style = _run_inline_style(fmt)
     inner = _escape_text(run.text)
@@ -216,6 +218,8 @@ def _run_data_attrs(fmt: RunFormatting) -> dict[str, str]:
         attrs["data-dw-highlight"] = fmt.highlight
     if fmt.vertical_align:
         attrs["data-dw-vertical-align"] = fmt.vertical_align
+    if fmt.char_style_id:
+        attrs["data-dw-char-style"] = fmt.char_style_id
     return attrs
 
 

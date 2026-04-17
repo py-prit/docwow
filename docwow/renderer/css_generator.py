@@ -58,7 +58,10 @@ def _document_rule(doc: Document) -> str:
 
 def _style_rule(style: Style) -> str:
     """Return a CSS rule for a single Word style, or '' if nothing to emit."""
-    selector = f".dw-style-{_css_ident(style.style_id)}"
+    if style.style_type == "character":
+        selector = f".dw-cstyle-{_css_ident(style.style_id)}"
+    else:
+        selector = f".dw-style-{_css_ident(style.style_id)}"
     declarations: list[str] = []
 
     if style.paragraph_fmt is not None:

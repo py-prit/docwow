@@ -175,6 +175,7 @@ def _parse_run_formatting(span_el) -> RunFormatting:
         color=g("data-dw-color"),
         highlight=g("data-dw-highlight"),
         vertical_align=g("data-dw-vertical-align"),
+        char_style_id=g("data-dw-char-style") or None,
     )
 
 
