@@ -238,6 +238,10 @@ def build_showcase() -> Document:
         _run("Bold + Italic", bold=True, italic=True),
     ))
     body.append(_rp(
+        _run("Small Caps  ", small_caps=True),
+        _run("All Caps", all_caps=True),
+    ))
+    body.append(_rp(
         _run("Arial 10pt  ", font_name="Arial", font_size_pt=10.0),
         _run("Courier New 12pt  ", font_name="Courier New", font_size_pt=12.0),
         _run("Times New Roman 14pt", font_name="Times New Roman", font_size_pt=14.0),

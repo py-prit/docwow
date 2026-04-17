@@ -128,6 +128,8 @@ def _parse_run_fmt(rPr: etree._Element | None) -> RunFormatting | None:
     italic = _toggle(rPr, "w:i")
     underline = find(rPr, "w:u") is not None and attrib(find(rPr, "w:u"), "w:val") != "none"
     strike = _toggle(rPr, "w:strike")
+    small_caps = _toggle(rPr, "w:smallCaps")
+    all_caps = _toggle(rPr, "w:caps")
 
     font_name: str | None = None
     fonts_el = find(rPr, "w:rFonts")
@@ -176,6 +178,8 @@ def _parse_run_fmt(rPr: etree._Element | None) -> RunFormatting | None:
         italic=italic,
         underline=underline,
         strike=strike,
+        small_caps=small_caps,
+        all_caps=all_caps,
         font_name=font_name,
         font_size_pt=font_size_pt,
         color=color,

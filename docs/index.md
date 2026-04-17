@@ -45,7 +45,7 @@ doc.save("updated.docx")
 ## What's supported
 
 - **Paragraphs** — alignment, indentation (left/right/first-line/hanging), spacing (before/after/line), page-break-before, keep-together, keep-with-next
-- **Run formatting** — bold, italic, underline, strikethrough, font name, font size, color, highlight, superscript/subscript
+- **Run formatting** — bold, italic, underline, strikethrough, small caps, all caps, font name, font size, color, highlight, superscript/subscript
 - **Named styles** — Heading 1–9, Normal, and any custom styles defined in the document
 - **Tables** — column widths, row heights, colspan, rowspan (vertical merge), cell borders
 - **Lists** — bullet and numbered, nested up to any depth, multiple list instances per document

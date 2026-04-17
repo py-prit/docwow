@@ -20,6 +20,8 @@ class TestMutableRunConstruction:
         assert run.italic is False
         assert run.underline is False
         assert run.strike is False
+        assert run.small_caps is False
+        assert run.all_caps is False
         assert run.font_name is None
         assert run.font_size is None
         assert run.color is None
@@ -66,6 +68,20 @@ class TestMutableRunSetters:
         run = MutableRun()
         run.set_strike()
         assert run.strike is True
+
+    def test_set_small_caps(self):
+        run = MutableRun()
+        run.set_small_caps()
+        assert run.small_caps is True
+        run.set_small_caps(False)
+        assert run.small_caps is False
+
+    def test_set_all_caps(self):
+        run = MutableRun()
+        run.set_all_caps()
+        assert run.all_caps is True
+        run.set_all_caps(False)
+        assert run.all_caps is False
 
     def test_set_font_name(self):
         run = MutableRun()
@@ -136,6 +152,8 @@ class TestMutableRunToFrozen:
             italic=True,
             underline=True,
             strike=True,
+            small_caps=True,
+            all_caps=True,
             font_name="Times",
             font_size=10.0,
             color="FF0000",
@@ -148,6 +166,8 @@ class TestMutableRunToFrozen:
         assert fmt.italic is True
         assert fmt.underline is True
         assert fmt.strike is True
+        assert fmt.small_caps is True
+        assert fmt.all_caps is True
         assert fmt.font_name == "Times"
         assert fmt.font_size_pt == 10.0
         assert fmt.color == "FF0000"
@@ -290,6 +310,8 @@ class TestRunCollection:
             italic=True,
             underline=True,
             strike=True,
+            small_caps=True,
+            all_caps=True,
             font_name="Arial",
             font_size=12.0,
             color="FF0000",
@@ -297,6 +319,8 @@ class TestRunCollection:
             vertical_align="superscript",
         )
         assert run.bold is True
+        assert run.small_caps is True
+        assert run.all_caps is True
         assert run.font_name == "Arial"
         assert run.vertical_align == "superscript"
 

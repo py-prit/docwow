@@ -19,6 +19,8 @@ class MutableRun:
         italic: bool = False,
         underline: bool = False,
         strike: bool = False,
+        small_caps: bool = False,
+        all_caps: bool = False,
         font_name: str | None = None,
         font_size: float | None = None,
         color: str | None = None,
@@ -31,6 +33,8 @@ class MutableRun:
         self._italic = italic
         self._underline = underline
         self._strike = strike
+        self._small_caps = small_caps
+        self._all_caps = all_caps
         self._font_name = font_name
         self._font_size = font_size
         self._color = color
@@ -69,6 +73,16 @@ class MutableRun:
     def set_strike(self, value: bool = True) -> "MutableRun":
         """Set strikethrough formatting."""
         self._strike = value
+        return self
+
+    def set_small_caps(self, value: bool = True) -> "MutableRun":
+        """Set small-caps formatting (renders lowercase letters as smaller uppercase)."""
+        self._small_caps = value
+        return self
+
+    def set_all_caps(self, value: bool = True) -> "MutableRun":
+        """Set all-caps formatting (renders all letters as uppercase)."""
+        self._all_caps = value
         return self
 
     # ---- Font ----------------------------------------------------------------
@@ -136,6 +150,16 @@ class MutableRun:
         return self._strike
 
     @property
+    def small_caps(self) -> bool:
+        """True if the run uses small-caps formatting."""
+        return self._small_caps
+
+    @property
+    def all_caps(self) -> bool:
+        """True if the run uses all-caps formatting."""
+        return self._all_caps
+
+    @property
     def font_name(self) -> str | None:
         """Font family name, or None to inherit from the style."""
         return self._font_name
@@ -176,6 +200,8 @@ class MutableRun:
                 italic=self._italic,
                 underline=self._underline,
                 strike=self._strike,
+                small_caps=self._small_caps,
+                all_caps=self._all_caps,
                 font_name=self._font_name,
                 font_size_pt=self._font_size,
                 color=self._color,
@@ -542,6 +568,8 @@ class RunCollection:
         italic: bool = False,
         underline: bool = False,
         strike: bool = False,
+        small_caps: bool = False,
+        all_caps: bool = False,
         font_name: str | None = None,
         font_size: float | None = None,
         color: str | None = None,
@@ -556,6 +584,8 @@ class RunCollection:
             italic=italic,
             underline=underline,
             strike=strike,
+            small_caps=small_caps,
+            all_caps=all_caps,
             font_name=font_name,
             font_size=font_size,
             color=color,
