@@ -12,11 +12,13 @@ from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
+from docwow.models.toc import TableOfContents, TocEntry
 from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
 from docwow.api.run import MutableBookmark, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, RunCollection
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.table import MutableTable, MutableTableCell, MutableTableRow
+from docwow.api.toc import MutableTableOfContents, MutableTocEntry
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +121,15 @@ def table_row_from_frozen(frozen: TableRow) -> MutableTableRow:
     )
 
 
+def toc_from_frozen(frozen: TableOfContents) -> MutableTableOfContents:
+    """Convert a frozen TableOfContents to a MutableTableOfContents."""
+    entries = [
+        MutableTocEntry(text=e.text, url=e.url, level=e.level)
+        for e in frozen.entries
+    ]
+    return MutableTableOfContents(title=frozen.title, entries=entries)
+
+
 def table_from_frozen(frozen: Table) -> MutableTable:
     """Convert a frozen Table to a MutableTable."""
     return MutableTable(
@@ -139,6 +150,8 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
             collection._items.append(paragraph_from_frozen(element))
         elif isinstance(element, Table):
             collection._items.append(table_from_frozen(element))
+        elif isinstance(element, TableOfContents):
+            collection._items.append(toc_from_frozen(element))
         elif isinstance(element, PageBreak):
             collection._items.append(element)  # already frozen, pass through
 

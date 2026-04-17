@@ -18,11 +18,13 @@ from docwow.models.document import Document
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.paragraph import PageBreak, PageNumberField, Paragraph, TextRun
 from docwow.models.table import Table
+from docwow.models.toc import TableOfContents
 from docwow.renderer.css_generator import generate_css
 from docwow.renderer.footnote_renderer import render_endnotes, render_footnotes
 from docwow.renderer.list_renderer import render_list_group
 from docwow.renderer.paragraph_renderer import render_paragraph
 from docwow.renderer.table_renderer import render_table
+from docwow.renderer.toc_renderer import render_toc
 from docwow.utils.units import pt_to_css
 
 
@@ -187,6 +189,9 @@ def _render_body(doc: Document, page_view: bool = False) -> str:
         elif isinstance(element, Table):
             flush_list()
             parts.append(render_table(element))
+        elif isinstance(element, TableOfContents):
+            flush_list()
+            parts.append(render_toc(element))
         elif isinstance(element, PageBreak):
             flush_list()
             page_num[0] += 1

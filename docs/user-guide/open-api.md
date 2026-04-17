@@ -374,6 +374,37 @@ bm = heading.runs.add_bookmark("temp-name")
 bm.set_name("introduction")
 ```
 
+## Table of Contents
+
+Use `paragraphs.add_toc()` to insert a Table of Contents block, or read one from a parsed DOCX:
+
+```python
+from docwow.api.toc import MutableTableOfContents
+
+# Read an existing TOC
+for item in doc.paragraphs:
+    if isinstance(item, MutableTableOfContents):
+        print(item.title)
+        for entry in item.entries:
+            print(f"  {'  ' * (entry.level - 1)}{entry.text}")
+
+# Create a new TOC
+toc = doc.paragraphs.add_toc("Contents")
+toc.add_entry("Introduction", url="#_Toc1", level=1)
+toc.add_entry("Background",   url="#_Toc2", level=2)
+toc.add_entry("Methods",      url="#_Toc3", level=1)
+```
+
+`add_toc()` returns a `MutableTableOfContents` with chainable setters:
+
+```python
+toc.set_title("Table of Contents")
+entry = toc.add_entry("Results")
+entry.set_url("#_Toc4").set_level(1)
+```
+
+See [Table of Contents](table-of-contents.md) for the full guide.
+
 ## Images
 
 ```python
@@ -427,7 +458,8 @@ doc.set_margins(top_pt=72.0, bottom_pt=72.0, left_pt=72.0, right_pt=72.0)
 | `add_image(data, content_type, width_pt, height_pt, alt_text)` | Create and append an image paragraph, return it |
 | `add_page_break()` | Append an explicit page break, return it |
 | `add_table(rows, cols, width_pt, style_id)` | Create and append a table, return it |
-| `append(item)` | Append an existing `MutableParagraph`, `MutableTable`, or `PageBreak` |
+| `add_toc(title)` | Create and append a `MutableTableOfContents`, return it |
+| `append(item)` | Append an existing `MutableParagraph`, `MutableTable`, `MutableTableOfContents`, or `PageBreak` |
 | `insert(index, item)` | Insert at index |
 | `remove(index)` | Remove item at index |
 | `clear()` | Remove all items |

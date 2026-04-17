@@ -58,6 +58,7 @@ doc.to_docx("output.docx")
 | Page breaks | Explicit page breaks parsed, written, and round-tripped |
 | Footnotes & endnotes | Parse, render to HTML, HTML → DOCX round-trip, and programmatic API |
 | Bookmarks | Parse `w:bookmarkStart`, render as `<a id="…">` anchors, full round-trip, `MutableBookmark` API |
+| Table of Contents | Parse `w:sdt` TOC blocks, render as `<nav class="dw-toc">`, full round-trip, `MutableTableOfContents` API |
 | Programmatic API | Open, edit, and save documents in pure Python |
 
 ### ⚠️ Headers, Footers & Page Numbers — Known Limitations
@@ -101,10 +102,8 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 
 | Feature | Notes |
 |---|---|
-| Table of contents | Requires bookmark support (bookmarks now done) |
 | Comments | Annotations / review marks |
 | Track changes | Accept/reject revision marks |
-| Footnotes (superscript numbering only) | Marker position is preserved; custom footnote styles and symbols not yet supported |
 | General HTML → DOCX | Best-effort conversion of arbitrary HTML (not just docwow HTML) |
 
 ## Documentation

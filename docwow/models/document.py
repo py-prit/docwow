@@ -9,9 +9,10 @@ from docwow.models.lists import NumberingDefinition
 from docwow.models.paragraph import PageBreak, Paragraph
 from docwow.models.styles import Style
 from docwow.models.table import Table
+from docwow.models.toc import TableOfContents
 
 # Top-level body elements
-BodyElement: TypeAlias = Paragraph | Table | PageBreak
+BodyElement: TypeAlias = Paragraph | Table | PageBreak | TableOfContents
 
 
 @dataclass(frozen=True)

@@ -62,6 +62,14 @@ These classes are returned by `docwow.open()` and are the primary interface for 
 
 ::: docwow.api.MutableBookmark
 
+## MutableTableOfContents
+
+::: docwow.api.MutableTableOfContents
+
+## MutableTocEntry
+
+::: docwow.api.MutableTocEntry
+
 ## MutableFootnote
 
 ::: docwow.api.MutableFootnote

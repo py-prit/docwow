@@ -55,7 +55,8 @@ doc.save("updated.docx")
 - **Page breaks** — explicit page breaks parsed, written, and round-tripped
 - **Footnotes & endnotes** — parse, render to HTML with anchor links, HTML→DOCX round-trip, and programmatic API
 - **Bookmarks** — parse `w:bookmarkStart` elements, render as `<a id="…">` HTML anchors, full round-trip, and `MutableBookmark` API
-- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, and friends; build documents from scratch including tables, footnotes, bookmarks, and lists; save to DOCX or render to HTML
+- **Table of Contents** — parse `w:sdt` TOC blocks, render as `<nav class="dw-toc">` with level-indented links, full round-trip, and `MutableTableOfContents` API
+- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, `MutableTableOfContents`, and friends; build documents from scratch including tables, footnotes, bookmarks, TOC, and lists; save to DOCX or render to HTML
 
 ## Design principles
 

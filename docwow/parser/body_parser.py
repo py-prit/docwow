@@ -19,6 +19,7 @@ from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
 from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
+from docwow.models.toc import TableOfContents, TocEntry
 from docwow.parser.image_parser import extract_image
 from docwow.parser.style_parser import parse_para_fmt, parse_run_fmt
 from docwow.utils.units import emu_to_pt
@@ -51,6 +52,10 @@ def parse_body(
                 elements.append(_parse_paragraph(child, zf, relationships, _style_num_map))
         elif tag == qn("w:tbl"):
             elements.append(_parse_table(child, zf, relationships, _style_num_map))
+        elif tag == qn("w:sdt"):
+            toc = _parse_sdt_toc(child, zf, relationships, _style_num_map)
+            if toc is not None:
+                elements.append(toc)
         # w:sectPr and unknown elements are intentionally skipped
     return tuple(elements)
 
@@ -152,8 +157,9 @@ def _parse_paragraph(
 
         elif tag == qn("w:bookmarkStart"):
             name = attrib(child, "w:name")
-            # Skip internal bookmarks Word inserts automatically (e.g. "_GoBack")
-            if name and not name.startswith("_"):
+            # Skip only the Word-internal navigation bookmark; preserve everything
+            # else including _Toc... anchors used by table-of-contents entries.
+            if name and name != "_GoBack":
                 runs.append(BookmarkStart(name=name))
             # w:bookmarkEnd carries only the numeric ID (no name) and is skipped;
             # the matching end element is synthesised by the writer on round-trip.
@@ -377,6 +383,126 @@ def _find_blip(inline: etree._Element) -> etree._Element | None:
     if blip_fill is None:
         return None
     return find(blip_fill, "a:blip")
+
+
+# ---------------------------------------------------------------------------
+# TOC  (w:sdt structured document tag)
+# ---------------------------------------------------------------------------
+
+_TOC_STYLE_RE_STR = r'^TOC\d$'
+_TOC_HEADING_STYLE = "TOCHeading"
+_TOC_ENTRY_PREFIX = "TOC"
+
+import re as _re
+_TOC_ENTRY_RE = _re.compile(r'^TOC(\d)$')
+
+
+def _parse_sdt_toc(
+    sdt: etree._Element,
+    zf: zipfile.ZipFile,
+    relationships: dict[str, str],
+    style_num_map: dict[str, tuple[str, int]] | None = None,
+) -> TableOfContents | None:
+    """Try to parse a ``w:sdt`` element as a Table of Contents.
+
+    Returns ``None`` if the structured document tag is not a TOC.
+    """
+    sdt_content = find(sdt, "w:sdtContent")
+    if sdt_content is None:
+        return None
+
+    # Collect all paragraphs inside sdtContent
+    p_elements = list(sdt_content.iter(qn("w:p")))
+    if not p_elements:
+        return None
+
+    # Determine if this sdt is a TOC by inspecting paragraph styles
+    if not _is_toc_sdt(sdt, p_elements):
+        return None
+
+    title = ""
+    entries: list[TocEntry] = []
+
+    for p_el in p_elements:
+        style_id = _get_para_style(p_el)
+        if style_id == _TOC_HEADING_STYLE:
+            title = _extract_plain_text(p_el)
+        else:
+            m = _TOC_ENTRY_RE.match(style_id or "")
+            if m:
+                level = int(m.group(1))
+                text, url = _extract_toc_entry(p_el)
+                entries.append(TocEntry(text=text, url=url, level=level))
+
+    return TableOfContents(title=title, entries=tuple(entries))
+
+
+def _is_toc_sdt(
+    sdt: etree._Element,
+    p_elements: list[etree._Element],
+) -> bool:
+    """Return True if this structured document tag looks like a TOC."""
+    # Check w:sdtPr/w:tag or w:sdtPr/w:docPartObj/w:docPartGallery
+    sdt_pr = find(sdt, "w:sdtPr")
+    if sdt_pr is not None:
+        tag_el = find(sdt_pr, "w:tag")
+        if tag_el is not None:
+            tag_val = (attrib(tag_el, "w:val") or "").lower()
+            if "toc" in tag_val or "contents" in tag_val or "table of contents" in tag_val:
+                return True
+        # w:docPartObj/w:docPartGallery
+        doc_part_obj = find(sdt_pr, "w:docPartObj")
+        if doc_part_obj is not None:
+            gallery = find(doc_part_obj, "w:docPartGallery")
+            if gallery is not None:
+                gallery_val = (attrib(gallery, "w:val") or "").lower()
+                if "table of contents" in gallery_val or "toc" in gallery_val:
+                    return True
+
+    # Fall back: does any paragraph in the content use a TOC style?
+    for p_el in p_elements:
+        style_id = _get_para_style(p_el)
+        if style_id == _TOC_HEADING_STYLE or _TOC_ENTRY_RE.match(style_id or ""):
+            return True
+
+    return False
+
+
+def _get_para_style(p_el: etree._Element) -> str | None:
+    """Return the paragraph style ID or None."""
+    pPr = find(p_el, "w:pPr")
+    if pPr is None:
+        return None
+    pStyle = find(pPr, "w:pStyle")
+    if pStyle is None:
+        return None
+    return attrib(pStyle, "w:val")
+
+
+def _extract_plain_text(p_el: etree._Element) -> str:
+    """Extract all text content from a paragraph element."""
+    parts: list[str] = []
+    for t_el in p_el.iter(qn("w:t")):
+        parts.append(t_el.text or "")
+    return "".join(parts)
+
+
+def _extract_toc_entry(p_el: etree._Element) -> tuple[str, str]:
+    """Extract (display text, url) from a TOC entry paragraph.
+
+    TOC entries are hyperlinks with w:anchor pointing to ``_Toc…`` bookmarks.
+    We prefer the first hyperlink's anchor as the URL; fall back to plain text.
+    """
+    url = ""
+    # Look for a w:hyperlink inside the paragraph
+    for hl in p_el.iter(qn("w:hyperlink")):
+        anchor = attrib(hl, "w:anchor")
+        if anchor:
+            url = f"#{anchor}"
+            break
+
+    text = _extract_plain_text(p_el)
+    return text, url
 
 
 # ---------------------------------------------------------------------------
