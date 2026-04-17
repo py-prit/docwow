@@ -228,12 +228,17 @@ class TestWarnings:
 # ---------------------------------------------------------------------------
 
 class TestDocumentModel:
-    def test_heading_style_not_in_document_styles(self):
-        # Built-in Word styles must NOT be defined — an empty definition
-        # overrides Word's built-in heading formatting with a blank style.
-        doc = parse_foreign_html("<h1>Title</h1>")
-        style_ids = {s.style_id for s in doc.styles}
-        assert "Heading1" not in style_ids
+    def test_heading_style_defined_with_formatting(self):
+        # Heading styles must be defined WITH explicit formatting so all
+        # DOCX viewers (Pages, LibreOffice, Word) render them correctly.
+        doc = parse_foreign_html("<h1>Title</h1><h2>Sub</h2>")
+        styles = {s.style_id: s for s in doc.styles}
+        assert "Heading1" in styles
+        assert styles["Heading1"].run_fmt is not None
+        assert styles["Heading1"].run_fmt.bold is True
+        assert styles["Heading1"].run_fmt.font_size_pt == 20.0
+        assert "Heading2" in styles
+        assert styles["Heading2"].run_fmt.font_size_pt == 16.0
 
     def test_produces_valid_docx(self):
         result = docwow.to_docx(

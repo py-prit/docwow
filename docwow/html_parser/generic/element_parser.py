@@ -26,6 +26,45 @@ from docwow.models.paragraph import PageBreak, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.warnings import warn as _warn
 
+# ---------------------------------------------------------------------------
+# Heading style definitions
+# ---------------------------------------------------------------------------
+# We define these explicitly so the DOCX works in all viewers (Pages,
+# LibreOffice, Word) rather than relying on application-specific built-ins.
+
+_HEADING_STYLE_DEFS: dict[str, Style] = {
+    "Heading1": Style(
+        style_id="Heading1", name="heading 1", style_type="paragraph",
+        run_fmt=RunFormatting(bold=True, font_size_pt=20.0),
+        paragraph_fmt=ParagraphFormatting(space_before_pt=12.0, space_after_pt=4.0),
+    ),
+    "Heading2": Style(
+        style_id="Heading2", name="heading 2", style_type="paragraph",
+        run_fmt=RunFormatting(bold=True, font_size_pt=16.0),
+        paragraph_fmt=ParagraphFormatting(space_before_pt=10.0, space_after_pt=2.0),
+    ),
+    "Heading3": Style(
+        style_id="Heading3", name="heading 3", style_type="paragraph",
+        run_fmt=RunFormatting(bold=True, font_size_pt=14.0),
+        paragraph_fmt=ParagraphFormatting(space_before_pt=8.0, space_after_pt=2.0),
+    ),
+    "Heading4": Style(
+        style_id="Heading4", name="heading 4", style_type="paragraph",
+        run_fmt=RunFormatting(bold=True, font_size_pt=13.0),
+        paragraph_fmt=ParagraphFormatting(space_before_pt=6.0, space_after_pt=2.0),
+    ),
+    "Heading5": Style(
+        style_id="Heading5", name="heading 5", style_type="paragraph",
+        run_fmt=RunFormatting(bold=True, font_size_pt=12.0),
+        paragraph_fmt=ParagraphFormatting(space_before_pt=4.0, space_after_pt=0.0),
+    ),
+    "Heading6": Style(
+        style_id="Heading6", name="heading 6", style_type="paragraph",
+        run_fmt=RunFormatting(bold=True, italic=True, font_size_pt=11.0),
+        paragraph_fmt=ParagraphFormatting(space_before_pt=2.0, space_after_pt=0.0),
+    ),
+}
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -118,21 +157,21 @@ class ElementParser:
 
         body_elements = list(self._walk(body_el, resolver, blockquote_depth=0))
 
-        # Collect style IDs used by paragraphs — but skip Word built-in styles.
-        # If we write an empty definition for e.g. "Heading1", it overrides
-        # Word's built-in "Heading 1" formatting (bold, large font, spacing)
-        # with a blank style.  Omitting them lets Word use its own definitions.
+        # Build styles tuple: use explicit heading definitions for h1-h6
+        # (so all DOCX viewers show correct sizes/weights), and minimal Style
+        # objects for any other custom style IDs encountered.
         style_ids: set[str] = set()
         for el in body_elements:
             if isinstance(el, Paragraph) and el.formatting.style_id:
-                sid = el.formatting.style_id
-                if sid not in _BUILTIN_WORD_STYLES:
-                    style_ids.add(sid)
+                style_ids.add(el.formatting.style_id)
 
-        styles = tuple(
-            Style(style_id=sid, name=sid, style_type="paragraph")
-            for sid in sorted(style_ids)
-        )
+        styles_list: list[Style] = []
+        for sid in sorted(style_ids):
+            if sid in _HEADING_STYLE_DEFS:
+                styles_list.append(_HEADING_STYLE_DEFS[sid])
+            elif sid not in _BUILTIN_WORD_STYLES:
+                styles_list.append(Style(style_id=sid, name=sid, style_type="paragraph"))
+        styles = tuple(styles_list)
 
         return Document(
             body=tuple(body_elements),
