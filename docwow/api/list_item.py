@@ -48,10 +48,12 @@ class MutableListItem(MutableParagraph):
 
     @property
     def level(self) -> int:
+        """List nesting level, 0-based (0 = top level, 8 = maximum depth)."""
         return self._level
 
     @property
     def num_id(self) -> str:
+        """Numbering definition ID — links this item to a list created with ``add_numbering_definition()``."""
         return self._num_id
 
     # ---- Internal conversion -------------------------------------------------
