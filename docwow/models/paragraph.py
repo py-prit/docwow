@@ -48,6 +48,19 @@ class PageNumberField:
 
 
 @dataclass(frozen=True)
+class CrossRef:
+    """An inline REF field linking to a named bookmark (cross-reference).
+
+    ``bookmark_name`` is the Word bookmark target (e.g. ``'_Ref123456789'``).
+    ``display_text`` is the text shown at the field location in Word.
+    """
+
+    bookmark_name: str
+    display_text: str = ""
+    formatting: RunFormatting = field(default_factory=RunFormatting)
+
+
+@dataclass(frozen=True)
 class FootnoteRef:
     """An inline footnote or endnote reference marker.
 
@@ -102,7 +115,7 @@ class TrackedChange:
 
 
 # A paragraph's content is a sequence of runs.
-Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | FootnoteRef | BookmarkStart | CommentRef | TrackedChange
+Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | CrossRef | FootnoteRef | BookmarkStart | CommentRef | TrackedChange
 
 
 @dataclass(frozen=True)

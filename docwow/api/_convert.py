@@ -11,12 +11,12 @@ from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.api.comment import MutableComment, MutableCommentRef
 from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
-from docwow.api.run import MutableBookmark, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
+from docwow.api.run import MutableBookmark, MutableCrossRef, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.table import MutableTable, MutableTableCell, MutableTableRow
@@ -53,7 +53,7 @@ def footnote_from_frozen(frozen: Footnote) -> MutableFootnote:
     )
 
 
-def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField | MutableFootnoteRef | MutableBookmark:
+def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField | MutableCrossRef | MutableFootnoteRef | MutableBookmark:
     """Convert a frozen run to its mutable wrapper."""
     if isinstance(frozen, TextRun):
         fmt = frozen.formatting
@@ -80,6 +80,8 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperl
         return MutableHyperlink(text=text, url=frozen.url)
     if isinstance(frozen, PageNumberField):
         return MutablePageNumberField(field_type=frozen.field_type)
+    if isinstance(frozen, CrossRef):
+        return MutableCrossRef(bookmark_name=frozen.bookmark_name, display_text=frozen.display_text)
     if isinstance(frozen, FootnoteRef):
         return MutableFootnoteRef(note_id=frozen.note_id, note_type=frozen.note_type)
     if isinstance(frozen, BookmarkStart):

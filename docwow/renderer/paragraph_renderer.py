@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 
 from docwow.models.comment import Comment
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting, TabStop
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
@@ -42,6 +42,8 @@ def _render_run(run: Run, comments: dict[int, Comment] | None = None) -> str:
         return _render_hyperlink(run)
     if isinstance(run, PageNumberField):
         return _render_page_number_field(run)
+    if isinstance(run, CrossRef):
+        return _render_cross_ref(run)
     if isinstance(run, FootnoteRef):
         return _render_footnote_ref(run)
     if isinstance(run, BookmarkStart):
@@ -73,6 +75,18 @@ def _render_page_number_field(field: PageNumberField) -> str:
     return (
         f'<span class="dw-field" data-dw-field="{field.field_type}"{style_attr}>'
         f"{placeholder}</span>"
+    )
+
+
+def _render_cross_ref(ref: CrossRef) -> str:
+    inline_style = _run_inline_style(ref.formatting)
+    style_attr = f' style="{inline_style}"' if inline_style else ""
+    display = html.escape(ref.display_text) if ref.display_text else html.escape(ref.bookmark_name)
+    return (
+        f'<a href="#{html.escape(ref.bookmark_name, quote=True)}" '
+        f'class="dw-xref" '
+        f'data-dw-xref="{html.escape(ref.bookmark_name, quote=True)}"'
+        f'{style_attr}>{display}</a>'
     )
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Iterator
 
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import BookmarkStart, Hyperlink, ImageRun, PageNumberField, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CrossRef, Hyperlink, ImageRun, PageNumberField, Run, TextRun, TrackedChange
 from docwow.models.styles import RunFormatting
 
 
@@ -430,6 +430,47 @@ class MutableBookmark:
         return f"MutableBookmark({self._name!r})"
 
 
+class MutableCrossRef:
+    """A mutable cross-reference field (REF) linking to a named bookmark."""
+
+    def __init__(self, bookmark_name: str = "", display_text: str = "") -> None:
+        self._bookmark_name = bookmark_name
+        self._display_text = display_text
+
+    # ---- Setters -------------------------------------------------------------
+
+    def set_bookmark_name(self, name: str) -> "MutableCrossRef":
+        """Set the target bookmark name."""
+        self._bookmark_name = name
+        return self
+
+    def set_display_text(self, text: str) -> "MutableCrossRef":
+        """Set the display text shown at the field location."""
+        self._display_text = text
+        return self
+
+    # ---- Read-back -----------------------------------------------------------
+
+    @property
+    def bookmark_name(self) -> str:
+        """The target bookmark name."""
+        return self._bookmark_name
+
+    @property
+    def display_text(self) -> str:
+        """The text displayed at the cross-reference location."""
+        return self._display_text
+
+    # ---- Internal conversion -------------------------------------------------
+
+    def _to_frozen(self) -> CrossRef:
+        """Convert to a frozen CrossRef for pipeline use."""
+        return CrossRef(bookmark_name=self._bookmark_name, display_text=self._display_text)
+
+    def __repr__(self) -> str:
+        return f"MutableCrossRef({self._bookmark_name!r}, {self._display_text!r})"
+
+
 class MutableTrackedChange:
     """A mutable tracked change (insertion or deletion).
 
@@ -521,9 +562,9 @@ class MutableTrackedChange:
 class RunCollection:
     """Ordered mutable collection of run instances."""
 
-    _ALLOWED = (MutableRun, MutableImageRun, MutableHyperlink, MutablePageNumberField, MutableBookmark)
+    _ALLOWED = (MutableRun, MutableImageRun, MutableHyperlink, MutablePageNumberField, MutableBookmark, MutableCrossRef)
 
-    _AnyRun = MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField | MutableBookmark
+    _AnyRun = MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField | MutableBookmark | MutableCrossRef
 
     def __init__(self) -> None:
         self._items: list[RunCollection._AnyRun] = []
@@ -624,6 +665,19 @@ class RunCollection:
         self._items.append(bm)
         return bm
 
+    def add_cross_ref(self, bookmark_name: str, display_text: str = "") -> MutableCrossRef:
+        """Create a cross-reference to a named bookmark, append it, and return it.
+
+        Args:
+            bookmark_name: The target bookmark name (must match a ``MutableBookmark``
+                           elsewhere in the document).
+            display_text:  The text displayed at the reference location.  Falls back
+                           to ``bookmark_name`` if empty.
+        """
+        ref = MutableCrossRef(bookmark_name=bookmark_name, display_text=display_text)
+        self._items.append(ref)
+        return ref
+
     def add_footnote_ref(self, note_id: int, note_type: str = "footnote") -> "MutableFootnoteRef":
         """Create a footnote or endnote reference marker, append it, and return it.
 
@@ -704,10 +758,10 @@ class RunCollection:
         from docwow.api.comment import MutableCommentRef
         allowed = self._ALLOWED + (MutableFootnoteRef, MutableCommentRef, MutableTrackedChange)
         if not isinstance(run, allowed):
-            if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField, BookmarkStart, TrackedChange)):
+            if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField, CrossRef, BookmarkStart, TrackedChange)):
                 raise TypeError(
                     f"Cannot add a frozen {type(run).__name__} directly. "
-                    "Use MutableRun, MutableHyperlink, MutablePageNumberField, "
+                    "Use MutableRun, MutableHyperlink, MutablePageNumberField, MutableCrossRef, "
                     "MutableBookmark, or the add_* factory methods instead."
                 )
             raise TypeError(

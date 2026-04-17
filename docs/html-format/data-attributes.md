@@ -80,6 +80,14 @@ When a paragraph belongs to a list, it gains two additional attributes:
 | `data-dw-num-id` | string | Numbering definition ID (matches `data-dw-num-id` on the `<ul>`/`<ol>`) |
 | `data-dw-level` | integer | List nesting level, 0-based |
 
+### Cross-reference attributes
+
+Cross-references render as `<a class="dw-xref">` elements:
+
+| Attribute | Type | Description |
+|---|---|---|
+| `data-dw-xref` | string | Target bookmark name (matches a `data-dw-bookmark` anchor elsewhere in the document) |
+
 ---
 
 ## Runs (`<span class="dw-r">`)

@@ -155,6 +155,10 @@ para.set_tab_stops((
     TabStop(position_pt=72.0, alignment="left"),
     TabStop(position_pt=216.0, alignment="right", leader="dot"),
 ))
+
+# Cross-references — link to a named bookmark
+para.runs.add_bookmark("my_target")          # define a target anchor
+para.runs.add_cross_ref("my_target", "Section 1")  # insert a REF field
 ```
 
 ## Building a document from scratch
