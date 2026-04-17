@@ -8,7 +8,7 @@ from docwow.models.footnote import Footnote
 class MutableFootnote:
     """A mutable footnote or endnote body.
 
-    Access the cell-like paragraph content via :attr:`paragraphs`.
+    Access the note body content via :attr:`paragraphs`.
     """
 
     def __init__(
@@ -76,10 +76,12 @@ class MutableFootnoteRef:
 
     @property
     def note_id(self) -> int:
+        """The integer ID of this reference (matches the note body's ``note_id``)."""
         return self._note_id
 
     @property
     def note_type(self) -> str:
+        """``'footnote'`` or ``'endnote'``."""
         return self._note_type
 
     def get_text(self) -> str:

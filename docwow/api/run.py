@@ -108,38 +108,47 @@ class MutableRun:
 
     @property
     def bold(self) -> bool:
+        """True if the run is bold."""
         return self._bold
 
     @property
     def italic(self) -> bool:
+        """True if the run is italic."""
         return self._italic
 
     @property
     def underline(self) -> bool:
+        """True if the run is underlined."""
         return self._underline
 
     @property
     def strike(self) -> bool:
+        """True if the run has strikethrough."""
         return self._strike
 
     @property
     def font_name(self) -> str | None:
+        """Font family name, or None to inherit from the style."""
         return self._font_name
 
     @property
     def font_size(self) -> float | None:
+        """Font size in points, or None to inherit from the style."""
         return self._font_size
 
     @property
     def color(self) -> str | None:
+        """Text colour as a 6-digit hex RGB string (e.g. ``'FF0000'``), or None."""
         return self._color
 
     @property
     def highlight(self) -> str | None:
+        """Highlight colour name (e.g. ``'yellow'``, ``'cyan'``), or None."""
         return self._highlight
 
     @property
     def vertical_align(self) -> str | None:
+        """Vertical alignment: ``'superscript'``, ``'subscript'``, or None."""
         return self._vertical_align
 
     # ---- Internal conversion -------------------------------------------------
@@ -240,18 +249,22 @@ class MutableImageRun:
 
     @property
     def width_pt(self) -> float:
+        """Rendered width in points."""
         return self._image.width_pt
 
     @property
     def height_pt(self) -> float:
+        """Rendered height in points."""
         return self._image.height_pt
 
     @property
     def alt_text(self) -> str:
+        """Image alt text / description."""
         return self._image.alt_text
 
     @property
     def content_type(self) -> str:
+        """MIME type of the image (e.g. ``'image/png'``, ``'image/jpeg'``)."""
         return self._image.content_type
 
     def _to_frozen(self) -> ImageRun:
@@ -292,6 +305,7 @@ class MutableHyperlink:
 
     @property
     def url(self) -> str:
+        """The hyperlink URL."""
         return self._url
 
     # ---- Internal conversion -------------------------------------------------
@@ -321,6 +335,7 @@ class MutablePageNumberField:
 
     @property
     def field_type(self) -> str:
+        """The field type: ``'PAGE'``, ``'NUMPAGES'``, or ``'SECTIONPAGES'``."""
         return self._field_type
 
     def set_field_type(self, field_type: str) -> "MutablePageNumberField":
@@ -430,14 +445,17 @@ class MutableTrackedChange:
 
     @property
     def author(self) -> str:
+        """Reviewer display name."""
         return self._author
 
     @property
     def date(self) -> str:
+        """ISO-8601 datetime string of the change."""
         return self._date
 
     @property
     def change_id(self) -> int:
+        """OOXML ``w:id`` for this change (0 = auto-assigned on write)."""
         return self._change_id
 
     # ---- Internal conversion -------------------------------------------------

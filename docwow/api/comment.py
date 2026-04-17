@@ -107,6 +107,7 @@ class MutableCommentRef:
 
     @property
     def comment_id(self) -> int:
+        """The integer ID of this reference (matches the comment body's ``comment_id``)."""
         return self._comment_id
 
     def get_text(self) -> str:

@@ -82,11 +82,23 @@ consistent with the current codebase before committing:
 - `docs/user-guide/tutorial.md` — end-to-end tutorial
 - `docs/user-guide/open-api.md` — API reference guide
 - `docs/api-reference/api-classes.md` — mkdocstrings entries
-- `docs/html-format/data-attributes.md` — if any `data-dw-*` attrs changed
-- `docs/internals/architecture.md` — if the layer diagram changed
+- `docs/html-format/data-attributes.md` — **every new `data-dw-*` attribute must be documented here**
+- `docs/html-format/css-classes.md` — **every new CSS class must be documented here**
+- `docs/html-format/overview.md` — CSS class summary table
+- `docs/internals/architecture.md` — if the layer diagram or module map changed
 
 Check for: stale class names, missing methods, incorrect code examples, "not yet
 supported" notes that are now wrong, version refs.
+
+### Docstring rule (enforced by tests)
+
+Every public method and property in `docwow/api/` **must** have a docstring.
+`tests/api/test_api_docstrings.py` fails if any are missing — the test suite will
+catch this automatically. When adding a new `Mutable*` class or new method:
+
+1. Add the class to `PUBLIC_CLASSES` in `test_api_docstrings.py`
+2. Add a docstring to every public method and property
+3. Add a `:::` entry to `docs/api-reference/api-classes.md`
 
 ## Versioning
 

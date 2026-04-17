@@ -79,10 +79,12 @@ class MutableTableCell:
 
     @property
     def v_merge_start(self) -> bool:
+        """True if this cell begins a vertical merge group (OOXML ``w:vMerge w:val="restart"``)."""
         return self._v_merge_start
 
     @property
     def v_merge_continue(self) -> bool:
+        """True if this cell continues a vertical merge (visually spanned by the cell above)."""
         return self._v_merge_continue
 
     # ---- Internal conversion -------------------------------------------------

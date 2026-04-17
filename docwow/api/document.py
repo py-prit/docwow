@@ -167,26 +167,32 @@ class DocumentWrapper:
 
     @property
     def page_width_pt(self) -> float:
+        """Page width in points."""
         return self._page_width_pt
 
     @property
     def page_height_pt(self) -> float:
+        """Page height in points."""
         return self._page_height_pt
 
     @property
     def margin_top_pt(self) -> float:
+        """Top margin in points."""
         return self._margin_top_pt
 
     @property
     def margin_bottom_pt(self) -> float:
+        """Bottom margin in points."""
         return self._margin_bottom_pt
 
     @property
     def margin_left_pt(self) -> float:
+        """Left margin in points."""
         return self._margin_left_pt
 
     @property
     def margin_right_pt(self) -> float:
+        """Right margin in points."""
         return self._margin_right_pt
 
     # ---- Footnotes / endnotes ------------------------------------------------
@@ -240,10 +246,6 @@ class DocumentWrapper:
             comment.paragraphs.add_paragraph(text)
         self._comments.append(comment)
         return comment
-
-    @property
-    def _comments_frozen(self):
-        return tuple(c._to_frozen() for c in self._comments)
 
     # ---- Footnotes / endnotes ------------------------------------------------
 

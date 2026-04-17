@@ -361,6 +361,40 @@ Represents a Word `w:sdt` structured document tag that contains a table of conte
 
 ---
 
+## Track changes (`<ins class="dw-ins">` / `<del class="dw-del">`)
+
+Insertions use `<ins>` and deletions use `<del>`. Both carry the same set of `data-dw-*` attributes. A hover popup with Accept/Reject buttons is injected by the renderer as a child `<span class="dw-tc-popup">` — this span is ignored by the HTML parser on round-trip.
+
+```html
+<ins class="dw-ins"
+     data-dw-author="Alice"
+     data-dw-date="2025-07-10T09:00:00Z"
+     data-dw-change-id="1">
+  <span class="dw-tc-popup">...</span>
+  <span class="dw-r">inserted text</span>
+</ins>
+
+<del class="dw-del"
+     data-dw-author="Alice"
+     data-dw-date="2025-07-10T09:00:00Z"
+     data-dw-change-id="2">
+  <span class="dw-tc-popup">...</span>
+  <span class="dw-r">deleted text</span>
+</del>
+```
+
+| Attribute | Type | Description |
+|---|---|---|
+| `data-dw-author` | string | Reviewer display name |
+| `data-dw-date` | string | ISO-8601 datetime of the change |
+| `data-dw-change-id` | integer (as string) | OOXML `w:id` for the change |
+
+The inner `<span class="dw-tc-popup">` is a purely visual element (contains author, date, and Accept/Reject buttons). It is ignored by the HTML parser. The `<span class="dw-r">` children are the only children the parser reads to reconstruct run content.
+
+Accepting or rejecting in the browser removes the `<ins>`/`<del>` wrapper. A subsequent HTML→DOCX round-trip will see the remaining `<span class="dw-r">` elements as plain text runs — the accepted/rejected state is preserved.
+
+---
+
 ## Comment references (`<a class="dw-comment-ref">`)
 
 Each inline comment reference renders as a superscript `[N]` anchor. When the document has comment bodies available, the renderer embeds a CSS-only hover popup directly inside the `<a>` element — no JavaScript required.

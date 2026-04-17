@@ -59,18 +59,22 @@ class MutableImage(MutableParagraph):
 
     @property
     def width_pt(self) -> float:
+        """Rendered width in points."""
         return self._image_run.width_pt
 
     @property
     def height_pt(self) -> float:
+        """Rendered height in points."""
         return self._image_run.height_pt
 
     @property
     def alt_text(self) -> str:
+        """Image alt text / description."""
         return self._image_run.alt_text
 
     @property
     def content_type(self) -> str:
+        """MIME type of the image (e.g. ``'image/png'``, ``'image/jpeg'``)."""
         return self._image_run.content_type
 
     def __repr__(self) -> str:
