@@ -5,7 +5,7 @@ from lxml import etree
 
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
@@ -213,6 +213,8 @@ def _write_run(
         _write_bookmark(parent, run, _bm_counter)
     elif isinstance(run, CommentRef):
         _write_comment_ref(parent, run)
+    elif isinstance(run, TrackedChange):
+        _write_tracked_change(parent, run)
     else:
         _write_text_run(parent, run)
 
@@ -287,6 +289,40 @@ def _write_comment_ref(parent: etree._Element, ref: CommentRef) -> None:
     rstyle.set(f"{{{W}}}val", "CommentReference")
     comment_ref_el = etree.SubElement(r_el, f"{{{W}}}commentReference")
     comment_ref_el.set(f"{{{W}}}id", cid)
+
+
+# ---------------------------------------------------------------------------
+# Tracked changes
+# ---------------------------------------------------------------------------
+
+def _write_tracked_change(parent: etree._Element, tc: TrackedChange) -> None:
+    """Write a TrackedChange as ``<w:ins>`` or ``<w:del>``."""
+    tag = f"{{{W}}}ins" if tc.change_type == "insert" else f"{{{W}}}del"
+    el = etree.SubElement(parent, tag)
+    el.set(f"{{{W}}}id", str(tc.change_id))
+    el.set(f"{{{W}}}author", tc.author)
+    el.set(f"{{{W}}}date", tc.date)
+
+    for run in tc.runs:
+        r_el = etree.SubElement(el, f"{{{W}}}r")
+        if isinstance(run, TextRun):
+            _write_r_rpr(r_el, run.formatting)
+            text_tag = f"{{{W}}}delText" if tc.change_type == "delete" else f"{{{W}}}t"
+            t_el = etree.SubElement(r_el, text_tag)
+            t_el.set(XML_SPACE, "preserve")
+            t_el.text = run.text
+        elif isinstance(run, ImageRun):
+            # Images inside tracked changes are written as normal inline images
+            _write_r_rpr(r_el, run.formatting)
+            _write_image_run(r_el, run.image, {}, [1])
+
+
+def _write_r_rpr(r_el: etree._Element, fmt) -> None:
+    """Add a <w:rPr> to a run element, removing it if empty."""
+    rpr = etree.SubElement(r_el, f"{{{W}}}rPr")
+    _write_run_fmt(rpr, fmt)
+    if len(rpr) == 0 and not rpr.text:
+        r_el.remove(rpr)
 
 
 # ---------------------------------------------------------------------------

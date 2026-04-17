@@ -85,3 +85,7 @@ These classes are returned by `docwow.open()` and are the primary interface for 
 ## MutableCommentRef
 
 ::: docwow.api.MutableCommentRef
+
+## MutableTrackedChange
+
+::: docwow.api.MutableTrackedChange

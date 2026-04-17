@@ -11,12 +11,12 @@ from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.api.comment import MutableComment, MutableCommentRef
 from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
-from docwow.api.run import MutableBookmark, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, RunCollection
+from docwow.api.run import MutableBookmark, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.table import MutableTable, MutableTableCell, MutableTableRow
@@ -83,6 +83,15 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperl
         return MutableBookmark(name=frozen.name)
     if isinstance(frozen, CommentRef):
         return MutableCommentRef(comment_id=frozen.comment_id)
+    if isinstance(frozen, TrackedChange):
+        text = "".join(r.text for r in frozen.runs if isinstance(r, TextRun))
+        return MutableTrackedChange(
+            change_type=frozen.change_type,
+            text=text,
+            author=frozen.author,
+            date=frozen.date,
+            change_id=frozen.change_id,
+        )
     raise TypeError(f"Unknown run type: {type(frozen).__name__}")
 
 

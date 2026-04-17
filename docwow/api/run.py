@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Iterator
 
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import BookmarkStart, Hyperlink, ImageRun, PageNumberField, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, Hyperlink, ImageRun, PageNumberField, Run, TextRun, TrackedChange
 from docwow.models.styles import RunFormatting
 
 
@@ -374,6 +374,91 @@ class MutableBookmark:
         return f"MutableBookmark({self._name!r})"
 
 
+class MutableTrackedChange:
+    """A mutable tracked change (insertion or deletion).
+
+    Wraps a ``w:ins`` or ``w:del`` element.  ``change_type`` is either
+    ``"insert"`` or ``"delete"``.
+
+    Create via :meth:`RunCollection.add_insertion` or
+    :meth:`RunCollection.add_deletion` rather than instantiating directly.
+    """
+
+    def __init__(
+        self,
+        change_type: str,
+        text: str = "",
+        author: str = "",
+        date: str = "",
+        change_id: int = 0,
+    ) -> None:
+        if change_type not in ("insert", "delete"):
+            raise ValueError(f"change_type must be 'insert' or 'delete'; got {change_type!r}")
+        self._change_type = change_type
+        self._text = text
+        self._author = author
+        self._date = date
+        self._change_id = change_id
+
+    # ---- Setters -------------------------------------------------------------
+
+    def set_text(self, text: str) -> "MutableTrackedChange":
+        """Replace the changed text."""
+        self._text = text
+        return self
+
+    def set_author(self, author: str) -> "MutableTrackedChange":
+        """Set the author name."""
+        self._author = author
+        return self
+
+    def set_date(self, date: str) -> "MutableTrackedChange":
+        """Set the ISO-8601 date string."""
+        self._date = date
+        return self
+
+    # ---- Read-back -----------------------------------------------------------
+
+    def get_text(self) -> str:
+        """Return the changed text."""
+        return self._text
+
+    @property
+    def change_type(self) -> str:
+        """Either ``'insert'`` or ``'delete'``."""
+        return self._change_type
+
+    @property
+    def author(self) -> str:
+        return self._author
+
+    @property
+    def date(self) -> str:
+        return self._date
+
+    @property
+    def change_id(self) -> int:
+        return self._change_id
+
+    # ---- Internal conversion -------------------------------------------------
+
+    def _to_frozen(self) -> TrackedChange:
+        """Convert to a frozen TrackedChange for pipeline use."""
+        return TrackedChange(
+            change_type=self._change_type,
+            runs=(TextRun(text=self._text),),
+            author=self._author,
+            date=self._date,
+            change_id=self._change_id,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"MutableTrackedChange({self._change_type!r}, "
+            f"{self._text!r}, author={self._author!r})"
+        )
+
+
 class RunCollection:
     """Ordered mutable collection of run instances."""
 
@@ -497,6 +582,50 @@ class RunCollection:
         self._items.append(ref)
         return ref
 
+    def add_insertion(
+        self,
+        text: str,
+        author: str = "",
+        date: str = "",
+        change_id: int = 0,
+    ) -> MutableTrackedChange:
+        """Create a tracked insertion, append it, and return it.
+
+        In HTML this renders as a green-underlined ``<ins>`` element.
+        In DOCX it becomes a ``<w:ins>`` element visible in Word's review pane.
+
+        Args:
+            text:      The inserted text.
+            author:    Reviewer name shown in Word's review pane.
+            date:      ISO-8601 timestamp string (e.g. ``"2025-07-10T09:00:00Z"``).
+            change_id: Optional integer ID; auto-assigned on write if 0.
+        """
+        tc = MutableTrackedChange("insert", text=text, author=author, date=date, change_id=change_id)
+        self._items.append(tc)
+        return tc
+
+    def add_deletion(
+        self,
+        text: str,
+        author: str = "",
+        date: str = "",
+        change_id: int = 0,
+    ) -> MutableTrackedChange:
+        """Create a tracked deletion, append it, and return it.
+
+        In HTML this renders as a red-strikethrough ``<del>`` element.
+        In DOCX it becomes a ``<w:del>`` element visible in Word's review pane.
+
+        Args:
+            text:      The deleted text.
+            author:    Reviewer name shown in Word's review pane.
+            date:      ISO-8601 timestamp string.
+            change_id: Optional integer ID; auto-assigned on write if 0.
+        """
+        tc = MutableTrackedChange("delete", text=text, author=author, date=date, change_id=change_id)
+        self._items.append(tc)
+        return tc
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen(self) -> tuple[Run, ...]:
@@ -508,9 +637,9 @@ class RunCollection:
     def _check_type(self, run: object) -> None:
         from docwow.api.footnote import MutableFootnoteRef
         from docwow.api.comment import MutableCommentRef
-        allowed = self._ALLOWED + (MutableFootnoteRef, MutableCommentRef)
+        allowed = self._ALLOWED + (MutableFootnoteRef, MutableCommentRef, MutableTrackedChange)
         if not isinstance(run, allowed):
-            if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField, BookmarkStart)):
+            if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField, BookmarkStart, TrackedChange)):
                 raise TypeError(
                     f"Cannot add a frozen {type(run).__name__} directly. "
                     "Use MutableRun, MutableHyperlink, MutablePageNumberField, "
@@ -519,7 +648,7 @@ class RunCollection:
             raise TypeError(
                 f"Expected MutableRun, MutableImageRun, MutableHyperlink, "
                 f"MutablePageNumberField, MutableBookmark, MutableFootnoteRef, "
-                f"or MutableCommentRef; got {type(run).__name__!r}"
+                f"MutableCommentRef, or MutableTrackedChange; got {type(run).__name__!r}"
             )
 
     def __repr__(self) -> str:

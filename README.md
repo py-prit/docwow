@@ -60,6 +60,7 @@ doc.to_docx("output.docx")
 | Bookmarks | Parse `w:bookmarkStart`, render as `<a id="…">` anchors, full round-trip, `MutableBookmark` API |
 | Table of Contents | Parse `w:sdt` TOC blocks, render as `<nav class="dw-toc">`, full round-trip, `MutableTableOfContents` API |
 | Comments | Parse `word/comments.xml`, render as superscript markers with CSS hover popups in HTML, full round-trip, `MutableComment` API |
+| Track changes | Parse `w:ins`/`w:del`, render as green underline / red strikethrough in HTML, full round-trip, `MutableTrackedChange` API |
 | Programmatic API | Open, edit, and save documents in pure Python |
 
 ### ⚠️ Headers, Footers & Page Numbers — Known Limitations

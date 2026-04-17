@@ -317,6 +317,21 @@ _BASE_CSS = """\
   text-decoration: underline;
 }
 
+/* Track changes */
+ins.dw-ins {
+  color: #1B5E20;
+  text-decoration: underline;
+  background-color: rgba(46, 125, 50, 0.08);
+  text-decoration-color: #1B5E20;
+}
+
+del.dw-del {
+  color: #B71C1C;
+  text-decoration: line-through;
+  background-color: rgba(183, 28, 28, 0.08);
+  text-decoration-color: #B71C1C;
+}
+
 /* Comments — inline hover popup */
 .dw-comment-ref {
   position: relative;
