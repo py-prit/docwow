@@ -25,6 +25,7 @@ from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
+from docwow.models.section import SectionProperties
 from docwow.parser.body_parser import parse_body
 from docwow.parser.comment_parser import parse_comments
 from docwow.parser.footnote_parser import parse_footnotes
@@ -157,24 +158,8 @@ _DEFAULTS = dict(
 )
 
 
-def _parse_page_geometry(doc_root: object) -> tuple[float, float, dict]:
-    """Extract page size and margins from w:sectPr."""
-    # sectPr lives either directly in w:body or as a child of w:body
-    body_el = find(doc_root, "w:body")
-    sect_pr = None
-    if body_el is not None:
-        sect_pr = find(body_el, "w:sectPr")
-    if sect_pr is None:
-        sect_pr = find(doc_root, "w:sectPr")
-
-    if sect_pr is None:
-        return _A4_W, _A4_H, {
-            "margin_top_pt": _ONE_INCH,
-            "margin_bottom_pt": _ONE_INCH,
-            "margin_left_pt": _ONE_INCH,
-            "margin_right_pt": _ONE_INCH,
-        }
-
+def parse_sect_pr(sect_pr, break_type: str = "nextPage") -> SectionProperties:
+    """Parse a w:sectPr element into a SectionProperties object."""
     page_width_pt = _A4_W
     page_height_pt = _A4_H
     pgSz = find(sect_pr, "w:pgSz")
@@ -205,11 +190,46 @@ def _parse_page_geometry(doc_root: object) -> tuple[float, float, dict]:
         if right is not None:
             margin_right_pt = twips_to_pt(int(right))
 
-    return page_width_pt, page_height_pt, {
-        "margin_top_pt": margin_top_pt,
-        "margin_bottom_pt": margin_bottom_pt,
-        "margin_left_pt": margin_left_pt,
-        "margin_right_pt": margin_right_pt,
+    type_el = find(sect_pr, "w:type")
+    if type_el is not None:
+        raw = attrib(type_el, "w:val")
+        if raw:
+            break_type = raw
+
+    return SectionProperties(
+        page_width_pt=page_width_pt,
+        page_height_pt=page_height_pt,
+        margin_top_pt=margin_top_pt,
+        margin_bottom_pt=margin_bottom_pt,
+        margin_left_pt=margin_left_pt,
+        margin_right_pt=margin_right_pt,
+        break_type=break_type,
+    )
+
+
+def _parse_page_geometry(doc_root: object) -> tuple[float, float, dict]:
+    """Extract page size and margins from w:sectPr."""
+    body_el = find(doc_root, "w:body")
+    sect_pr = None
+    if body_el is not None:
+        sect_pr = find(body_el, "w:sectPr")
+    if sect_pr is None:
+        sect_pr = find(doc_root, "w:sectPr")
+
+    if sect_pr is None:
+        return _A4_W, _A4_H, {
+            "margin_top_pt": _ONE_INCH,
+            "margin_bottom_pt": _ONE_INCH,
+            "margin_left_pt": _ONE_INCH,
+            "margin_right_pt": _ONE_INCH,
+        }
+
+    props = parse_sect_pr(sect_pr)
+    return props.page_width_pt, props.page_height_pt, {
+        "margin_top_pt": props.margin_top_pt,
+        "margin_bottom_pt": props.margin_bottom_pt,
+        "margin_left_pt": props.margin_left_pt,
+        "margin_right_pt": props.margin_right_pt,
     }
 
 

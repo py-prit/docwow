@@ -7,6 +7,7 @@ from docwow.models.document import Document
 from docwow.models.image import InlineImage
 from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting
+from docwow.models.section import SectionBreak, SectionProperties
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.writer._xml import (
@@ -69,6 +70,8 @@ def build_document_xml(
             _write_toc(body, element)
         elif isinstance(element, PageBreak):
             _write_page_break(body)
+        elif isinstance(element, SectionBreak):
+            _write_section_break(body, element.properties)
 
     # w:sectPr — page geometry + header/footer references
     _write_sect_pr(body, doc, hf_rids or {})
@@ -79,6 +82,14 @@ def build_document_xml(
 # ---------------------------------------------------------------------------
 # Page break
 # ---------------------------------------------------------------------------
+
+def _write_section_break(parent: etree._Element, props: SectionProperties) -> None:
+    """Write a section break as an empty paragraph with w:pPr/w:sectPr."""
+    p_el = etree.SubElement(parent, f"{{{W}}}p")
+    pPr = etree.SubElement(p_el, f"{{{W}}}pPr")
+    sect_pr = etree.SubElement(pPr, f"{{{W}}}sectPr")
+    _write_sect_pr_props(sect_pr, props)
+
 
 def _write_page_break(parent: etree._Element) -> None:
     """Write an explicit page break as <w:p><w:r><w:br w:type="page"/></w:r></w:p>."""
@@ -649,6 +660,22 @@ def _write_cell(
 # ---------------------------------------------------------------------------
 # Section properties (page geometry)
 # ---------------------------------------------------------------------------
+
+def _write_sect_pr_props(sect: etree._Element, props: SectionProperties) -> None:
+    """Write page size, margins (and break type for inline sectPr) into a sectPr element."""
+    type_el = etree.SubElement(sect, f"{{{W}}}type")
+    type_el.set(f"{{{W}}}val", props.break_type)
+
+    pgsz = etree.SubElement(sect, f"{{{W}}}pgSz")
+    pgsz.set(f"{{{W}}}w", pt_tw(props.page_width_pt))
+    pgsz.set(f"{{{W}}}h", pt_tw(props.page_height_pt))
+
+    pgmar = etree.SubElement(sect, f"{{{W}}}pgMar")
+    pgmar.set(f"{{{W}}}top",    pt_tw(props.margin_top_pt))
+    pgmar.set(f"{{{W}}}right",  pt_tw(props.margin_right_pt))
+    pgmar.set(f"{{{W}}}bottom", pt_tw(props.margin_bottom_pt))
+    pgmar.set(f"{{{W}}}left",   pt_tw(props.margin_left_pt))
+
 
 def _write_sect_pr(
     body: etree._Element,

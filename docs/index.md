@@ -48,6 +48,7 @@ doc.save("updated.docx")
 - **Run formatting** — bold, italic, underline, strikethrough, small caps, all caps, font name, font size, color, highlight, superscript/subscript
 - **Tab stops** — custom paragraph tab stops (`w:tabs`), tab character runs (`w:tab`), full round-trip via `data-dw-tab-stops`
 - **Cross-references** — REF fields linking to named bookmarks; renders as `<a class="dw-xref">`, full round-trip, `MutableCrossRef` API
+- **Multiple sections** — multiple `w:sectPr` with independent page size, margins, and break type; `MutableSectionBreak` API, full round-trip via `data-dw-section-break`
 - **Named styles** — Heading 1–9, Normal, and any custom styles defined in the document
 - **Tables** — column widths, row heights, colspan, rowspan (vertical merge), cell borders
 - **Lists** — bullet and numbered, nested up to any depth, multiple list instances per document

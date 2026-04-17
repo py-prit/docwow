@@ -217,6 +217,10 @@ _BASE_CSS = """\
   display: none;
 }
 
+.dw-section-break {
+  display: none;
+}
+
 .dw-page-only {
   display: none;
 }

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Iterator
 
 from docwow.models.lists import ListInfo
 from docwow.models.paragraph import PageBreak, Paragraph
+from docwow.models.section import SectionBreak, SectionProperties
 from docwow.models.styles import ParagraphFormatting, TabStop
 from docwow.api.run import MutableImageRun, MutableRun, RunCollection
 
@@ -372,6 +373,123 @@ class MutableParagraph:
         )
 
 
+class MutableSectionBreak:
+    """A mutable section break with its own page geometry.
+
+    Inserted between content to mark the end of one Word section and the
+    start of another.  Each section can have independent page size, margins,
+    and break type (``nextPage``, ``evenPage``, ``oddPage``, ``continuous``).
+
+    Create via :meth:`ParagraphCollection.add_section_break`.
+    """
+
+    _VALID_BREAK_TYPES = ("nextPage", "evenPage", "oddPage", "continuous")
+
+    def __init__(
+        self,
+        page_width_pt: float = 595.28,
+        page_height_pt: float = 841.89,
+        margin_top_pt: float = 72.0,
+        margin_bottom_pt: float = 72.0,
+        margin_left_pt: float = 72.0,
+        margin_right_pt: float = 72.0,
+        break_type: str = "nextPage",
+    ) -> None:
+        self._page_width_pt = page_width_pt
+        self._page_height_pt = page_height_pt
+        self._margin_top_pt = margin_top_pt
+        self._margin_bottom_pt = margin_bottom_pt
+        self._margin_left_pt = margin_left_pt
+        self._margin_right_pt = margin_right_pt
+        self._break_type = break_type
+
+    # ---- Setters -------------------------------------------------------------
+
+    def set_page_size(self, width_pt: float, height_pt: float) -> "MutableSectionBreak":
+        """Set the page dimensions for this section in points."""
+        self._page_width_pt = width_pt
+        self._page_height_pt = height_pt
+        return self
+
+    def set_margins(
+        self,
+        top_pt: float = 72.0,
+        bottom_pt: float = 72.0,
+        left_pt: float = 72.0,
+        right_pt: float = 72.0,
+    ) -> "MutableSectionBreak":
+        """Set all four page margins for this section in points."""
+        self._margin_top_pt = top_pt
+        self._margin_bottom_pt = bottom_pt
+        self._margin_left_pt = left_pt
+        self._margin_right_pt = right_pt
+        return self
+
+    def set_break_type(self, break_type: str) -> "MutableSectionBreak":
+        """Set the break type: ``'nextPage'``, ``'evenPage'``, ``'oddPage'``, or ``'continuous'``."""
+        if break_type not in self._VALID_BREAK_TYPES:
+            raise ValueError(f"break_type must be one of {self._VALID_BREAK_TYPES}; got {break_type!r}")
+        self._break_type = break_type
+        return self
+
+    # ---- Read-back -----------------------------------------------------------
+
+    @property
+    def page_width_pt(self) -> float:
+        """Page width in points."""
+        return self._page_width_pt
+
+    @property
+    def page_height_pt(self) -> float:
+        """Page height in points."""
+        return self._page_height_pt
+
+    @property
+    def margin_top_pt(self) -> float:
+        """Top margin in points."""
+        return self._margin_top_pt
+
+    @property
+    def margin_bottom_pt(self) -> float:
+        """Bottom margin in points."""
+        return self._margin_bottom_pt
+
+    @property
+    def margin_left_pt(self) -> float:
+        """Left margin in points."""
+        return self._margin_left_pt
+
+    @property
+    def margin_right_pt(self) -> float:
+        """Right margin in points."""
+        return self._margin_right_pt
+
+    @property
+    def break_type(self) -> str:
+        """Section break type: ``'nextPage'``, ``'evenPage'``, ``'oddPage'``, or ``'continuous'``."""
+        return self._break_type
+
+    # ---- Internal conversion -------------------------------------------------
+
+    def _to_frozen(self) -> SectionBreak:
+        """Convert to a frozen SectionBreak for pipeline use."""
+        return SectionBreak(properties=SectionProperties(
+            page_width_pt=self._page_width_pt,
+            page_height_pt=self._page_height_pt,
+            margin_top_pt=self._margin_top_pt,
+            margin_bottom_pt=self._margin_bottom_pt,
+            margin_left_pt=self._margin_left_pt,
+            margin_right_pt=self._margin_right_pt,
+            break_type=self._break_type,
+        ))
+
+    def __repr__(self) -> str:
+        return (
+            f"MutableSectionBreak({self._break_type!r}, "
+            f"{self._page_width_pt:.1f}×{self._page_height_pt:.1f}pt)"
+        )
+
+
 class ParagraphCollection:
     """Ordered mutable collection of body elements (paragraphs, list items, images, tables)."""
 
@@ -481,6 +599,39 @@ class ParagraphCollection:
         self._items.append(table)
         return table
 
+    def add_section_break(
+        self,
+        break_type: str = "nextPage",
+        page_width_pt: float = 595.28,
+        page_height_pt: float = 841.89,
+        margin_top_pt: float = 72.0,
+        margin_bottom_pt: float = 72.0,
+        margin_left_pt: float = 72.0,
+        margin_right_pt: float = 72.0,
+    ) -> MutableSectionBreak:
+        """Append a section break and return it.
+
+        Args:
+            break_type:       ``'nextPage'`` (default), ``'evenPage'``, ``'oddPage'``, or ``'continuous'``.
+            page_width_pt:    Page width in points for the NEW section.
+            page_height_pt:   Page height in points for the NEW section.
+            margin_top_pt:    Top margin in points.
+            margin_bottom_pt: Bottom margin in points.
+            margin_left_pt:   Left margin in points.
+            margin_right_pt:  Right margin in points.
+        """
+        sb = MutableSectionBreak(
+            page_width_pt=page_width_pt,
+            page_height_pt=page_height_pt,
+            margin_top_pt=margin_top_pt,
+            margin_bottom_pt=margin_bottom_pt,
+            margin_left_pt=margin_left_pt,
+            margin_right_pt=margin_right_pt,
+            break_type=break_type,
+        )
+        self._items.append(sb)
+        return sb
+
     def add_toc(
         self,
         title: str = "Contents",
@@ -509,12 +660,14 @@ class ParagraphCollection:
                 result.append(item._to_frozen())
         return tuple(result)
 
+    # Note: MutableSectionBreak._to_frozen() is called via the else branch above.
+
     # ---- Type enforcement ----------------------------------------------------
 
     def _check_type(self, item: object) -> None:
         from docwow.api.table import MutableTable as MT
         from docwow.api.toc import MutableTableOfContents as MTOC
-        if not isinstance(item, (MutableParagraph, MT, PageBreak, MTOC)):
+        if not isinstance(item, (MutableParagraph, MT, PageBreak, MTOC, MutableSectionBreak)):
             if isinstance(item, Paragraph):
                 raise TypeError(
                     "Cannot add a frozen Paragraph directly. "

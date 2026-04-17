@@ -12,7 +12,7 @@ from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
 from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.image import MutableImage
 from docwow.api.list_item import MutableListItem
-from docwow.api.paragraph import MutableParagraph, ParagraphCollection
+from docwow.api.paragraph import MutableParagraph, MutableSectionBreak, ParagraphCollection
 from docwow.api.run import MutableBookmark, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
 from docwow.api.table import (
     MutableTable,
@@ -45,6 +45,7 @@ __all__ = [
     "MutableTableOfContents",
     "MutableTableRow",
     "MutableTocEntry",
+    "MutableSectionBreak",
     "MutableTrackedChange",
     "ParagraphCollection",
     "RunCollection",

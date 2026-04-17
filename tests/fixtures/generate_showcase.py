@@ -724,7 +724,29 @@ def build_showcase() -> Document:
     ))
 
     # -----------------------------------------------------------------------
-    # 13. Headers and Footers
+    # 13. Multiple Sections
+    # -----------------------------------------------------------------------
+    from docwow.models.section import SectionBreak, SectionProperties
+    body.append(_p(
+        "Section breaks divide the document into sections with independent page geometry. "
+        "The paragraph below ends Section A; what follows is in Section B (landscape A4)."
+    ))
+    body.append(SectionBreak(properties=SectionProperties(
+        page_width_pt=841.89,
+        page_height_pt=595.28,
+        margin_top_pt=54.0,
+        margin_bottom_pt=54.0,
+        margin_left_pt=72.0,
+        margin_right_pt=72.0,
+        break_type="nextPage",
+    )))
+    body.append(_p(
+        "This paragraph is in Section B (landscape A4, 54pt top/bottom margins). "
+        "Section breaks are invisible in HTML but round-trip losslessly to DOCX."
+    ))
+
+    # -----------------------------------------------------------------------
+    # 14. Headers and Footers
     # -----------------------------------------------------------------------
     body.append(_ph("Headers and Footers", BM["hf"], style_id="Heading1"))
     body.append(_p(

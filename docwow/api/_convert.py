@@ -12,12 +12,13 @@ from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.section import SectionBreak
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.api.comment import MutableComment, MutableCommentRef
 from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
 from docwow.api.run import MutableBookmark, MutableCrossRef, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
-from docwow.api.paragraph import MutableParagraph, ParagraphCollection
+from docwow.api.paragraph import MutableParagraph, MutableSectionBreak, ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.table import MutableTable, MutableTableCell, MutableTableRow
 from docwow.api.toc import MutableTableOfContents, MutableTocEntry
@@ -185,6 +186,17 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
             collection._items.append(table_from_frozen(element))
         elif isinstance(element, TableOfContents):
             collection._items.append(toc_from_frozen(element))
+        elif isinstance(element, SectionBreak):
+            p = element.properties
+            collection._items.append(MutableSectionBreak(
+                page_width_pt=p.page_width_pt,
+                page_height_pt=p.page_height_pt,
+                margin_top_pt=p.margin_top_pt,
+                margin_bottom_pt=p.margin_bottom_pt,
+                margin_left_pt=p.margin_left_pt,
+                margin_right_pt=p.margin_right_pt,
+                break_type=p.break_type,
+            ))
         elif isinstance(element, PageBreak):
             collection._items.append(element)  # already frozen, pass through
 
