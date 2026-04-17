@@ -98,3 +98,78 @@ class TestRenderCommentRefInParagraph:
         assert "dw-comment-ref" in html
         # Should not be wrapped in dw-r span
         assert 'class="dw-r"' not in html
+
+
+class TestCommentRefHoverPopup:
+    """Inline hover popup emitted when comments lookup is passed."""
+
+    def _comment(self, cid: int, author: str, text: str, date: str = "") -> Comment:
+        return Comment(comment_id=cid, author=author, date=date, paragraphs=(_para(text),))
+
+    def test_popup_present_when_comment_provided(self):
+        from docwow.models.paragraph import CommentRef
+        from docwow.renderer.paragraph_renderer import render_paragraph
+        c = self._comment(1, "Alice", "Great point.")
+        para = Paragraph(runs=(CommentRef(comment_id=1),))
+        html = render_paragraph(para, comments={1: c})
+        assert 'class="dw-comment-popup"' in html
+        assert 'class="dw-comment-popup-author"' in html
+        assert "Alice" in html
+        assert "Great point." in html
+
+    def test_popup_absent_without_comments(self):
+        from docwow.models.paragraph import CommentRef
+        from docwow.renderer.paragraph_renderer import render_paragraph
+        para = Paragraph(runs=(CommentRef(comment_id=1),))
+        html = render_paragraph(para)
+        assert 'dw-comment-popup' not in html
+
+    def test_popup_absent_for_unknown_comment_id(self):
+        from docwow.models.paragraph import CommentRef
+        from docwow.renderer.paragraph_renderer import render_paragraph
+        para = Paragraph(runs=(CommentRef(comment_id=99),))
+        html = render_paragraph(para, comments={1: self._comment(1, "Alice", "x")})
+        assert 'dw-comment-popup' not in html
+
+    def test_popup_includes_date(self):
+        from docwow.models.paragraph import CommentRef
+        from docwow.renderer.paragraph_renderer import render_paragraph
+        c = self._comment(2, "Bob", "Fix this.", date="2024-01-15T10:00:00Z")
+        para = Paragraph(runs=(CommentRef(comment_id=2),))
+        html = render_paragraph(para, comments={2: c})
+        assert 'class="dw-comment-popup-date"' in html
+        assert "2024-01-15T10:00:00Z" in html
+
+    def test_popup_no_date_span_when_date_empty(self):
+        from docwow.models.paragraph import CommentRef
+        from docwow.renderer.paragraph_renderer import render_paragraph
+        c = self._comment(3, "Carol", "LGTM")
+        para = Paragraph(runs=(CommentRef(comment_id=3),))
+        html = render_paragraph(para, comments={3: c})
+        assert 'dw-comment-popup-date' not in html
+
+    def test_author_html_escaped(self):
+        from docwow.models.paragraph import CommentRef
+        from docwow.renderer.paragraph_renderer import render_paragraph
+        c = self._comment(1, "A & B", "ok")
+        para = Paragraph(runs=(CommentRef(comment_id=1),))
+        html = render_paragraph(para, comments={1: c})
+        assert "A &amp; B" in html
+        assert "A & B" not in html
+
+    def test_text_html_escaped(self):
+        from docwow.models.paragraph import CommentRef
+        from docwow.renderer.paragraph_renderer import render_paragraph
+        c = self._comment(1, "A", "<script>alert(1)</script>")
+        para = Paragraph(runs=(CommentRef(comment_id=1),))
+        html = render_paragraph(para, comments={1: c})
+        assert "<script>" not in html
+        assert "&lt;script&gt;" in html
+
+    def test_data_dw_comment_id_preserved(self):
+        from docwow.models.paragraph import CommentRef
+        from docwow.renderer.paragraph_renderer import render_paragraph
+        c = self._comment(7, "Dave", "Check this.")
+        para = Paragraph(runs=(CommentRef(comment_id=7),))
+        html = render_paragraph(para, comments={7: c})
+        assert 'data-dw-comment-id="7"' in html

@@ -421,7 +421,7 @@ comment.paragraphs.add_paragraph("Second paragraph with more detail.")
 comment.set_author("Carol").set_date("2025-07-11T08:00:00Z").set_initials("C")
 ```
 
-In HTML, comment references render as `<a class="dw-comment-ref" href="#comment-N">[N]</a>` and the comment bodies appear in a `<section class="dw-comments">` block. In DOCX they are stored in `word/comments.xml` with matching `w:commentRangeStart`, `w:commentRangeEnd`, and `w:commentReference` elements.
+In HTML, comment references render as superscript `[N]` anchors with a CSS-only hover popup showing the author, date, and comment text — similar to how Word shows comments in a side pane when you hover. The comment bodies are also stored in a hidden `<section class="dw-comments">` block (invisible in the browser) that the HTML parser reads when round-tripping back to DOCX. In DOCX they are stored in `word/comments.xml` with matching `w:commentRangeStart`, `w:commentRangeEnd`, and `w:commentReference` elements.
 
 ## Table of Contents
 

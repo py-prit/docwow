@@ -56,7 +56,7 @@ doc.save("updated.docx")
 - **Footnotes & endnotes** — parse, render to HTML with anchor links, HTML→DOCX round-trip, and programmatic API
 - **Bookmarks** — parse `w:bookmarkStart` elements, render as `<a id="…">` HTML anchors, full round-trip, and `MutableBookmark` API
 - **Table of Contents** — parse `w:sdt` TOC blocks, render as `<nav class="dw-toc">` with level-indented links, full round-trip, and `MutableTableOfContents` API
-- **Comments** — parse `word/comments.xml`, render as superscript markers + comment section in HTML, full round-trip, and `MutableComment` API
+- **Comments** — parse `word/comments.xml`, render as superscript markers with CSS hover popups in HTML, full round-trip, and `MutableComment` API
 - **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, `MutableTableOfContents`, `MutableComment`, and friends; build documents from scratch including tables, footnotes, bookmarks, TOC, comments, and lists; save to DOCX or render to HTML
 
 ## Design principles

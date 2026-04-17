@@ -173,13 +173,14 @@ def _document_attrs(doc: Document) -> str:
 
 def _render_body(doc: Document, page_view: bool = False) -> str:
     """Render all body elements, grouping list paragraphs."""
+    comments_lookup = {c.comment_id: c for c in doc.comments}
     parts: list[str] = []
     list_buffer: list[Paragraph] = []
     page_num = [1]  # mutable counter
 
     def flush_list() -> None:
         if list_buffer:
-            parts.append(render_list_group(list_buffer, doc.numbering))
+            parts.append(render_list_group(list_buffer, doc.numbering, comments=comments_lookup))
             list_buffer.clear()
 
     for element in doc.body:
@@ -188,7 +189,7 @@ def _render_body(doc: Document, page_view: bool = False) -> str:
                 list_buffer.append(element)
             else:
                 flush_list()
-                parts.append(render_paragraph(element))
+                parts.append(render_paragraph(element, comments=comments_lookup))
         elif isinstance(element, Table):
             flush_list()
             parts.append(render_table(element))

@@ -317,40 +317,61 @@ _BASE_CSS = """\
   text-decoration: underline;
 }
 
-/* Comments */
+/* Comments — inline hover popup */
 .dw-comment-ref {
+  position: relative;
   color: #E65100;
   font-size: 0.75em;
   vertical-align: super;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dw-comment-popup {
+  display: none;
+  position: absolute;
+  bottom: 1.6em;
+  left: 0;
+  z-index: 100;
+  min-width: 200px;
+  max-width: 300px;
+  background: #ffffff;
+  border: 1px solid #E65100;
+  border-radius: 4px;
+  padding: 8px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  font-size: 9pt;
+  font-weight: normal;
+  vertical-align: baseline;
+  white-space: normal;
+  color: #333333;
   text-decoration: none;
 }
 
-.dw-comment-ref:hover {
-  text-decoration: underline;
+.dw-comment-ref:hover .dw-comment-popup {
+  display: block;
 }
 
-.dw-comments {
-  margin-top: 2em;
-  border-top: 2px solid #E65100;
-  padding-top: 0.75em;
-}
-
-.dw-comment {
-  margin: 0.5em 0;
-  padding: 0.4em 0.6em;
-  background: #FFF8E1;
-  border-left: 3px solid #E65100;
-  border-radius: 2px;
-}
-
-.dw-comment-marker {
-  font-size: 0.75em;
-  color: #E65100;
-  vertical-align: super;
+.dw-comment-popup-author {
+  display: block;
   font-weight: bold;
-  margin-right: 0.4em;
+  color: #E65100;
+  font-size: 8pt;
+  margin-bottom: 5px;
 }
 
-.dw-comment-body {
-  display: inline;
+.dw-comment-popup-date {
+  font-weight: normal;
+  color: #888888;
+}
+
+.dw-comment-popup-text {
+  display: block;
+  color: #222222;
+}
+
+/* Round-trip section — hidden visually, present in DOM for HTML→DOCX */
+.dw-comments {
+  display: none;
 }"""

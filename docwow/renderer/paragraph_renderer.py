@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import html
 
+from docwow.models.comment import Comment
 from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
 
 
-def render_paragraph(p: Paragraph, extra_classes: list[str] | None = None) -> str:
+def render_paragraph(
+    p: Paragraph,
+    extra_classes: list[str] | None = None,
+    comments: dict[int, Comment] | None = None,
+) -> str:
     """Return a <p> HTML element for a paragraph."""
     fmt = p.formatting
     classes = ["dw-p"]
@@ -25,12 +30,12 @@ def render_paragraph(p: Paragraph, extra_classes: list[str] | None = None) -> st
         data_attrs["data-dw-level"] = str(p.list_info.level)
 
     inline_style = _para_inline_style(fmt)
-    inner = "".join(_render_run(r) for r in p.runs)
+    inner = "".join(_render_run(r, comments=comments) for r in p.runs)
 
     return _tag("p", classes, data_attrs, inline_style, inner)
 
 
-def _render_run(run: Run) -> str:
+def _render_run(run: Run, comments: dict[int, Comment] | None = None) -> str:
     if isinstance(run, ImageRun):
         return render_image(run.image)
     if isinstance(run, Hyperlink):
@@ -42,7 +47,8 @@ def _render_run(run: Run) -> str:
     if isinstance(run, BookmarkStart):
         return _render_bookmark(run)
     if isinstance(run, CommentRef):
-        return _render_comment_ref(run)
+        comment = comments.get(run.comment_id) if comments else None
+        return _render_comment_ref(run, comment)
     return _render_text_run(run)
 
 
@@ -68,13 +74,35 @@ def _render_page_number_field(field: PageNumberField) -> str:
     )
 
 
-def _render_comment_ref(ref: CommentRef) -> str:
-    """Render a comment reference as a superscript anchor."""
+def _render_comment_ref(ref: CommentRef, comment: Comment | None = None) -> str:
+    """Render a comment reference as a superscript anchor with a hover popup."""
+    popup = ""
+    if comment is not None:
+        author = html.escape(comment.author)
+        date = html.escape(comment.date)
+        text = html.escape(_comment_text(comment))
+        date_part = f' <span class="dw-comment-popup-date">· {date}</span>' if date else ""
+        popup = (
+            f'<span class="dw-comment-popup">'
+            f'<span class="dw-comment-popup-author">{author}{date_part}</span>'
+            f'<span class="dw-comment-popup-text">{text}</span>'
+            f"</span>"
+        )
     return (
         f'<a href="#comment-{ref.comment_id}" class="dw-comment-ref" '
         f'data-dw-comment-id="{ref.comment_id}">'
-        f"[{ref.comment_id}]</a>"
+        f"[{ref.comment_id}]{popup}</a>"
     )
+
+
+def _comment_text(comment: Comment) -> str:
+    """Extract plain text from all paragraphs of a comment."""
+    parts: list[str] = []
+    for para in comment.paragraphs:
+        for run in para.runs:
+            if isinstance(run, TextRun):
+                parts.append(run.text)
+    return " ".join(parts)
 
 
 def _render_bookmark(start: BookmarkStart) -> str:
