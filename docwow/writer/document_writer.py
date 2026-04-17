@@ -407,6 +407,7 @@ def _has_run_fmt(fmt: RunFormatting) -> bool:
         fmt.bold, fmt.italic, fmt.underline, fmt.strike,
         fmt.font_name, fmt.font_size_pt is not None,
         fmt.color, fmt.highlight, fmt.vertical_align,
+        fmt.char_style_id,
     ])
 
 

@@ -141,7 +141,7 @@ Inline span for a page number field. Rendered as gray italic to signal it is a p
 
 ## Style classes (`.dw-style-*`)
 
-For every named Word style in the document, docwow emits a CSS rule:
+For every named Word **paragraph** style in the document, docwow emits a CSS rule:
 
 ```css
 .dw-style-Heading1 {
@@ -167,6 +167,25 @@ Each paragraph element carries both `.dw-p` and its style class:
 ```html
 <p class="dw-p dw-style-Heading1" data-dw-style="Heading1">...</p>
 ```
+
+## Character style classes (`.dw-cstyle-*`)
+
+When a run has a named Word **character** style applied (e.g. `Strong`, `Emphasis`), it gains an additional CSS class alongside `.dw-r`:
+
+```html
+<span class="dw-r dw-cstyle-Strong" data-dw-char-style="Strong">Strong text</span>
+<span class="dw-r dw-cstyle-Emphasis" data-dw-char-style="Emphasis">Italic text</span>
+```
+
+The class name is `.dw-cstyle-` followed by the character style ID with spaces replaced by hyphens:
+
+| Word character style ID | CSS class |
+|---|---|
+| `Strong` | `.dw-cstyle-Strong` |
+| `Emphasis` | `.dw-cstyle-Emphasis` |
+| `Intense Quote` | `.dw-cstyle-Intense-Quote` |
+
+The visual formatting of the character style (bold, italic, color, etc.) is carried directly on the span via inline `style` attributes — the `dw-cstyle-*` class is a semantic hook for custom CSS overrides. The `data-dw-char-style` attribute carries the style ID for lossless round-trip back to DOCX.
 
 ### What gets emitted into a style class
 

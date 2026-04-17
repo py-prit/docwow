@@ -260,6 +260,12 @@ def build_showcase() -> Document:
         _run("  Normal"),
     ))
     body.append(_rp(_run("Line 1\nLine 2 (newline inside one run)\nLine 3")))
+    body.append(_rp(
+        _run("Plain  "),
+        _run("Strong  ", char_style_id="Strong"),
+        _run("Emphasis  ", char_style_id="Emphasis"),
+        _run("Subtle Emphasis", char_style_id="SubtleEmphasis"),
+    ))
 
     # -----------------------------------------------------------------------
     # 3. Inline Images
@@ -686,6 +692,13 @@ def build_showcase() -> Document:
               run_fmt=RunFormatting(bold=True, font_size_pt=18.0)),
         Style(style_id="Heading2", name="heading 2", style_type="paragraph",
               run_fmt=RunFormatting(bold=True, font_size_pt=14.0)),
+        # Character styles used in the Run Formatting section
+        Style(style_id="Strong", name="Strong", style_type="character",
+              run_fmt=RunFormatting(bold=True)),
+        Style(style_id="Emphasis", name="Emphasis", style_type="character",
+              run_fmt=RunFormatting(italic=True)),
+        Style(style_id="SubtleEmphasis", name="Subtle Emphasis", style_type="character",
+              run_fmt=RunFormatting(italic=True, color="808080")),
     )
     numbering = (nd_bullet, nd_decimal, nd_misc)
 

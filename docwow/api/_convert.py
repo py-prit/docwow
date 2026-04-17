@@ -68,6 +68,7 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperl
             color=fmt.color,
             highlight=fmt.highlight,
             vertical_align=fmt.vertical_align,
+            char_style_id=fmt.char_style_id,
         )
     if isinstance(frozen, ImageRun):
         return MutableImageRun(frozen.image)

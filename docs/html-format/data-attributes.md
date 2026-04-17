@@ -84,7 +84,7 @@ When a paragraph belongs to a list, it gains two additional attributes:
 ## Runs (`<span class="dw-r">`)
 
 ```html
-<span class="dw-r"
+<span class="dw-r dw-cstyle-Strong"
       data-dw-bold="true"
       data-dw-italic="true"
       data-dw-underline="true"
@@ -93,7 +93,8 @@ When a paragraph belongs to a list, it gains two additional attributes:
       data-dw-size="14.0"
       data-dw-color="FF0000"
       data-dw-highlight="yellow"
-      data-dw-valign="superscript">
+      data-dw-valign="superscript"
+      data-dw-char-style="Strong">
   text content
 </span>
 ```
@@ -109,6 +110,9 @@ When a paragraph belongs to a list, it gains two additional attributes:
 | `data-dw-color` | string | Font color as 6-digit hex, no `#` (e.g. `FF0000`) |
 | `data-dw-highlight` | string | Highlight color name (e.g. `yellow`, `cyan`, `red`) |
 | `data-dw-valign` | string | `superscript` \| `subscript` |
+| `data-dw-char-style` | string | Named Word character style ID (e.g. `Strong`, `Emphasis`). Absent = no character style |
+
+When a character style is applied, the span also gains a CSS class `dw-cstyle-{id}` (e.g. `dw-cstyle-Strong`) for CSS-based styling.
 
 Boolean attributes (`data-dw-bold`, etc.) are only present when `true`; their absence means `false`.
 

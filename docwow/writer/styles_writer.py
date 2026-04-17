@@ -134,6 +134,9 @@ def _write_para_fmt(ppr: etree._Element, fmt: ParagraphFormatting, *, skip_keep_
 
 def _write_run_fmt(rpr: etree._Element, fmt: RunFormatting) -> None:
     """Emit run formatting children inside a w:rPr element."""
+    if fmt.char_style_id:
+        rstyle = etree.SubElement(rpr, f"{{{W}}}rStyle")
+        rstyle.set(f"{{{W}}}val", fmt.char_style_id)
     if fmt.bold:
         etree.SubElement(rpr, f"{{{W}}}b")
     if fmt.italic:

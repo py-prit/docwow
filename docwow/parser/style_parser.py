@@ -166,6 +166,11 @@ def _parse_run_fmt(rPr: etree._Element | None) -> RunFormatting | None:
         elif raw_va == "subscript":
             vertical_align = "subscript"
 
+    char_style_id: str | None = None
+    rstyle_el = find(rPr, "w:rStyle")
+    if rstyle_el is not None:
+        char_style_id = attrib(rstyle_el, "w:val") or None
+
     return RunFormatting(
         bold=bold,
         italic=italic,
@@ -176,6 +181,7 @@ def _parse_run_fmt(rPr: etree._Element | None) -> RunFormatting | None:
         color=color,
         highlight=highlight,
         vertical_align=vertical_align,
+        char_style_id=char_style_id,
     )
 
 

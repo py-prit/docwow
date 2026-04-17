@@ -16,6 +16,7 @@ class RunFormatting:
     color: str | None = None           # hex RGB e.g. "FF0000"; None = auto
     highlight: str | None = None       # Word highlight color name e.g. "yellow"
     vertical_align: str | None = None  # "superscript" | "subscript" | None
+    char_style_id: str | None = None   # character style ID e.g. "Strong", "Emphasis"
 
 
 @dataclass(frozen=True)

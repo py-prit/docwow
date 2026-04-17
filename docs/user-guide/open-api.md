@@ -128,6 +128,7 @@ run.set_font_size(14.0)               # in points
 run.set_color("FF0000")               # hex RGB, no '#'
 run.set_highlight("yellow")
 run.set_vertical_align("superscript") # or "subscript"
+run.set_char_style("Strong")          # named Word character style; None to clear
 ```
 
 ### Paragraph-level formatting
