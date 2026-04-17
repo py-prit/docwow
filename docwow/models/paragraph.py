@@ -72,8 +72,20 @@ class BookmarkStart:
     name: str
 
 
+@dataclass(frozen=True)
+class CommentRef:
+    """An inline comment reference marker.
+
+    ``comment_id`` matches the ``w:id`` of the corresponding
+    :class:`~docwow.models.comment.Comment` stored in
+    ``Document.comments``.
+    """
+
+    comment_id: int
+
+
 # A paragraph's content is a sequence of runs.
-Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | FootnoteRef | BookmarkStart
+Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | FootnoteRef | BookmarkStart | CommentRef
 
 
 @dataclass(frozen=True)

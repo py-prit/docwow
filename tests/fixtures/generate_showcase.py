@@ -22,13 +22,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import (
-    BookmarkStart, FootnoteRef, Hyperlink, ImageRun,
+    BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun,
     PageBreak, PageNumberField, Paragraph, TextRun,
 )
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
@@ -124,6 +125,7 @@ BM = {
     "hyperlinks":  "showcase-hyperlinks",
     "bookmarks":   "showcase-bookmarks",
     "footnotes":   "showcase-footnotes",
+    "comments":    "showcase-comments",
     "pagebreaks":  "showcase-pagebreaks",
     "pagefields":  "showcase-pagefields",
     "hf":          "showcase-hf",
@@ -166,6 +168,7 @@ def build_showcase() -> Document:
             TocEntry("Hyperlinks",                  f"#{BM['hyperlinks']}",  1),
             TocEntry("Bookmarks",                   f"#{BM['bookmarks']}",  1),
             TocEntry("Footnotes and Endnotes",      f"#{BM['footnotes']}",  1),
+            TocEntry("Comments",                    f"#{BM['comments']}",   1),
             TocEntry("Page Breaks",                 f"#{BM['pagebreaks']}", 1),
             TocEntry("Page Number Fields",          f"#{BM['pagefields']}", 1),
             TocEntry("Headers and Footers",         f"#{BM['hf']}",         1),
@@ -470,7 +473,55 @@ def build_showcase() -> Document:
     ))
 
     # -----------------------------------------------------------------------
-    # 9. Page Breaks
+    # 9. Comments
+    # -----------------------------------------------------------------------
+    body.append(_ph("Comments", BM["comments"], style_id="Heading1"))
+    body.append(_p(
+        "Comments are annotations attached to specific points in the document text. "
+        "In HTML they render as superscript reference markers (orange brackets) and "
+        "a comment section at the bottom of the page. In DOCX they appear in the "
+        "Word review pane."
+    ))
+
+    c1 = Comment(
+        comment_id=1,
+        author="Alice",
+        date="2026-04-17T09:00:00Z",
+        initials="A",
+        paragraphs=(Paragraph(
+            runs=(TextRun(text="This is a great example!"),),
+            formatting=ParagraphFormatting(),
+        ),),
+    )
+    c2 = Comment(
+        comment_id=2,
+        author="Bob",
+        date="2026-04-17T10:00:00Z",
+        initials="B",
+        paragraphs=(Paragraph(
+            runs=(TextRun(text="Consider adding more detail here."),),
+            formatting=ParagraphFormatting(),
+        ),),
+    )
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="This sentence has a comment from Alice"),
+            CommentRef(comment_id=1),
+            TextRun(text=" attached at the end."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="This sentence has a comment from Bob"),
+            CommentRef(comment_id=2),
+            TextRun(text=" for review."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+
+    # -----------------------------------------------------------------------
+    # 10. Page Breaks
     # -----------------------------------------------------------------------
     body.append(_ph("Page Breaks", BM["pagebreaks"], style_id="Heading1"))
     body.append(_p(
@@ -568,6 +619,7 @@ def build_showcase() -> Document:
         footer_default=footer_default,
         footnotes=(fn1, fn2),
         endnotes=(en1,),
+        comments=(c1, c2),
     )
 
 

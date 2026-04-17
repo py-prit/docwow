@@ -5,7 +5,7 @@ from lxml import etree
 
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
@@ -211,6 +211,8 @@ def _write_run(
     elif isinstance(run, BookmarkStart):
         _bm_counter = bookmark_counter if bookmark_counter is not None else [0]
         _write_bookmark(parent, run, _bm_counter)
+    elif isinstance(run, CommentRef):
+        _write_comment_ref(parent, run)
     else:
         _write_text_run(parent, run)
 
@@ -252,6 +254,39 @@ def _write_bookmark(
 
     bm_end = etree.SubElement(parent, f"{{{W}}}bookmarkEnd")
     bm_end.set(f"{{{W}}}id", bm_id)
+
+
+# ---------------------------------------------------------------------------
+# Comment reference
+# ---------------------------------------------------------------------------
+
+def _write_comment_ref(parent: etree._Element, ref: CommentRef) -> None:
+    """Write the three-element comment reference sequence into a paragraph.
+
+    OOXML requires:
+      <w:commentRangeStart w:id="N"/>
+      ... (the referenced text would normally go between these) ...
+      <w:commentRangeEnd w:id="N"/>
+      <w:r>
+        <w:rPr><w:rStyle w:val="CommentReference"/></w:rPr>
+        <w:commentReference w:id="N"/>
+      </w:r>
+    For a point-style reference (no range), the start/end bracket an empty span.
+    """
+    cid = str(ref.comment_id)
+
+    range_start = etree.SubElement(parent, f"{{{W}}}commentRangeStart")
+    range_start.set(f"{{{W}}}id", cid)
+
+    range_end = etree.SubElement(parent, f"{{{W}}}commentRangeEnd")
+    range_end.set(f"{{{W}}}id", cid)
+
+    r_el = etree.SubElement(parent, f"{{{W}}}r")
+    rpr = etree.SubElement(r_el, f"{{{W}}}rPr")
+    rstyle = etree.SubElement(rpr, f"{{{W}}}rStyle")
+    rstyle.set(f"{{{W}}}val", "CommentReference")
+    comment_ref_el = etree.SubElement(r_el, f"{{{W}}}commentReference")
+    comment_ref_el.set(f"{{{W}}}id", cid)
 
 
 # ---------------------------------------------------------------------------

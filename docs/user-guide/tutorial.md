@@ -275,7 +275,36 @@ para.runs.add_text(" for full details.")
 
 In HTML the bookmark renders as `<a class="dw-bookmark" id="appendix-a"></a>` and the internal hyperlink becomes `<a href="#appendix-a">`.
 
-## 12. Table of Contents
+## 12. Comments
+
+Comments attach reviewer annotations to specific points in the document text.
+
+```python
+# Create a comment body
+comment = doc.add_comment(
+    author="Alice",
+    text="Revenue figure needs verification.",
+    date="2025-07-10T09:00:00Z",
+    initials="A",
+)
+
+# Add a reference marker in a body paragraph
+para = doc.paragraphs.add_paragraph()
+para.runs.add_text("Revenue grew by 18%")
+para.runs.add_comment_ref(comment_id=comment.comment_id)
+para.runs.add_text(" year-on-year.")
+```
+
+In HTML the reference marker renders as an orange superscript `[1]` linking to a `<section class="dw-comments">` block at the bottom of the page. In DOCX the comment appears in the Word review pane (right-click to see it).
+
+To read comments from an existing document:
+
+```python
+for comment in doc.comments:
+    print(f"[{comment.comment_id}] {comment.author}: {comment.get_text()}")
+```
+
+## 13. Table of Contents
 
 Build a TOC manually or point it at existing bookmark anchors. Each entry carries a display level (1–9) matching the heading depth.
 
@@ -295,7 +324,7 @@ intro_heading.runs.add_bookmark("intro")
 
 In HTML the TOC renders as a `<nav class="dw-toc">` element with clickable `<a>` links. In DOCX it becomes a `w:sdt` structured document tag with `TOC1`–`TOC9` styled paragraphs.
 
-## 13. Save to DOCX
+## 14. Save to DOCX
 
 ```python
 doc.save("q2_report.docx")
@@ -311,7 +340,7 @@ Open `q2_report.docx` in Word and verify:
 - The footnote appears at the bottom of the relevant page
 - TOC entries link to headings when clicked
 
-## 14. Convert to HTML
+## 15. Convert to HTML
 
 ```python
 # Standard HTML — for browser viewing or embedding in a web app
@@ -332,7 +361,7 @@ Open `q2_report.html` in a browser and verify:
 - Body text, lists, and hyperlink all render correctly
 - The page break div is invisible
 
-## 15. Round-trip HTML → DOCX
+## 16. Round-trip HTML → DOCX
 
 ```python
 # Read the HTML back and convert to DOCX
@@ -366,6 +395,7 @@ Open `q2_report_restored.docx` in Word and verify that the header, footer page n
 | Footnote | `doc.add_footnote()` + `para.runs.add_footnote_ref(note_id)` |
 | Endnote | `doc.add_footnote(note_type="endnote")` + `add_footnote_ref(..., note_type="endnote")` |
 | Bookmark | `para.runs.add_bookmark(name)` |
+| Comment | `doc.add_comment(author, text)` + `para.runs.add_comment_ref(comment_id)` |
 | Table of Contents | `toc = doc.paragraphs.add_toc("Contents")` + `toc.add_entry(text, url, level)` |
 | Save DOCX | `doc.save("file.docx")` or `doc.to_bytes()` |
 | Convert to HTML | `doc.to_html()` or `docwow.to_html("file.docx")` |

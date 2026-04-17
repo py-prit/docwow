@@ -20,6 +20,7 @@ from docwow.models.paragraph import PageBreak, PageNumberField, Paragraph, TextR
 from docwow.models.table import Table
 from docwow.models.toc import TableOfContents
 from docwow.renderer.css_generator import generate_css
+from docwow.renderer.comment_renderer import render_comments
 from docwow.renderer.footnote_renderer import render_endnotes, render_footnotes
 from docwow.renderer.list_renderer import render_list_group
 from docwow.renderer.paragraph_renderer import render_paragraph
@@ -55,6 +56,7 @@ def render_document(
     body_html = _render_body(doc, page_view=page_view)
     footnotes_html = render_footnotes(doc.footnotes)
     endnotes_html = render_endnotes(doc.endnotes)
+    comments_html = render_comments(doc.comments)
     doc_attrs = _document_attrs(doc)
 
     return (
@@ -72,6 +74,7 @@ def render_document(
         "</div>\n"
         f"{footnotes_html}"
         f"{endnotes_html}"
+        f"{comments_html}"
         f"{footer_html}"
         "</body>\n"
         "</html>"
@@ -170,13 +173,14 @@ def _document_attrs(doc: Document) -> str:
 
 def _render_body(doc: Document, page_view: bool = False) -> str:
     """Render all body elements, grouping list paragraphs."""
+    comments_lookup = {c.comment_id: c for c in doc.comments}
     parts: list[str] = []
     list_buffer: list[Paragraph] = []
     page_num = [1]  # mutable counter
 
     def flush_list() -> None:
         if list_buffer:
-            parts.append(render_list_group(list_buffer, doc.numbering))
+            parts.append(render_list_group(list_buffer, doc.numbering, comments=comments_lookup))
             list_buffer.clear()
 
     for element in doc.body:
@@ -185,7 +189,7 @@ def _render_body(doc: Document, page_view: bool = False) -> str:
                 list_buffer.append(element)
             else:
                 flush_list()
-                parts.append(render_paragraph(element))
+                parts.append(render_paragraph(element, comments=comments_lookup))
         elif isinstance(element, Table):
             flush_list()
             parts.append(render_table(element))

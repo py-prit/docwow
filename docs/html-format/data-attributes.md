@@ -361,6 +361,72 @@ Represents a Word `w:sdt` structured document tag that contains a table of conte
 
 ---
 
+## Comment references (`<a class="dw-comment-ref">`)
+
+Each inline comment reference renders as a superscript `[N]` anchor. When the document has comment bodies available, the renderer embeds a CSS-only hover popup directly inside the `<a>` element — no JavaScript required.
+
+```html
+<a href="#comment-1"
+   class="dw-comment-ref"
+   data-dw-comment-id="1">
+  [1]
+  <span class="dw-comment-popup">
+    <span class="dw-comment-popup-author">
+      Alice
+      <span class="dw-comment-popup-date">· 2024-01-15T10:00:00Z</span>
+    </span>
+    <span class="dw-comment-popup-text">This is a great example!</span>
+  </span>
+</a>
+```
+
+The popup spans are **purely visual** and are ignored by the HTML parser on round-trip — they carry no `data-dw-*` attributes. The `data-dw-comment-id` on the `<a>` is the only attribute the parser reads.
+
+| Attribute / Element | Type | Notes |
+|---|---|---|
+| `class="dw-comment-ref"` | string | Marks the inline reference; used by the HTML parser |
+| `data-dw-comment-id` | integer | Comment ID; used to reconstruct `CommentRef` on round-trip |
+| `href` | string | Anchor pointing to `#comment-{id}` in the hidden comments section |
+| `dw-comment-popup` | — | CSS hover popup container; hidden by default, shown on `:hover` |
+| `dw-comment-popup-author` | — | Author name and optional date |
+| `dw-comment-popup-date` | — | Omitted when `date` is empty |
+| `dw-comment-popup-text` | — | Plain text of the comment body |
+
+## Comment sections (`<section class="dw-comments">`)
+
+The comment section is present in every HTML document that has comments, but it is **visually hidden** (`display: none`). It exists solely to preserve the full comment metadata for the HTML → DOCX round-trip; the HTML parser reads it to reconstruct `Comment` objects.
+
+```html
+<section class="dw-comments" data-dw-note-section="comments">
+  <div class="dw-comment"
+       id="comment-1"
+       data-dw-comment-id="1"
+       data-dw-comment-author="Alice"
+       data-dw-comment-date="2024-01-15T10:00:00Z"
+       data-dw-comment-initials="A">
+    <span class="dw-comment-marker">[1]</span>
+    <div class="dw-comment-body">
+      <p class="dw-p">…</p>
+    </div>
+  </div>
+</section>
+```
+
+| Element / Attribute | Description |
+|---|---|
+| `<section class="dw-comments">` | Hidden container for all comment bodies (`display:none`) |
+| `data-dw-note-section` | Always `"comments"` — marks the section for the HTML parser |
+| `<div class="dw-comment">` | One comment body |
+| `id` | `comment-{id}` — anchor target for the in-text reference |
+| `data-dw-comment-id` | Integer comment ID — used to reconstruct the model on round-trip |
+| `data-dw-comment-author` | Author display name |
+| `data-dw-comment-date` | ISO-8601 datetime string, or empty string |
+| `data-dw-comment-initials` | Author initials, or empty string |
+| `<span class="dw-comment-marker">` | `[N]` marker at the start of the comment |
+| `<div class="dw-comment-body">` | Contains one or more `<p class="dw-p">` paragraphs |
+
+---
+
 ## Attribute presence rules
 
 - **Omitted = default.** Attributes are only written when their value differs from the Word default (e.g. `data-dw-align` is omitted for left-aligned paragraphs).

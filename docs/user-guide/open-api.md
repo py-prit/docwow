@@ -374,6 +374,55 @@ bm = heading.runs.add_bookmark("temp-name")
 bm.set_name("introduction")
 ```
 
+## Comments
+
+Use `doc.add_comment()` to create a comment body, then `para.runs.add_comment_ref()` to place the reference marker in the text.
+
+```python
+from docwow.api import MutableComment
+
+# Create a comment with text, author, date
+comment = doc.add_comment(
+    author="Alice",
+    text="Revenue figure needs verification.",
+    date="2025-07-10T09:00:00Z",
+    initials="A",
+)
+
+# Place a reference marker at the relevant point in the body
+para = doc.paragraphs.add_paragraph()
+para.runs.add_text("Revenue grew by 18%")
+para.runs.add_comment_ref(comment_id=comment.comment_id)
+para.runs.add_text(" year-on-year.")
+```
+
+### Reading comments from an existing document
+
+```python
+from docwow.api import MutableComment
+
+for comment in doc.comments:
+    print(f"[{comment.comment_id}] {comment.author}: {comment.get_text()}")
+```
+
+### Adding multi-paragraph comment content
+
+```python
+comment = doc.add_comment(author="Bob")
+comment.paragraphs.add_paragraph("First paragraph of comment.")
+comment.paragraphs.add_paragraph("Second paragraph with more detail.")
+```
+
+### Setters
+
+`add_comment()` returns a `MutableComment` with chainable setters:
+
+```python
+comment.set_author("Carol").set_date("2025-07-11T08:00:00Z").set_initials("C")
+```
+
+In HTML, comment references render as superscript `[N]` anchors with a CSS-only hover popup showing the author, date, and comment text — similar to how Word shows comments in a side pane when you hover. The comment bodies are also stored in a hidden `<section class="dw-comments">` block (invisible in the browser) that the HTML parser reads when round-tripping back to DOCX. In DOCX they are stored in `word/comments.xml` with matching `w:commentRangeStart`, `w:commentRangeEnd`, and `w:commentReference` elements.
+
 ## Table of Contents
 
 Use `paragraphs.add_toc()` to insert a Table of Contents block, or read one from a parsed DOCX:
@@ -475,6 +524,8 @@ doc.set_margins(top_pt=72.0, bottom_pt=72.0, left_pt=72.0, right_pt=72.0)
 | `add_text(text, bold, italic, ...)` | Create and append a `MutableRun`, return it |
 | `add_hyperlink(text, url)` | Create and append a `MutableHyperlink`, return it |
 | `add_bookmark(name)` | Create and append a `MutableBookmark` anchor, return it |
+| `add_comment_ref(comment_id)` | Create and append a `MutableCommentRef` marker, return it |
+| `add_footnote_ref(note_id, note_type)` | Create and append a `MutableFootnoteRef` marker, return it |
 | `add_page_number(field_type)` | Create and append a `MutablePageNumberField`, return it |
 | `append(run)` | Append an existing run |
 | `insert(index, run)` | Insert at index |

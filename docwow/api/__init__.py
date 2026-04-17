@@ -6,6 +6,7 @@ docwow.models are an internal implementation detail and should not be
 constructed or mutated by user code.
 """
 
+from docwow.api.comment import MutableComment, MutableCommentRef
 from docwow.api.document import DocumentWrapper
 from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
 from docwow.api.header_footer import MutableHeaderFooter
@@ -27,6 +28,8 @@ from docwow.api.toc import MutableTableOfContents, MutableTocEntry
 __all__ = [
     "DocumentWrapper",
     "MutableBookmark",
+    "MutableComment",
+    "MutableCommentRef",
     "MutableFootnote",
     "MutableFootnoteRef",
     "MutableHeaderFooter",

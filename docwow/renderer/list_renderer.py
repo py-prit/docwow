@@ -12,6 +12,7 @@ The stack-based algorithm opens/closes <ul>/<ol> elements as the
 
 from __future__ import annotations
 
+from docwow.models.comment import Comment
 from docwow.models.lists import NumberingDefinition
 from docwow.models.paragraph import Paragraph
 from docwow.renderer.paragraph_renderer import render_paragraph
@@ -20,6 +21,7 @@ from docwow.renderer.paragraph_renderer import render_paragraph
 def render_list_group(
     paragraphs: list[Paragraph],
     numbering: tuple[NumberingDefinition, ...],
+    comments: dict[int, Comment] | None = None,
 ) -> str:
     """Render a sequence of list paragraphs (all with list_info set) to HTML.
 
@@ -76,7 +78,7 @@ def render_list_group(
             buf.append("</li>")
             buf.append(_open_li(num_id, level))
 
-        buf.append(render_paragraph(para))
+        buf.append(render_paragraph(para, comments=comments))
 
     # Close all remaining open elements
     while stack:
