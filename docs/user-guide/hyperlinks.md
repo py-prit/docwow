@@ -98,5 +98,5 @@ The resulting DOCX contains a proper `word/_rels/document.xml.rels` entry:
 
 ## Limitations
 
-- **In-document anchor links** (e.g. links that jump to a heading within the same file) are parsed and stored as `Hyperlink(url="#bookmark-name")`, but the bookmark *targets* are not yet supported. The link text is preserved through round-trips; clickable navigation requires bookmark support (planned).
+- **In-document anchor links** (e.g. links that jump to a heading within the same file) are parsed and stored as `Hyperlink(url="#bookmark-name")`. Bookmark *targets* are fully supported — see [Bookmarks](bookmarks.md). In the rendered HTML, `<a href="#name">` links resolve to `<a id="name" class="dw-bookmark">` anchors in the same document.
 - The link text is stored as a single string in the programmatic API. Multi-run hyperlinks (e.g. bold mid-link) are flattened to plain text on open.

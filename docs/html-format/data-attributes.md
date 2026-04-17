@@ -307,6 +307,26 @@ Always `display:none`. Preserved for round-trip only.
 
 ---
 
+## Bookmark anchors (`<a class="dw-bookmark">`)
+
+```html
+<a id="section1"
+   class="dw-bookmark"
+   data-dw-bookmark="section1"></a>
+```
+
+A zero-width anchor that marks the position of a Word `w:bookmarkStart` element.
+
+| Attribute | Type | Description |
+|---|---|---|
+| `id` | string | The bookmark name — used as the fragment target for `#name` links |
+| `class` | string | Always `dw-bookmark` |
+| `data-dw-bookmark` | string | The bookmark name (same as `id`; used by the HTML parser to reconstruct the model) |
+
+The element is always empty (no text content). Anchor hyperlinks pointing to `#name` resolve to the bookmark with the matching `id`.
+
+---
+
 ## Attribute presence rules
 
 - **Omitted = default.** Attributes are only written when their value differs from the Word default (e.g. `data-dw-align` is omitted for left-aligned paragraphs).

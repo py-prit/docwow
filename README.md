@@ -57,6 +57,7 @@ doc.to_docx("output.docx")
 | Headers & footers | Text content, page number fields, default/first/even slots — see limitations below |
 | Page breaks | Explicit page breaks parsed, written, and round-tripped |
 | Footnotes & endnotes | Parse, render to HTML, HTML → DOCX round-trip, and programmatic API |
+| Bookmarks | Parse `w:bookmarkStart`, render as `<a id="…">` anchors, full round-trip, `MutableBookmark` API |
 | Programmatic API | Open, edit, and save documents in pure Python |
 
 ### ⚠️ Headers, Footers & Page Numbers — Known Limitations
@@ -100,8 +101,7 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 
 | Feature | Notes |
 |---|---|
-| Table of contents | Requires bookmark support |
-| Bookmarks | In-document anchor links and TOC targets |
+| Table of contents | Requires bookmark support (bookmarks now done) |
 | Comments | Annotations / review marks |
 | Track changes | Accept/reject revision marks |
 | Footnotes (superscript numbering only) | Marker position is preserved; custom footnote styles and symbols not yet supported |

@@ -17,7 +17,7 @@ from lxml import etree
 
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.parser.image_parser import extract_image
 from docwow.parser.style_parser import parse_para_fmt, parse_run_fmt
@@ -149,6 +149,14 @@ def _parse_paragraph(
                 # No URL found — flatten to plain runs
                 for r_el in child.findall(qn("w:r")):
                     runs.extend(_parse_run(r_el, zf, relationships))
+
+        elif tag == qn("w:bookmarkStart"):
+            name = attrib(child, "w:name")
+            # Skip internal bookmarks Word inserts automatically (e.g. "_GoBack")
+            if name and not name.startswith("_"):
+                runs.append(BookmarkStart(name=name))
+            # w:bookmarkEnd carries only the numeric ID (no name) and is skipped;
+            # the matching end element is synthesised by the writer on round-trip.
 
     from docwow.models.styles import ParagraphFormatting
     return Paragraph(
