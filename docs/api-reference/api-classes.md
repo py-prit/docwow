@@ -77,3 +77,11 @@ These classes are returned by `docwow.open()` and are the primary interface for 
 ## MutableFootnoteRef
 
 ::: docwow.api.MutableFootnoteRef
+
+## MutableComment
+
+::: docwow.api.MutableComment
+
+## MutableCommentRef
+
+::: docwow.api.MutableCommentRef

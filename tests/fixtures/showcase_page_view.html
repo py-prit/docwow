@@ -161,6 +161,44 @@
 .dw-toc-link:hover {
   text-decoration: underline;
 }
+
+/* Comments */
+.dw-comment-ref {
+  color: #E65100;
+  font-size: 0.75em;
+  vertical-align: super;
+  text-decoration: none;
+}
+
+.dw-comment-ref:hover {
+  text-decoration: underline;
+}
+
+.dw-comments {
+  margin-top: 2em;
+  border-top: 2px solid #E65100;
+  padding-top: 0.75em;
+}
+
+.dw-comment {
+  margin: 0.5em 0;
+  padding: 0.4em 0.6em;
+  background: #FFF8E1;
+  border-left: 3px solid #E65100;
+  border-radius: 2px;
+}
+
+.dw-comment-marker {
+  font-size: 0.75em;
+  color: #E65100;
+  vertical-align: super;
+  font-weight: bold;
+  margin-right: 0.4em;
+}
+
+.dw-comment-body {
+  display: inline;
+}
 .dw-document {
   max-width:595.28pt;
   padding:72pt 72pt 72pt 72pt;
@@ -211,6 +249,7 @@
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-hyperlinks">Hyperlinks</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-bookmarks">Bookmarks</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-footnotes">Footnotes and Endnotes</a></li>
+<li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-comments">Comments</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-pagebreaks">Page Breaks</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-pagefields">Page Number Fields</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-hf">Headers and Footers</a></li>
@@ -330,6 +369,10 @@
 <p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-footnotes" class="dw-bookmark" data-dw-bookmark="showcase-footnotes"></a><span class="dw-r">Footnotes and Endnotes</span></p>
 <p class="dw-p"><span class="dw-r">This sentence has a footnote reference</span><a href="#fn-1" class="dw-footnote-ref" data-dw-note-type="footnote" data-dw-note-id="1">[1]</a><span class="dw-r"> at the end.</span></p>
 <p class="dw-p"><span class="dw-r">A second sentence with another footnote</span><a href="#fn-2" class="dw-footnote-ref" data-dw-note-type="footnote" data-dw-note-id="2">[2]</a><span class="dw-r"> and an endnote reference</span><a href="#en-1" class="dw-endnote-ref" data-dw-note-type="endnote" data-dw-note-id="1">[1]</a><span class="dw-r">.</span></p>
+<p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-comments" class="dw-bookmark" data-dw-bookmark="showcase-comments"></a><span class="dw-r">Comments</span></p>
+<p class="dw-p"><span class="dw-r">Comments are annotations attached to specific points in the document text. In HTML they render as superscript reference markers (orange brackets) and a comment section at the bottom of the page. In DOCX they appear in the Word review pane.</span></p>
+<p class="dw-p"><span class="dw-r">This sentence has a comment from Alice</span><a href="#comment-1" class="dw-comment-ref" data-dw-comment-id="1">[1]</a><span class="dw-r"> attached at the end.</span></p>
+<p class="dw-p"><span class="dw-r">This sentence has a comment from Bob</span><a href="#comment-2" class="dw-comment-ref" data-dw-comment-id="2">[2]</a><span class="dw-r"> for review.</span></p>
 <p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-pagebreaks" class="dw-bookmark" data-dw-bookmark="showcase-pagebreaks"></a><span class="dw-r">Page Breaks</span></p>
 <p class="dw-p"><span class="dw-r">An explicit page break element follows. In HTML it renders as &lt;div class=&quot;dw-page-break&quot;&gt; (invisible, preserved for round-trip). In Word / LibreOffice it forces a new page.</span></p>
 <div class="dw-page-break" data-dw-page="2"></div>
@@ -347,6 +390,9 @@
 <div class="dw-fn" id="fn-2" data-dw-note-id="2" data-dw-note-type="footnote"><span class="dw-fn-marker">[2]</span><div class="dw-fn-body"><p class="dw-p"><span class="dw-r">Second footnote body — attached to the second sentence.</span></p></div></div>
 </section><section class="dw-endnotes" data-dw-note-section="endnotes">
 <div class="dw-en" id="en-1" data-dw-note-id="1" data-dw-note-type="endnote"><span class="dw-en-marker">[1]</span><div class="dw-fn-body"><p class="dw-p"><span class="dw-r">Endnote body — rendered at the very end of the document in Word.</span></p></div></div>
+</section><section class="dw-comments" data-dw-note-section="comments">
+<div class="dw-comment" id="comment-1" data-dw-comment-id="1" data-dw-comment-author="Alice" data-dw-comment-date="2026-04-17T09:00:00Z" data-dw-comment-initials="A"><span class="dw-comment-marker">[1]</span><div class="dw-comment-body"><p class="dw-p"><span class="dw-r">This is a great example!</span></p></div></div>
+<div class="dw-comment" id="comment-2" data-dw-comment-id="2" data-dw-comment-author="Bob" data-dw-comment-date="2026-04-17T10:00:00Z" data-dw-comment-initials="B"><span class="dw-comment-marker">[2]</span><div class="dw-comment-body"><p class="dw-p"><span class="dw-r">Consider adding more detail here.</span></p></div></div>
 </section><footer class="dw-footer dw-footer-default" data-dw-footer-type="default">
 <p class="dw-p dw-page-only" style="text-align:center" data-dw-alignment="center"><span class="dw-r">Page </span><span class="dw-field" data-dw-field="PAGE">1</span><span class="dw-r"> of </span><span class="dw-field" data-dw-field="NUMPAGES">1</span></p>
 </footer>

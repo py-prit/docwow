@@ -361,6 +361,53 @@ Represents a Word `w:sdt` structured document tag that contains a table of conte
 
 ---
 
+## Comment references (`<a class="dw-comment-ref">`)
+
+```html
+<a href="#comment-1"
+   class="dw-comment-ref"
+   data-dw-comment-id="1">[1]</a>
+```
+
+| Attribute | Type | Notes |
+|---|---|---|
+| `class` | string | Always `dw-comment-ref` |
+| `data-dw-comment-id` | integer | The comment ID; used by the HTML parser to reconstruct `CommentRef` |
+| `href` | string | Anchor pointing to `#comment-{id}` in the comments section |
+
+## Comment sections (`<section class="dw-comments">`)
+
+```html
+<section class="dw-comments" data-dw-note-section="comments">
+  <div class="dw-comment"
+       id="comment-1"
+       data-dw-comment-id="1"
+       data-dw-comment-author="Alice"
+       data-dw-comment-date="2024-01-15T10:00:00Z"
+       data-dw-comment-initials="A">
+    <span class="dw-comment-marker">[1]</span>
+    <div class="dw-comment-body">
+      <p class="dw-p">…</p>
+    </div>
+  </div>
+</section>
+```
+
+| Element / Attribute | Description |
+|---|---|
+| `<section class="dw-comments">` | Container for all comment bodies |
+| `data-dw-note-section` | Always `"comments"` — marks the section for the HTML parser |
+| `<div class="dw-comment">` | One comment body |
+| `id` | `comment-{id}` — anchor target for the in-text reference |
+| `data-dw-comment-id` | Integer comment ID — used to reconstruct the model on round-trip |
+| `data-dw-comment-author` | Author display name |
+| `data-dw-comment-date` | ISO-8601 datetime string, or empty string |
+| `data-dw-comment-initials` | Author initials, or empty string |
+| `<span class="dw-comment-marker">` | Visible `[N]` superscript marker at the start of the comment |
+| `<div class="dw-comment-body">` | Contains one or more `<p class="dw-p">` paragraphs |
+
+---
+
 ## Attribute presence rules
 
 - **Omitted = default.** Attributes are only written when their value differs from the Word default (e.g. `data-dw-align` is omitted for left-aligned paragraphs).

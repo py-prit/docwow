@@ -7,12 +7,14 @@ in the codebase where frozen models and mutable wrappers are coupled.
 
 from __future__ import annotations
 
+from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
-from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
+from docwow.api.comment import MutableComment, MutableCommentRef
 from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
 from docwow.api.run import MutableBookmark, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, RunCollection
 from docwow.api.paragraph import MutableParagraph, ParagraphCollection
@@ -24,6 +26,20 @@ from docwow.api.toc import MutableTableOfContents, MutableTocEntry
 # ---------------------------------------------------------------------------
 # Frozen → Wrapper  (used at docwow.open() time)
 # ---------------------------------------------------------------------------
+
+def comment_from_frozen(frozen: Comment) -> MutableComment:
+    """Convert a frozen Comment to a MutableComment."""
+    collection = ParagraphCollection()
+    for para in frozen.paragraphs:
+        collection._items.append(paragraph_from_frozen(para))
+    return MutableComment(
+        comment_id=frozen.comment_id,
+        author=frozen.author,
+        date=frozen.date,
+        initials=frozen.initials,
+        paragraphs=collection,
+    )
+
 
 def footnote_from_frozen(frozen: Footnote) -> MutableFootnote:
     """Convert a frozen Footnote to a MutableFootnote."""
@@ -65,6 +81,8 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperl
         return MutableFootnoteRef(note_id=frozen.note_id, note_type=frozen.note_type)
     if isinstance(frozen, BookmarkStart):
         return MutableBookmark(name=frozen.name)
+    if isinstance(frozen, CommentRef):
+        return MutableCommentRef(comment_id=frozen.comment_id)
     raise TypeError(f"Unknown run type: {type(frozen).__name__}")
 
 
@@ -158,7 +176,7 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
     def _hf(hf: HeaderFooter | None) -> MutableHeaderFooter | None:
         return header_footer_from_frozen(hf) if hf is not None else None
 
-    return DocumentWrapper(
+    wrapper = DocumentWrapper(
         paragraphs=collection,
         styles=frozen.styles,
         numbering=frozen.numbering,
@@ -178,6 +196,8 @@ def document_from_frozen(frozen: Document) -> "DocumentWrapper":
         footnotes=[footnote_from_frozen(n) for n in frozen.footnotes],
         endnotes=[footnote_from_frozen(n) for n in frozen.endnotes],
     )
+    wrapper._comments = [comment_from_frozen(c) for c in frozen.comments]
+    return wrapper
 
 
 # ---------------------------------------------------------------------------
@@ -208,4 +228,5 @@ def document_to_frozen(wrapper: "DocumentWrapper") -> Document:
         title_pg=wrapper._title_pg,
         footnotes=wrapper._footnotes_frozen,
         endnotes=wrapper._endnotes_frozen,
+        comments=wrapper._comments_frozen,
     )

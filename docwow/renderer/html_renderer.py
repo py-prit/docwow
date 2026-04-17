@@ -20,6 +20,7 @@ from docwow.models.paragraph import PageBreak, PageNumberField, Paragraph, TextR
 from docwow.models.table import Table
 from docwow.models.toc import TableOfContents
 from docwow.renderer.css_generator import generate_css
+from docwow.renderer.comment_renderer import render_comments
 from docwow.renderer.footnote_renderer import render_endnotes, render_footnotes
 from docwow.renderer.list_renderer import render_list_group
 from docwow.renderer.paragraph_renderer import render_paragraph
@@ -55,6 +56,7 @@ def render_document(
     body_html = _render_body(doc, page_view=page_view)
     footnotes_html = render_footnotes(doc.footnotes)
     endnotes_html = render_endnotes(doc.endnotes)
+    comments_html = render_comments(doc.comments)
     doc_attrs = _document_attrs(doc)
 
     return (
@@ -72,6 +74,7 @@ def render_document(
         "</div>\n"
         f"{footnotes_html}"
         f"{endnotes_html}"
+        f"{comments_html}"
         f"{footer_html}"
         "</body>\n"
         "</html>"

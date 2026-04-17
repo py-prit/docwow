@@ -24,8 +24,9 @@ from docwow.models.table import Table
 from docwow.models.header_footer import HeaderFooter
 from docwow.writer._xml import (
     REL_HYPERLINK, REL_IMAGE, REL_STYLES, REL_NUMBERING, REL_SETTINGS,
-    REL_HEADER, REL_FOOTER, REL_FOOTNOTES, REL_ENDNOTES,
+    REL_HEADER, REL_FOOTER, REL_FOOTNOTES, REL_ENDNOTES, REL_COMMENTS,
 )
+from docwow.writer.comment_writer import write_comments
 from docwow.writer.footnote_writer import write_endnotes, write_footnotes
 from docwow.writer.header_footer_writer import build_header_xml, build_footer_xml
 from docwow.writer.document_writer import build_document_xml
@@ -133,15 +134,19 @@ def _build_zip(doc: Document) -> bytes:
 
     hf_rids: dict[tuple[str, str], str] = {k: v[0] for k, v in hf_parts.items()}
 
-    # 6. Footnotes / endnotes rIds
+    # 6. Footnotes / endnotes / comments rIds
     has_footnotes = bool(doc.footnotes)
     has_endnotes = bool(doc.endnotes)
+    has_comments = bool(doc.comments)
     footnotes_rid = None
     endnotes_rid = None
+    comments_rid = None
     if has_footnotes:
         footnotes_rid = f"rId{next_rid}"; next_rid += 1
     if has_endnotes:
         endnotes_rid = f"rId{next_rid}"; next_rid += 1
+    if has_comments:
+        comments_rid = f"rId{next_rid}"; next_rid += 1
 
     # 7. Build image_rids map used by document_writer
     image_rids = {orig: info[0] for orig, info in image_info.items()}
@@ -163,6 +168,8 @@ def _build_zip(doc: Document) -> bytes:
         rel_entries.append((footnotes_rid, REL_FOOTNOTES, "footnotes.xml"))
     if endnotes_rid:
         rel_entries.append((endnotes_rid, REL_ENDNOTES, "endnotes.xml"))
+    if comments_rid:
+        rel_entries.append((comments_rid, REL_COMMENTS, "comments.xml"))
 
     # 9. Build image content-type entries for [Content_Types].xml
     ct_image_entries = [
@@ -180,6 +187,7 @@ def _build_zip(doc: Document) -> bytes:
     ct_xml        = build_content_types_xml(
         ct_image_entries, has_numbering, hf_filenames,
         has_footnotes=has_footnotes, has_endnotes=has_endnotes,
+        has_comments=has_comments,
     )
     numbering_xml = build_numbering_xml(doc.numbering) if has_numbering else None
 
@@ -210,6 +218,8 @@ def _build_zip(doc: Document) -> bytes:
             zf.writestr("word/footnotes.xml", write_footnotes(doc.footnotes))
         if has_endnotes:
             zf.writestr("word/endnotes.xml", write_endnotes(doc.endnotes))
+        if has_comments:
+            zf.writestr("word/comments.xml", write_comments(doc.comments))
 
     return buf.getvalue()
 

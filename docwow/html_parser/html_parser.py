@@ -12,9 +12,11 @@ from __future__ import annotations
 import lxml.html
 
 from docwow.html_parser._utils import has_class, pt_val
+from docwow.html_parser.comment_parser import parse_comments
 from docwow.html_parser.paragraph_parser import parse_paragraph
 from docwow.html_parser.table_parser import parse_table
 from docwow.html_parser.toc_parser import parse_toc
+from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
@@ -73,6 +75,9 @@ def parse_html(source: str | bytes) -> Document:
     footnotes = _parse_note_section(root, note_type="footnote")
     endnotes = _parse_note_section(root, note_type="endnote")
 
+    # Comments — parsed from <section class="dw-comments">
+    comments = _parse_comment_section(root)
+
     return Document(
         body=body,
         styles=styles,
@@ -86,6 +91,7 @@ def parse_html(source: str | bytes) -> Document:
         title_pg=title_pg,
         footnotes=footnotes,
         endnotes=endnotes,
+        comments=comments,
         **hf_kwargs,
     )
 
@@ -224,6 +230,14 @@ def _parse_note_section(root, note_type: str) -> tuple[Footnote, ...]:
             ))
 
     return tuple(notes)
+
+
+def _parse_comment_section(root) -> tuple[Comment, ...]:
+    """Parse ``<section class="dw-comments">`` into Comment objects."""
+    sections = root.xpath('.//section[contains(@class,"dw-comments")]')
+    if not sections:
+        return ()
+    return parse_comments(sections[0])
 
 
 def _build_numbering(

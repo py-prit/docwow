@@ -315,4 +315,42 @@ _BASE_CSS = """\
 
 .dw-toc-link:hover {
   text-decoration: underline;
+}
+
+/* Comments */
+.dw-comment-ref {
+  color: #E65100;
+  font-size: 0.75em;
+  vertical-align: super;
+  text-decoration: none;
+}
+
+.dw-comment-ref:hover {
+  text-decoration: underline;
+}
+
+.dw-comments {
+  margin-top: 2em;
+  border-top: 2px solid #E65100;
+  padding-top: 0.75em;
+}
+
+.dw-comment {
+  margin: 0.5em 0;
+  padding: 0.4em 0.6em;
+  background: #FFF8E1;
+  border-left: 3px solid #E65100;
+  border-radius: 2px;
+}
+
+.dw-comment-marker {
+  font-size: 0.75em;
+  color: #E65100;
+  vertical-align: super;
+  font-weight: bold;
+  margin-right: 0.4em;
+}
+
+.dw-comment-body {
+  display: inline;
 }"""

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import html
 
-from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
@@ -41,6 +41,8 @@ def _render_run(run: Run) -> str:
         return _render_footnote_ref(run)
     if isinstance(run, BookmarkStart):
         return _render_bookmark(run)
+    if isinstance(run, CommentRef):
+        return _render_comment_ref(run)
     return _render_text_run(run)
 
 
@@ -63,6 +65,15 @@ def _render_page_number_field(field: PageNumberField) -> str:
     return (
         f'<span class="dw-field" data-dw-field="{field.field_type}"{style_attr}>'
         f"{placeholder}</span>"
+    )
+
+
+def _render_comment_ref(ref: CommentRef) -> str:
+    """Render a comment reference as a superscript anchor."""
+    return (
+        f'<a href="#comment-{ref.comment_id}" class="dw-comment-ref" '
+        f'data-dw-comment-id="{ref.comment_id}">'
+        f"[{ref.comment_id}]</a>"
     )
 
 

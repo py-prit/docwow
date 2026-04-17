@@ -486,6 +486,17 @@ class RunCollection:
         self._items.append(ref)
         return ref
 
+    def add_comment_ref(self, comment_id: int) -> "MutableCommentRef":
+        """Create a comment reference marker, append it, and return it.
+
+        Args:
+            comment_id: The integer ID of the comment this marker points to.
+        """
+        from docwow.api.comment import MutableCommentRef
+        ref = MutableCommentRef(comment_id=comment_id)
+        self._items.append(ref)
+        return ref
+
     # ---- Internal conversion -------------------------------------------------
 
     def _to_frozen(self) -> tuple[Run, ...]:
@@ -496,7 +507,8 @@ class RunCollection:
 
     def _check_type(self, run: object) -> None:
         from docwow.api.footnote import MutableFootnoteRef
-        allowed = self._ALLOWED + (MutableFootnoteRef,)
+        from docwow.api.comment import MutableCommentRef
+        allowed = self._ALLOWED + (MutableFootnoteRef, MutableCommentRef)
         if not isinstance(run, allowed):
             if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField, BookmarkStart)):
                 raise TypeError(
@@ -506,8 +518,8 @@ class RunCollection:
                 )
             raise TypeError(
                 f"Expected MutableRun, MutableImageRun, MutableHyperlink, "
-                f"MutablePageNumberField, MutableBookmark, or MutableFootnoteRef; "
-                f"got {type(run).__name__!r}"
+                f"MutablePageNumberField, MutableBookmark, MutableFootnoteRef, "
+                f"or MutableCommentRef; got {type(run).__name__!r}"
             )
 
     def __repr__(self) -> str:

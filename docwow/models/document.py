@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypeAlias
 
+from docwow.models.comment import Comment
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.lists import NumberingDefinition
@@ -51,3 +52,6 @@ class Document:
     # Footnotes and endnotes (optional)
     footnotes: tuple[Footnote, ...] = ()
     endnotes: tuple[Footnote, ...] = ()
+
+    # Comments (optional)
+    comments: tuple[Comment, ...] = ()

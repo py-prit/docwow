@@ -27,6 +27,7 @@ def build_content_types_xml(
     hf_entries: list[tuple[str, str, str]] | None = None,
     has_footnotes: bool = False,
     has_endnotes: bool = False,
+    has_comments: bool = False,
 ) -> bytes:
     """Build ``[Content_Types].xml``.
 
@@ -88,6 +89,11 @@ def build_content_types_xml(
         _override(
             "/word/endnotes.xml",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml",
+        )
+    if has_comments:
+        _override(
+            "/word/comments.xml",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml",
         )
 
     return to_bytes(root)

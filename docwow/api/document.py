@@ -6,6 +6,7 @@ from pathlib import Path
 
 from docwow.models.lists import NumberingDefinition
 from docwow.models.styles import Style
+from docwow.api.comment import MutableComment
 from docwow.api.footnote import MutableFootnote
 from docwow.api.paragraph import ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
@@ -59,6 +60,7 @@ class DocumentWrapper:
         self._title_pg = title_pg
         self._footnotes: list[MutableFootnote] = list(footnotes) if footnotes else []
         self._endnotes: list[MutableFootnote] = list(endnotes) if endnotes else []
+        self._comments: list[MutableComment] = []
 
     # ---- Body access ---------------------------------------------------------
 
@@ -199,6 +201,52 @@ class DocumentWrapper:
         """All endnote bodies in the document."""
         return self._endnotes
 
+    # ---- Comments ------------------------------------------------------------
+
+    @property
+    def comments(self) -> list[MutableComment]:
+        """All comment bodies in the document."""
+        return self._comments
+
+    def add_comment(
+        self,
+        author: str = "",
+        text: str = "",
+        date: str = "",
+        initials: str = "",
+    ) -> MutableComment:
+        """Create a new comment body, register it, and return it.
+
+        The returned :class:`~docwow.api.comment.MutableComment` has an
+        auto-assigned sequential ``comment_id``. The optional *text* argument
+        adds an initial paragraph with that content. Add a matching
+        :meth:`~docwow.api.run.RunCollection.add_comment_ref` to the body
+        paragraph where the superscript marker should appear.
+
+        Args:
+            author:   Display name of the comment author.
+            text:     Initial comment text (creates one paragraph if non-empty).
+            date:     ISO-8601 datetime string, e.g. ``"2024-01-15T10:30:00Z"``.
+            initials: Author initials.
+        """
+        comment_id = len(self._comments) + 1
+        comment = MutableComment(
+            comment_id=comment_id,
+            author=author,
+            date=date,
+            initials=initials,
+        )
+        if text:
+            comment.paragraphs.add_paragraph(text)
+        self._comments.append(comment)
+        return comment
+
+    @property
+    def _comments_frozen(self):
+        return tuple(c._to_frozen() for c in self._comments)
+
+    # ---- Footnotes / endnotes ------------------------------------------------
+
     def add_footnote(self, note_type: str = "footnote") -> MutableFootnote:
         """Create a new footnote (or endnote) body, register it, and return it.
 
@@ -272,6 +320,10 @@ class DocumentWrapper:
     @property
     def _endnotes_frozen(self):
         return tuple(n._to_frozen() for n in self._endnotes)
+
+    @property
+    def _comments_frozen(self):
+        return tuple(c._to_frozen() for c in self._comments)
 
     def to_bytes(self) -> bytes:
         """Serialise the document to DOCX bytes."""

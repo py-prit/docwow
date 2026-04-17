@@ -21,10 +21,12 @@ from __future__ import annotations
 import zipfile
 from pathlib import Path
 
+from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.parser.body_parser import parse_body
+from docwow.parser.comment_parser import parse_comments
 from docwow.parser.footnote_parser import parse_footnotes
 from docwow.parser.header_footer_parser import parse_header_footer
 from docwow.parser.image_parser import parse_relationships
@@ -119,6 +121,10 @@ def _parse_zip(zf: zipfile.ZipFile) -> Document:
             zf.read("word/endnotes.xml"), zf, relationships, note_type="endnote"
         )
 
+    comments: tuple[Comment, ...] = ()
+    if "word/comments.xml" in names:
+        comments = parse_comments(zf.read("word/comments.xml"), zf, relationships)
+
     return Document(
         body=body,
         styles=styles,
@@ -127,6 +133,7 @@ def _parse_zip(zf: zipfile.ZipFile) -> Document:
         page_height_pt=page_height_pt,
         footnotes=footnotes,
         endnotes=endnotes,
+        comments=comments,
         **margins,
         **hf,
     )

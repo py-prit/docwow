@@ -17,7 +17,7 @@ from lxml import etree
 
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.parser.image_parser import extract_image
@@ -323,6 +323,13 @@ def _parse_run(
             note_id_str = attrib(child, "w:id") or ""
             try:
                 result.append(FootnoteRef(note_id=int(note_id_str), note_type="endnote"))
+            except ValueError:
+                pass
+
+        elif tag == qn("w:commentReference"):
+            comment_id_str = attrib(child, "w:id") or ""
+            try:
+                result.append(CommentRef(comment_id=int(comment_id_str)))
             except ValueError:
                 pass
 
