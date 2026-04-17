@@ -7,7 +7,7 @@ from docwow.html_parser._utils import has_class, pt_val
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
 from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
-from docwow.models.styles import ParagraphFormatting, RunFormatting
+from docwow.models.styles import ParagraphFormatting, RunFormatting, TabStop
 
 
 def parse_paragraph(p_el) -> Paragraph:
@@ -38,7 +38,26 @@ def _parse_para_formatting(p_el) -> ParagraphFormatting:
         keep_with_next=g("data-dw-keep-with-next") == "true",
         page_break_before=g("data-dw-page-break-before") == "true",
         shading=g("data-dw-shading") or None,
+        tab_stops=_parse_tab_stops(g("data-dw-tab-stops")),
     )
+
+
+def _parse_tab_stops(raw: str | None) -> tuple[TabStop, ...]:
+    """Decode a 'pos:align' or 'pos:align:leader' comma-separated string."""
+    if not raw:
+        return ()
+    stops = []
+    for entry in raw.split(","):
+        parts = entry.strip().split(":")
+        if len(parts) < 2:
+            continue
+        pos = pt_val(parts[0])
+        if pos is None:
+            continue
+        alignment = parts[1]
+        leader = parts[2] if len(parts) >= 3 else None
+        stops.append(TabStop(position_pt=pos, alignment=alignment, leader=leader or None))
+    return tuple(stops)
 
 
 def _parse_list_info(p_el) -> ListInfo | None:

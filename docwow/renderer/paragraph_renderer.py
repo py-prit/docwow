@@ -6,7 +6,7 @@ import html
 
 from docwow.models.comment import Comment
 from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
-from docwow.models.styles import ParagraphFormatting, RunFormatting
+from docwow.models.styles import ParagraphFormatting, RunFormatting, TabStop
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
 
@@ -195,6 +195,8 @@ def _para_data_attrs(fmt: ParagraphFormatting) -> dict[str, str]:
         attrs["data-dw-page-break-before"] = "true"
     if fmt.shading:
         attrs["data-dw-shading"] = fmt.shading
+    if fmt.tab_stops:
+        attrs["data-dw-tab-stops"] = _serialize_tab_stops(fmt.tab_stops)
     return attrs
 
 
@@ -287,6 +289,17 @@ def _run_inline_style(fmt: RunFormatting) -> str:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _serialize_tab_stops(stops: tuple[TabStop, ...]) -> str:
+    """Encode tab stops as 'pos:align' or 'pos:align:leader' joined by commas."""
+    parts = []
+    for s in stops:
+        entry = f"{pt_to_css(s.position_pt)}:{s.alignment}"
+        if s.leader:
+            entry += f":{s.leader}"
+        parts.append(entry)
+    return ",".join(parts)
+
 
 def _tag(
     tag_name: str,

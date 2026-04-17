@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterator
 
 from docwow.models.lists import ListInfo
 from docwow.models.paragraph import PageBreak, Paragraph
-from docwow.models.styles import ParagraphFormatting
+from docwow.models.styles import ParagraphFormatting, TabStop
 from docwow.api.run import MutableImageRun, MutableRun, RunCollection
 
 if TYPE_CHECKING:
@@ -50,6 +50,7 @@ class MutableParagraph:
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
             shading=self._fmt.shading,
+            tab_stops=self._fmt.tab_stops,
         )
         return self
 
@@ -73,6 +74,7 @@ class MutableParagraph:
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
             shading=self._fmt.shading,
+            tab_stops=self._fmt.tab_stops,
         )
         return self
 
@@ -96,6 +98,7 @@ class MutableParagraph:
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
             shading=self._fmt.shading,
+            tab_stops=self._fmt.tab_stops,
         )
         return self
 
@@ -119,6 +122,7 @@ class MutableParagraph:
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
             shading=self._fmt.shading,
+            tab_stops=self._fmt.tab_stops,
         )
         return self
 
@@ -137,6 +141,7 @@ class MutableParagraph:
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
             shading=self._fmt.shading,
+            tab_stops=self._fmt.tab_stops,
         )
         return self
 
@@ -155,6 +160,7 @@ class MutableParagraph:
             keep_with_next=value,
             page_break_before=self._fmt.page_break_before,
             shading=self._fmt.shading,
+            tab_stops=self._fmt.tab_stops,
         )
         return self
 
@@ -173,6 +179,7 @@ class MutableParagraph:
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=value,
             shading=self._fmt.shading,
+            tab_stops=self._fmt.tab_stops,
         )
         return self
 
@@ -309,6 +316,31 @@ class MutableParagraph:
             keep_with_next=self._fmt.keep_with_next,
             page_break_before=self._fmt.page_break_before,
             shading=hex_rgb.upper() if hex_rgb else None,
+            tab_stops=self._fmt.tab_stops,
+        )
+        return self
+
+    @property
+    def tab_stops(self) -> tuple:
+        """Tuple of TabStop objects defining custom tab stop positions."""
+        return self._fmt.tab_stops
+
+    def set_tab_stops(self, stops: tuple) -> "MutableParagraph":
+        """Set custom tab stops.  Pass a tuple of :class:`~docwow.models.styles.TabStop` objects, or ``()`` to clear."""
+        self._fmt = ParagraphFormatting(
+            style_id=self._fmt.style_id,
+            alignment=self._fmt.alignment,
+            indent_left_pt=self._fmt.indent_left_pt,
+            indent_right_pt=self._fmt.indent_right_pt,
+            indent_first_line_pt=self._fmt.indent_first_line_pt,
+            space_before_pt=self._fmt.space_before_pt,
+            space_after_pt=self._fmt.space_after_pt,
+            line_spacing_pt=self._fmt.line_spacing_pt,
+            keep_together=self._fmt.keep_together,
+            keep_with_next=self._fmt.keep_with_next,
+            page_break_before=self._fmt.page_break_before,
+            shading=self._fmt.shading,
+            tab_stops=tuple(stops),
         )
         return self
 

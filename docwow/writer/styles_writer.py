@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from lxml import etree
 
-from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
+from docwow.models.styles import ParagraphFormatting, RunFormatting, Style, TabStop
 from docwow.writer._xml import (
     STYLE_NSMAP, W,
     sub, to_bytes, pt_tw, pt_hp,
@@ -130,6 +130,15 @@ def _write_para_fmt(ppr: etree._Element, fmt: ParagraphFormatting, *, skip_keep_
         shd.set(f"{{{W}}}val", "clear")
         shd.set(f"{{{W}}}color", "auto")
         shd.set(f"{{{W}}}fill", fmt.shading)
+
+    if fmt.tab_stops:
+        tabs = etree.SubElement(ppr, f"{{{W}}}tabs")
+        for stop in fmt.tab_stops:
+            tab = etree.SubElement(tabs, f"{{{W}}}tab")
+            tab.set(f"{{{W}}}val", stop.alignment)
+            tab.set(f"{{{W}}}pos", pt_tw(stop.position_pt))
+            if stop.leader:
+                tab.set(f"{{{W}}}leader", stop.leader)
 
 
 def _write_run_fmt(rpr: etree._Element, fmt: RunFormatting) -> None:

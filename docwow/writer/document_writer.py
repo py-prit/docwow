@@ -413,12 +413,16 @@ def _has_run_fmt(fmt: RunFormatting) -> bool:
 
 
 def _write_text_content(r_el: etree._Element, text: str) -> None:
-    """Write text to a run, splitting on \\n and inserting w:br elements."""
-    parts = text.split("\n")
-    _append_t(r_el, parts[0])
-    for part in parts[1:]:
-        etree.SubElement(r_el, f"{{{W}}}br")
-        _append_t(r_el, part)
+    """Write text to a run, splitting on \\n→w:br and \\t→w:tab."""
+    # Split on newlines first, then on tabs within each segment
+    for line_idx, line in enumerate(text.split("\n")):
+        if line_idx > 0:
+            etree.SubElement(r_el, f"{{{W}}}br")
+        segments = line.split("\t")
+        _append_t(r_el, segments[0])
+        for seg in segments[1:]:
+            etree.SubElement(r_el, f"{{{W}}}tab")
+            _append_t(r_el, seg)
 
 
 def _append_t(r_el: etree._Element, text: str) -> None:

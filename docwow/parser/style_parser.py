@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from lxml import etree
 
-from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
+from docwow.models.styles import ParagraphFormatting, RunFormatting, Style, TabStop
 from docwow.utils.units import half_pt_to_pt, twips_to_pt
 from docwow.utils.xml_utils import attrib, find, findall, qn
 
@@ -104,6 +104,26 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
         if fill and fill.upper() not in ("AUTO", "FFFFFF", ""):
             shading = fill.upper()
 
+    tab_stops: tuple[TabStop, ...] = ()
+    tabs_el = find(pPr, "w:tabs")
+    if tabs_el is not None:
+        stops = []
+        for tab_el in tabs_el.findall(qn("w:tab")):
+            val = attrib(tab_el, "w:val") or "left"
+            if val in ("clear", "num"):
+                continue
+            pos_str = attrib(tab_el, "w:pos")
+            if pos_str is None:
+                continue
+            leader_raw = attrib(tab_el, "w:leader")
+            leader = leader_raw if leader_raw and leader_raw != "none" else None
+            stops.append(TabStop(
+                position_pt=twips_to_pt(int(pos_str)),
+                alignment=val,
+                leader=leader,
+            ))
+        tab_stops = tuple(stops)
+
     return ParagraphFormatting(
         style_id=style_id,
         alignment=alignment,
@@ -117,6 +137,7 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
         keep_with_next=keep_with_next,
         page_break_before=page_break_before,
         shading=shading,
+        tab_stops=tab_stops,
     )
 
 

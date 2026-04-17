@@ -4,6 +4,15 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
+class TabStop:
+    """A single tab stop definition from w:tabs/w:tab."""
+
+    position_pt: float
+    alignment: str        # "left" | "right" | "center" | "decimal" | "bar"
+    leader: str | None = None  # "dot" | "hyphen" | "underscore" | None
+
+
+@dataclass(frozen=True)
 class RunFormatting:
     """Character-level formatting for a run of text."""
 
@@ -37,6 +46,7 @@ class ParagraphFormatting:
     keep_with_next: bool = False
     page_break_before: bool = False
     shading: str | None = None          # hex RGB background e.g. "4472C4"; None = none
+    tab_stops: tuple[TabStop, ...] = ()  # custom tab stop definitions
 
 
 @dataclass(frozen=True)
