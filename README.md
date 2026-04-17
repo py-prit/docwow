@@ -133,7 +133,7 @@ Individual features, each ~1–3 hours, all following the same 5-layer pattern (
 
 #### How to contribute
 
-Every feature follows the same 5-layer pattern — read `CLAUDE.md` for the full contributor guide. One branch per feature, all layers in one PR (parser + renderer + html_parser + writer + API + tests + docs).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, the 5-layer architecture pattern, testing requirements, and the PR process. One branch per feature, all layers in one PR.
 
 ## Documentation
 
