@@ -437,6 +437,24 @@ def build_showcase() -> Document:
         "carries a BookmarkStart run that the TOC hyperlinks resolve to."
     ))
 
+    body.append(_p("Cross-references (REF fields) link to named bookmarks elsewhere in the document:"))
+    body.append(Paragraph(
+        runs=(
+            BookmarkStart(name="xref-target"),
+            TextRun(text="This paragraph is the cross-reference target (bookmark: xref-target)."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    from docwow.models.paragraph import CrossRef
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Jump to: "),
+            CrossRef(bookmark_name="xref-target", display_text="the target paragraph"),
+            TextRun(text="."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+
     # -----------------------------------------------------------------------
     # 8. Footnotes and Endnotes
     # -----------------------------------------------------------------------

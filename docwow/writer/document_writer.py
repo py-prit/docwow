@@ -5,7 +5,7 @@ from lxml import etree
 
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
@@ -206,6 +206,8 @@ def _write_run(
         _write_image_run(parent, run.image, image_rids, draw_counter)
     elif isinstance(run, PageNumberField):
         _write_page_number_field(parent, run)
+    elif isinstance(run, CrossRef):
+        _write_cross_ref_field(parent, run)
     elif isinstance(run, FootnoteRef):
         _write_footnote_ref(parent, run)
     elif isinstance(run, BookmarkStart):
@@ -362,6 +364,40 @@ def _write_page_number_field(parent: etree._Element, field: PageNumberField) -> 
     t_el.text = "1"
 
     # end
+    r_end = _run_with_fmt()
+    fc_end = etree.SubElement(r_end, f"{{{W}}}fldChar")
+    fc_end.set(f"{{{W}}}fldCharType", "end")
+
+
+def _write_cross_ref_field(parent: etree._Element, ref: CrossRef) -> None:
+    """Write a REF cross-reference field using the complex fldChar form."""
+    fmt = ref.formatting
+
+    def _run_with_fmt() -> etree._Element:
+        r_el = etree.SubElement(parent, f"{{{W}}}r")
+        if _has_run_fmt(fmt):
+            rpr = etree.SubElement(r_el, f"{{{W}}}rPr")
+            _write_run_fmt(rpr, fmt)
+        return r_el
+
+    r_begin = _run_with_fmt()
+    fc_begin = etree.SubElement(r_begin, f"{{{W}}}fldChar")
+    fc_begin.set(f"{{{W}}}fldCharType", "begin")
+
+    r_instr = _run_with_fmt()
+    instr = etree.SubElement(r_instr, f"{{{W}}}instrText")
+    instr.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    instr.text = f" REF {ref.bookmark_name} \\h "
+
+    r_sep = _run_with_fmt()
+    fc_sep = etree.SubElement(r_sep, f"{{{W}}}fldChar")
+    fc_sep.set(f"{{{W}}}fldCharType", "separate")
+
+    r_disp = _run_with_fmt()
+    t_el = etree.SubElement(r_disp, f"{{{W}}}t")
+    t_el.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    t_el.text = ref.display_text or ref.bookmark_name
+
     r_end = _run_with_fmt()
     fc_end = etree.SubElement(r_end, f"{{{W}}}fldChar")
     fc_end.set(f"{{{W}}}fldCharType", "end")

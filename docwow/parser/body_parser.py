@@ -17,7 +17,7 @@ from lxml import etree
 
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.parser.image_parser import extract_image
@@ -117,16 +117,20 @@ def _parse_paragraph(
                 fld_char_type = attrib(fld_char_el, "w:fldCharType")
                 if fld_char_type == "begin":
                     rPr = find(child, "w:rPr")
-                    _field_state = {"instr": "", "fmt": parse_run_fmt(rPr)}
+                    _field_state = {"instr": "", "fmt": parse_run_fmt(rPr), "display": "", "in_display": False}
+                elif fld_char_type == "separate":
+                    if _field_state is not None:
+                        _field_state["in_display"] = True
                 elif fld_char_type == "end":
                     if _field_state is not None:
-                        pf = _make_page_number_field(
-                            _field_state["instr"], _field_state["fmt"]
+                        pf = _make_field(
+                            _field_state["instr"],
+                            _field_state["fmt"],
+                            _field_state["display"],
                         )
                         if pf is not None:
                             runs.append(pf)
                         _field_state = None
-                # "separate" and others: do nothing
                 continue
 
             if instr_el is not None:
@@ -134,8 +138,12 @@ def _parse_paragraph(
                     _field_state["instr"] += instr_el.text or ""
                 continue
 
-            # Skip display-value runs between "separate" and "end"
+            # Accumulate display-value text; skip non-display runs inside fields
             if _field_state is not None:
+                if _field_state["in_display"]:
+                    t_el = find(child, "w:t")
+                    if t_el is not None:
+                        _field_state["display"] += t_el.text or ""
                 continue
 
             runs.extend(_parse_run(child, zf, relationships))
@@ -306,26 +314,33 @@ def _parse_hyperlink_runs(
 # Page number fields
 # ---------------------------------------------------------------------------
 
-_KNOWN_FIELDS = ("PAGE", "NUMPAGES", "SECTIONPAGES")
+_PAGE_FIELDS = ("PAGE", "NUMPAGES", "SECTIONPAGES")
 
 
-def _make_page_number_field(instr: str, fmt) -> PageNumberField | None:
-    """Return a PageNumberField for known field types, or None."""
+def _make_field(instr: str, fmt, display: str = "") -> PageNumberField | CrossRef | None:
+    """Parse a field instruction into a PageNumberField, CrossRef, or None."""
     from docwow.models.styles import RunFormatting
-    instr_upper = instr.strip().upper()
-    for field_type in _KNOWN_FIELDS:
-        if instr_upper.startswith(field_type):
-            return PageNumberField(
-                field_type=field_type,
-                formatting=fmt if fmt is not None else RunFormatting(),
-            )
+    effective_fmt = fmt if fmt is not None else RunFormatting()
+    tokens = instr.strip().split()
+    if not tokens:
+        return None
+    keyword = tokens[0].upper()
+    if keyword in _PAGE_FIELDS:
+        return PageNumberField(field_type=keyword, formatting=effective_fmt)
+    if keyword == "REF" and len(tokens) >= 2:
+        return CrossRef(
+            bookmark_name=tokens[1],
+            display_text=display,
+            formatting=effective_fmt,
+        )
     return None
 
 
 def _parse_field_simple(el: etree._Element) -> PageNumberField | None:
     """Parse a <w:fldSimple> element into a PageNumberField."""
     instr = attrib(el, "w:instr") or ""
-    return _make_page_number_field(instr, None)
+    result = _make_field(instr, None)
+    return result if isinstance(result, PageNumberField) else None
 
 
 # ---------------------------------------------------------------------------
