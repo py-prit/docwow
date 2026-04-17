@@ -208,3 +208,206 @@ Because visual appearance is entirely controlled by CSS, you can override any do
 ```
 
 This does not affect round-trip fidelity — the `data-dw-*` attributes carry all the Word metadata independently of the CSS.
+
+---
+
+## Bookmarks (`.dw-bookmark`)
+
+```css
+.dw-bookmark {
+  display: inline;
+}
+```
+
+Zero-width anchor. Marks the position of a `w:bookmarkStart` element in the document body. Renders as an empty `<a id="name">` element. Invisible in the browser; used as a fragment target for `#name` hyperlinks.
+
+---
+
+## Footnotes and endnotes
+
+### `.dw-footnote-ref`, `.dw-endnote-ref`
+
+Inline superscript reference markers (e.g. `[1]`) that link to the note body section at the bottom of the page.
+
+```css
+.dw-footnote-ref, .dw-endnote-ref {
+  color: #1565C0;
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 1;
+  text-decoration: none;
+}
+.dw-footnote-ref:hover, .dw-endnote-ref:hover {
+  text-decoration: underline;
+}
+```
+
+### `.dw-footnotes`, `.dw-endnotes`
+
+Note body sections at the bottom of the rendered document.
+
+```css
+.dw-footnotes, .dw-endnotes {
+  margin-top: 24pt;
+  padding-top: 12pt;
+  border-top: 1px solid #cccccc;
+  font-size: 9pt;
+  color: #333333;
+}
+```
+
+### `.dw-fn`, `.dw-en`
+
+Individual footnote / endnote body containers.
+
+```css
+.dw-fn, .dw-en {
+  display: flex;
+  gap: 6pt;
+  margin-bottom: 6pt;
+}
+.dw-fn-marker, .dw-en-marker {
+  flex-shrink: 0;
+  font-weight: bold;
+  color: #1565C0;
+  min-width: 2em;
+}
+.dw-fn-body, .dw-en-body {
+  flex: 1;
+}
+```
+
+---
+
+## Table of Contents (`.dw-toc`)
+
+```css
+.dw-toc {
+  margin: 12pt 0;
+  padding: 10pt 14pt;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+.dw-toc-title {
+  font-weight: bold;
+  font-size: 11pt;
+  margin-bottom: 8pt;
+}
+.dw-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dw-toc-entry {
+  margin: 3pt 0;
+}
+.dw-toc-level-1 { padding-left: 0; }
+.dw-toc-level-2 { padding-left: 16pt; }
+.dw-toc-level-3 { padding-left: 32pt; }
+/* ... up to level-9 */
+.dw-toc-link {
+  color: #1a1a1a;
+  text-decoration: none;
+}
+.dw-toc-link:hover {
+  text-decoration: underline;
+}
+```
+
+---
+
+## Comments
+
+### `.dw-comment-ref`
+
+Inline superscript reference marker (e.g. `[1]`). Styled in orange to match Word's comment colour. Uses CSS `:hover` to show the popup — no JavaScript.
+
+```css
+.dw-comment-ref {
+  position: relative;
+  color: #E65100;
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+```
+
+### `.dw-comment-popup`
+
+CSS hover popup shown when hovering over a comment reference.
+
+```css
+.dw-comment-popup {
+  display: none;
+  position: absolute;
+  /* ... positioned above the ref marker */
+}
+.dw-comment-ref:hover .dw-comment-popup {
+  display: block;
+}
+```
+
+### `.dw-comments`
+
+Hidden section at the bottom of the document containing full comment metadata for HTML→DOCX round-trip. Always `display: none`.
+
+```css
+.dw-comments {
+  display: none;
+}
+```
+
+---
+
+## Track changes
+
+### `ins.dw-ins`
+
+Inserted text. Green underline with a subtle green background.
+
+```css
+ins.dw-ins {
+  position: relative;
+  color: #1B5E20;
+  text-decoration: underline;
+  text-decoration-color: #1B5E20;
+  background-color: rgba(46, 125, 50, 0.08);
+  cursor: pointer;
+}
+```
+
+### `del.dw-del`
+
+Deleted text. Red strikethrough with a subtle red background.
+
+```css
+del.dw-del {
+  position: relative;
+  color: #B71C1C;
+  text-decoration: line-through;
+  text-decoration-color: #B71C1C;
+  background-color: rgba(183, 28, 28, 0.08);
+  cursor: pointer;
+}
+```
+
+### `.dw-tc-popup`
+
+Hover popup containing author, date, and Accept/Reject buttons. Shown via CSS `:hover` on the parent `ins`/`del` element. The popup is purely visual — it is ignored by the HTML parser on round-trip.
+
+```css
+.dw-tc-popup {
+  display: none;
+  position: absolute;
+  /* ... positioned above the changed text */
+}
+ins.dw-ins:hover .dw-tc-popup,
+del.dw-del:hover .dw-tc-popup {
+  display: block;
+}
+```
+
+Accept/Reject buttons (`.dw-tc-accept`, `.dw-tc-reject`) are styled inline. Clicking them triggers the `dwTcAccept()` / `dwTcReject()` JavaScript functions injected into the `<script>` block at the end of `<body>`.

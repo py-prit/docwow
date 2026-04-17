@@ -31,24 +31,36 @@ DOCX file
 
 The pipeline is strictly unidirectional at each stage. No layer reaches into another layer's internals.
 
-## Programmatic API layer (v0.2)
+## Programmatic API layer
 
 `docwow/api/` sits above the pipeline as a mutable wrapper layer. It is the primary interface for user code — `docwow.open()` returns a `DocumentWrapper`, not a raw `Document`.
 
 ```
-                    ┌──────────────────────────────────────┐
-                    │           docwow/api/                │
-                    │  DocumentWrapper                     │
-                    │  ├── ParagraphCollection             │  ◄── user code
-                    │  │   ├── MutableParagraph            │
-                    │  │   │   └── RunCollection           │
-                    │  │   │       └── MutableRun          │
-                    │  │   ├── MutableListItem             │
-                    │  │   ├── MutableImage                │
-                    │  │   └── MutableTable               │
-                    │  │       └── MutableTableRow        │
-                    │  │           └── MutableTableCell   │
-                    └──────────────┬───────────────────────┘
+                    ┌──────────────────────────────────────────────┐
+                    │                docwow/api/                   │
+                    │  DocumentWrapper                             │
+                    │  ├── ParagraphCollection                     │  ◄── user code
+                    │  │   ├── MutableParagraph                    │
+                    │  │   │   └── RunCollection                   │
+                    │  │   │       ├── MutableRun                  │
+                    │  │   │       ├── MutableImageRun             │
+                    │  │   │       ├── MutableHyperlink            │
+                    │  │   │       ├── MutablePageNumberField      │
+                    │  │   │       ├── MutableBookmark             │
+                    │  │   │       ├── MutableFootnoteRef          │
+                    │  │   │       ├── MutableCommentRef           │
+                    │  │   │       └── MutableTrackedChange        │
+                    │  │   ├── MutableListItem                     │
+                    │  │   ├── MutableImage                        │
+                    │  │   └── MutableTable                        │
+                    │  │       └── MutableTableRow                 │
+                    │  │           └── MutableTableCell            │
+                    │  ├── MutableHeaderFooter (header / footer)   │
+                    │  ├── MutableFootnote (footnotes / endnotes)  │
+                    │  ├── MutableComment                          │
+                    │  └── MutableTableOfContents                  │
+                    │         └── MutableTocEntry                  │
+                    └──────────────┬───────────────────────────────┘
                                    │  _to_frozen()
                                    ▼
                         Document (frozen dataclasses)
@@ -100,41 +112,71 @@ docwow/
 ├── api/                     Programmatic API — mutable wrapper layer
 │   ├── document.py          DocumentWrapper
 │   ├── paragraph.py         MutableParagraph, ParagraphCollection
-│   ├── run.py               MutableRun, MutableImageRun, RunCollection
+│   ├── run.py               MutableRun, MutableImageRun, MutableHyperlink,
+│   │                        MutablePageNumberField, MutableBookmark,
+│   │                        MutableFootnoteRef, MutableCommentRef,
+│   │                        MutableTrackedChange, RunCollection
 │   ├── list_item.py         MutableListItem
 │   ├── image.py             MutableImage
 │   ├── table.py             MutableTable, MutableTableRow, MutableTableCell
+│   ├── header_footer.py     MutableHeaderFooter
+│   ├── footnote.py          MutableFootnote, MutableFootnoteRef
+│   ├── comment.py           MutableComment, MutableCommentRef
+│   ├── toc.py               MutableTableOfContents, MutableTocEntry
 │   └── _convert.py          DocumentWrapper → frozen Document (internal)
 ├── models/                  Internal Document model (frozen dataclasses)
 │   ├── document.py          Document — top-level container
-│   ├── paragraph.py         Paragraph, TextRun, ImageRun
+│   ├── paragraph.py         Paragraph, TextRun, ImageRun, Hyperlink,
+│   │                        PageNumberField, BookmarkStart, FootnoteRef,
+│   │                        CommentRef, TrackedChange, Run (TypeAlias)
 │   ├── table.py             Table, TableRow, TableCell
 │   ├── lists.py             ListInfo, ListLevel, NumberingDefinition
 │   ├── image.py             InlineImage
-│   └── styles.py            Style, ParagraphFormatting, RunFormatting
+│   ├── styles.py            Style, ParagraphFormatting, RunFormatting
+│   ├── header_footer.py     HeaderFooter
+│   ├── footnote.py          Footnote
+│   ├── comment.py           Comment
+│   └── toc.py               TableOfContents, TocEntry
 ├── parser/                  DOCX XML → Document model
 │   ├── docx_parser.py       ZIP unpacking, orchestration
-│   ├── body_parser.py       <w:body> → paragraphs and tables
+│   ├── body_parser.py       <w:body> → paragraphs, tables, TOC, page breaks,
+│   │                        footnote refs, bookmarks, comments, track changes
 │   ├── style_parser.py      <w:styles> → Style objects
 │   ├── numbering_parser.py  <w:numbering> → NumberingDefinition objects
-│   └── image_parser.py      Relationship lookup + image bytes extraction
+│   ├── image_parser.py      Relationship lookup + image bytes extraction
+│   ├── header_footer_parser.py  word/header*.xml, word/footer*.xml
+│   ├── footnote_parser.py   word/footnotes.xml, word/endnotes.xml
+│   └── comment_parser.py    word/comments.xml
 ├── renderer/                Document model → HTML
-│   ├── html_renderer.py     Orchestration, <html>/<head>/<body> wrapper
+│   ├── html_renderer.py     Orchestration, <html>/<head>/<body> wrapper,
+│   │                        track-changes JS injection
 │   ├── css_generator.py     <style> block generation
-│   ├── paragraph_renderer.py <p> + <span> elements
+│   ├── paragraph_renderer.py <p>, <span>, <ins>, <del>, comment popups
 │   ├── table_renderer.py    <table>/<tr>/<td> elements
 │   ├── list_renderer.py     <ul>/<ol>/<li> elements
-│   └── image_renderer.py    <img> with base64 data URI
+│   ├── image_renderer.py    <img> with base64 data URI
+│   ├── footnote_renderer.py <section class="dw-footnotes/endnotes">
+│   ├── comment_renderer.py  <section class="dw-comments">
+│   └── toc_renderer.py      <nav class="dw-toc">
 ├── html_parser/             docwow HTML → Document model
-│   ├── html_parser.py       Orchestration, page geometry, numbering reconstruction
-│   ├── paragraph_parser.py  <p class="dw-p"> → Paragraph
-│   └── table_parser.py      <table class="dw-table"> → Table
+│   ├── html_parser.py       Orchestration, page geometry, numbering,
+│   │                        footnotes, endnotes, comments, TOC
+│   ├── paragraph_parser.py  <p class="dw-p"> → Paragraph (including all
+│   │                        run types: hyperlinks, footnote refs, bookmarks,
+│   │                        comment refs, track changes)
+│   ├── table_parser.py      <table class="dw-table"> → Table
+│   ├── toc_parser.py        <nav class="dw-toc"> → TableOfContents
+│   └── comment_parser.py    <section class="dw-comments"> → Comment objects
 ├── writer/                  Document model → DOCX ZIP
 │   ├── docx_writer.py       ZIP assembly, image deduplication
-│   ├── document_writer.py   word/document.xml
+│   ├── document_writer.py   word/document.xml (paragraphs, tables, all run
+│   │                        types, footnote refs, bookmarks, track changes)
 │   ├── styles_writer.py     word/styles.xml
 │   ├── numbering_writer.py  word/numbering.xml
 │   ├── parts_writer.py      [Content_Types].xml, .rels, settings.xml
+│   ├── header_footer_writer.py  word/header*.xml, word/footer*.xml
+│   ├── footnote_writer.py   word/footnotes.xml, word/endnotes.xml
+│   ├── comment_writer.py    word/comments.xml
 │   └── _xml.py              Namespace constants, lxml helpers, unit conversions
 └── utils/
     ├── units.py             pt ↔ CSS unit conversion

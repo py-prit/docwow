@@ -49,14 +49,28 @@ Every piece of Word-specific information that has no CSS equivalent is stored in
 | `.dw-list` | `<ul>` / `<ol>` | List container |
 | `.dw-li` | `<li>` | List item |
 | `.dw-img` | `<img>` | Inline image |
+| `.dw-bookmark` | `<a>` | Zero-width bookmark anchor |
+| `.dw-footnote-ref` | `<a>` | Inline footnote reference marker |
+| `.dw-endnote-ref` | `<a>` | Inline endnote reference marker |
+| `.dw-footnotes` | `<section>` | Footnote bodies section |
+| `.dw-endnotes` | `<section>` | Endnote bodies section |
+| `.dw-toc` | `<nav>` | Table of Contents block |
+| `.dw-toc-link` | `<a>` | Clickable TOC entry link |
+| `.dw-comment-ref` | `<a>` | Inline comment reference marker (orange superscript) |
+| `.dw-comments` | `<section>` | Hidden comment metadata section (round-trip only) |
+| `ins.dw-ins` | `<ins>` | Tracked insertion (green underline) |
+| `del.dw-del` | `<del>` | Tracked deletion (red strikethrough) |
+| `.dw-page-break` | `<div>` | Explicit page break (hidden, round-trip only) |
+| `.dw-page-only` | `<p>` | Page-number-only paragraph (hidden, round-trip only) |
+| `.dw-field` | `<span>` | Page number field placeholder |
 | `.dw-style-{StyleId}` | `<p>` | Named Word style applied to a paragraph |
 
 ## Self-contained
 
-The HTML output is fully self-contained:
+The HTML output is almost entirely self-contained:
 
 - All styles are inlined in a `<style>` block — no external CSS
 - All images are embedded as base64 data URIs — no external files
-- No JavaScript
+- A small inline `<script>` block is injected at the end of `<body>` to power the track-changes Accept/Reject buttons (`dwTcAccept` / `dwTcReject`). It has no external dependencies.
 
 This means a docwow HTML file can be saved to disk, emailed, or stored in a database and opened anywhere without needing the original DOCX.
