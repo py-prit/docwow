@@ -286,6 +286,7 @@ class MutableParagraph:
 
     @property
     def list_info(self) -> ListInfo | None:
+        """List metadata if this paragraph is a list item, else None."""
         return self._list_info
 
     def _set_list_info(self, info: ListInfo | None) -> None:

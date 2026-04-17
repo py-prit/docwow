@@ -249,18 +249,22 @@ class MutableImageRun:
 
     @property
     def width_pt(self) -> float:
+        """Rendered width in points."""
         return self._image.width_pt
 
     @property
     def height_pt(self) -> float:
+        """Rendered height in points."""
         return self._image.height_pt
 
     @property
     def alt_text(self) -> str:
+        """Image alt text / description."""
         return self._image.alt_text
 
     @property
     def content_type(self) -> str:
+        """MIME type of the image (e.g. ``'image/png'``, ``'image/jpeg'``)."""
         return self._image.content_type
 
     def _to_frozen(self) -> ImageRun:
