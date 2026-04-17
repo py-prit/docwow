@@ -30,14 +30,26 @@ import docwow
 # DOCX → HTML
 html = docwow.to_html("document.docx")
 
-# HTML → DOCX (round-trip)
+# docwow HTML → DOCX (lossless round-trip)
 docwow.to_docx(html, "output.docx")
+
+# Arbitrary HTML → DOCX (best-effort, any source)
+docwow.to_docx("<h1>Title</h1><p>Body text.</p>", "output.docx", is_foreign_html=True)
 
 # Or use the Document object for programmatic editing
 doc = docwow.open("document.docx")
 para = doc.paragraphs.add_paragraph()
 para.runs.add_text("Hello world", bold=True)
 doc.to_docx("output.docx")
+```
+
+Control conversion warnings:
+
+```python
+import docwow
+
+docwow.suppress_warnings()   # silence all DocwowConversionWarnings
+docwow.strict_warnings()     # raise on any unsupported construct (useful in CI)
 ```
 
 ## Feature Support

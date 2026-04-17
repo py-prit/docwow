@@ -588,3 +588,68 @@ doc.set_margins(top_pt=72.0, bottom_pt=72.0, left_pt=72.0, right_pt=72.0)
 | `insert(index, run)` | Insert at index |
 | `remove(index)` | Remove run at index |
 | `clear()` | Remove all runs |
+
+## Converting arbitrary HTML to DOCX
+
+Pass `is_foreign_html=True` to convert HTML from any source — a CMS, rich text editor, web page, or email:
+
+```python
+import docwow
+
+# Basic conversion
+docwow.to_docx("<h1>Title</h1><p>Body text.</p>", "output.docx", is_foreign_html=True)
+
+# With remote image downloading
+docwow.to_docx(html, "output.docx", is_foreign_html=True, fetch_images=True)
+
+# With external stylesheet downloading
+docwow.to_docx(html, "output.docx", is_foreign_html=True, fetch_external_css=True)
+```
+
+When the converter encounters HTML it cannot fully represent in Word (unsupported elements, unresolvable CSS, etc.), it issues a `DocwowConversionWarning` and continues:
+
+```
+DocwowConversionWarning: <canvas> has no Word equivalent — element skipped.
+  Want this supported? Open an issue: https://github.com/py-prit/docwow/issues
+  Contributions welcome: https://github.com/py-prit/docwow/blob/main/CONTRIBUTING.md
+```
+
+Control warning behaviour:
+
+```python
+import docwow
+
+docwow.suppress_warnings()   # silence all warnings
+docwow.strict_warnings()     # raise on any warning (useful in CI)
+
+# Or use the standard warnings module directly
+import warnings
+warnings.filterwarnings("ignore", category=docwow.DocwowConversionWarning)
+warnings.filterwarnings("error",  category=docwow.DocwowConversionWarning)
+
+# Redirect to a log file
+import logging
+logging.captureWarnings(True)
+logging.basicConfig(filename="conversion.log")
+```
+
+### What is supported
+
+Currently supported (as of v0.8.x):
+
+| HTML | Word output |
+|---|---|
+| `<h1>`–`<h6>` | Heading 1–6 styles (bold, sized 20pt→11pt) |
+| `<p>` | Normal paragraph |
+| `<div>` | Paragraph (text-only) or transparent container (has block children) |
+| `<blockquote>` | Paragraph indented 36pt per nesting level |
+| `<pre>` | Paragraph in Courier New, whitespace preserved |
+| `<section>`, `<article>`, `<main>` | Transparent containers |
+| `<hr>` | Empty paragraph separator |
+| `<style>` block | CSS rules resolved (element, class, ID, descendant selectors) |
+| Inline `style=""` | CSS properties applied to paragraph |
+| `text-align` | Paragraph alignment |
+| `margin-left` / `padding-left` | Left indent |
+| `background-color` | Paragraph shading |
+
+Inline element formatting (`<b>`, `<i>`, `<span>`, etc.), lists, tables, and images are added in subsequent releases.

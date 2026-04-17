@@ -68,4 +68,4 @@ doc.save("updated.docx")
 - **Pure Python** — no system dependencies beyond `lxml` and `Pillow`
 - **Immutable models** — the internal `Document` model uses frozen dataclasses; safe to pass across threads or pipeline stages
 - **Round-trip first** — every design decision is made with lossless DOCX→HTML→DOCX in mind
-- **Not a general converter** — docwow reads its own HTML output back to DOCX; it does not attempt to convert arbitrary HTML
+- **Two conversion paths** — lossless round-trip for docwow HTML, and best-effort conversion for arbitrary HTML from any source (`is_foreign_html=True`)
