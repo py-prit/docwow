@@ -444,7 +444,7 @@ for item in doc.paragraphs:
             print(f"{run.author} {action}: {run.get_text()!r}")
 ```
 
-In HTML, insertions render as `<ins class="dw-ins">` (green underline) and deletions as `<del class="dw-del">` (red strikethrough) with `data-dw-author`, `data-dw-date`, and `data-dw-change-id` attributes for lossless round-trip. In DOCX they are stored as `w:ins` / `w:del` elements visible in Word's review pane.
+In HTML, insertions render as `<ins class="dw-ins">` (green underline) and deletions as `<del class="dw-del">` (red strikethrough) with `data-dw-author`, `data-dw-date`, and `data-dw-change-id` attributes for lossless round-trip. Hovering over either element shows a popup with the author, date, and **Accept** / **Reject** buttons. Accepting or rejecting in the browser removes the track-change markup — if you then convert back to DOCX via `docwow.to_docx(html)`, the accepted/rejected state is preserved in the output. In DOCX they are stored as `w:ins` / `w:del` elements visible in Word's review pane.
 
 `MutableTrackedChange` supports chainable setters:
 

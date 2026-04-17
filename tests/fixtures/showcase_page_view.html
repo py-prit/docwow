@@ -164,17 +164,113 @@
 
 /* Track changes */
 ins.dw-ins {
+  position: relative;
   color: #1B5E20;
   text-decoration: underline;
   background-color: rgba(46, 125, 50, 0.08);
   text-decoration-color: #1B5E20;
+  cursor: pointer;
 }
 
 del.dw-del {
+  position: relative;
   color: #B71C1C;
   text-decoration: line-through;
   background-color: rgba(183, 28, 28, 0.08);
   text-decoration-color: #B71C1C;
+  cursor: pointer;
+}
+
+.dw-tc-popup {
+  display: none;
+  position: absolute;
+  bottom: 1.5em;
+  left: 0;
+  z-index: 100;
+  min-width: 170px;
+  background: #ffffff;
+  border-radius: 4px;
+  border-top: 3px solid transparent;
+  padding: 7px 10px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  font-size: 9pt;
+  font-weight: normal;
+  font-style: normal;
+  vertical-align: baseline;
+  white-space: nowrap;
+  color: #333333;
+  text-decoration: none;
+  line-height: 1.4;
+}
+
+ins.dw-ins .dw-tc-popup {
+  border-top-color: #1B5E20;
+}
+
+del.dw-del .dw-tc-popup {
+  border-top-color: #B71C1C;
+}
+
+ins.dw-ins:hover .dw-tc-popup,
+del.dw-del:hover .dw-tc-popup {
+  display: block;
+}
+
+.dw-tc-popup-label {
+  display: block;
+  font-weight: bold;
+  font-size: 8pt;
+  margin-bottom: 2px;
+}
+
+ins.dw-ins .dw-tc-popup-label {
+  color: #1B5E20;
+}
+
+del.dw-del .dw-tc-popup-label {
+  color: #B71C1C;
+}
+
+.dw-tc-popup-meta {
+  display: block;
+  font-size: 8pt;
+  color: #666666;
+  margin-bottom: 7px;
+}
+
+.dw-tc-popup-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dw-tc-accept,
+.dw-tc-reject {
+  border-radius: 3px;
+  padding: 3px 9px;
+  font-size: 8pt;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.dw-tc-accept {
+  background: #E8F5E9;
+  color: #1B5E20;
+  border: 1px solid #A5D6A7;
+}
+
+.dw-tc-accept:hover {
+  background: #C8E6C9;
+}
+
+.dw-tc-reject {
+  background: #FFEBEE;
+  color: #B71C1C;
+  border: 1px solid #FFCDD2;
+}
+
+.dw-tc-reject:hover {
+  background: #FFCDD2;
 }
 
 /* Comments — inline hover popup */
@@ -412,8 +508,8 @@ del.dw-del {
 <p class="dw-p"><span class="dw-r">This sentence has a comment from Bob</span><a href="#comment-2" class="dw-comment-ref" data-dw-comment-id="2">[2]<span class="dw-comment-popup"><span class="dw-comment-popup-author">Bob <span class="dw-comment-popup-date">· 2026-04-17T10:00:00Z</span></span><span class="dw-comment-popup-text">Consider adding more detail here.</span></span></a><span class="dw-r"> for review.</span></p>
 <p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-track-changes" class="dw-bookmark" data-dw-bookmark="showcase-track-changes"></a><span class="dw-r">Track Changes</span></p>
 <p class="dw-p"><span class="dw-r">Track changes records insertions and deletions made by reviewers. In HTML, insertions render as green underlined text and deletions as red strikethrough text. In DOCX they appear in Word&#x27;s review pane.</span></p>
-<p class="dw-p"><span class="dw-r">The original revenue figure was </span><del class="dw-del" data-dw-author="Alice" data-dw-date="2026-04-17T09:00:00Z" data-dw-change-id="10"><span class="dw-r">$3.8 M</span></del><ins class="dw-ins" data-dw-author="Alice" data-dw-date="2026-04-17T09:00:00Z" data-dw-change-id="11"><span class="dw-r">$4.2 M</span></ins><span class="dw-r"> for the quarter.</span></p>
-<p class="dw-p"><span class="dw-r">Please </span><del class="dw-del" data-dw-author="Bob" data-dw-date="2026-04-17T10:00:00Z" data-dw-change-id="12"><span class="dw-r">review</span></del><ins class="dw-ins" data-dw-author="Bob" data-dw-date="2026-04-17T10:00:00Z" data-dw-change-id="13"><span class="dw-r">approve</span></ins><span class="dw-r"> this change before the deadline.</span></p>
+<p class="dw-p"><span class="dw-r">The original revenue figure was </span><del class="dw-del" data-dw-author="Alice" data-dw-date="2026-04-17T09:00:00Z" data-dw-change-id="10"><span class="dw-tc-popup"><span class="dw-tc-popup-label">Deleted</span><span class="dw-tc-popup-meta">Alice · 2026-04-17</span><span class="dw-tc-popup-actions"><button class="dw-tc-accept" onclick="dwTcAccept(this)">&#10003; Accept</button><button class="dw-tc-reject" onclick="dwTcReject(this)">&#10007; Reject</button></span></span><span class="dw-r">$3.8 M</span></del><ins class="dw-ins" data-dw-author="Alice" data-dw-date="2026-04-17T09:00:00Z" data-dw-change-id="11"><span class="dw-tc-popup"><span class="dw-tc-popup-label">Inserted</span><span class="dw-tc-popup-meta">Alice · 2026-04-17</span><span class="dw-tc-popup-actions"><button class="dw-tc-accept" onclick="dwTcAccept(this)">&#10003; Accept</button><button class="dw-tc-reject" onclick="dwTcReject(this)">&#10007; Reject</button></span></span><span class="dw-r">$4.2 M</span></ins><span class="dw-r"> for the quarter.</span></p>
+<p class="dw-p"><span class="dw-r">Please </span><del class="dw-del" data-dw-author="Bob" data-dw-date="2026-04-17T10:00:00Z" data-dw-change-id="12"><span class="dw-tc-popup"><span class="dw-tc-popup-label">Deleted</span><span class="dw-tc-popup-meta">Bob · 2026-04-17</span><span class="dw-tc-popup-actions"><button class="dw-tc-accept" onclick="dwTcAccept(this)">&#10003; Accept</button><button class="dw-tc-reject" onclick="dwTcReject(this)">&#10007; Reject</button></span></span><span class="dw-r">review</span></del><ins class="dw-ins" data-dw-author="Bob" data-dw-date="2026-04-17T10:00:00Z" data-dw-change-id="13"><span class="dw-tc-popup"><span class="dw-tc-popup-label">Inserted</span><span class="dw-tc-popup-meta">Bob · 2026-04-17</span><span class="dw-tc-popup-actions"><button class="dw-tc-accept" onclick="dwTcAccept(this)">&#10003; Accept</button><button class="dw-tc-reject" onclick="dwTcReject(this)">&#10007; Reject</button></span></span><span class="dw-r">approve</span></ins><span class="dw-r"> this change before the deadline.</span></p>
 <p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-pagebreaks" class="dw-bookmark" data-dw-bookmark="showcase-pagebreaks"></a><span class="dw-r">Page Breaks</span></p>
 <p class="dw-p"><span class="dw-r">An explicit page break element follows. In HTML it renders as &lt;div class=&quot;dw-page-break&quot;&gt; (invisible, preserved for round-trip). In Word / LibreOffice it forces a new page.</span></p>
 <div class="dw-page-break" data-dw-page="2"></div>
@@ -437,5 +533,34 @@ del.dw-del {
 </section><footer class="dw-footer dw-footer-default" data-dw-footer-type="default">
 <p class="dw-p dw-page-only" style="text-align:center" data-dw-alignment="center"><span class="dw-r">Page </span><span class="dw-field" data-dw-field="PAGE">1</span><span class="dw-r"> of </span><span class="dw-field" data-dw-field="NUMPAGES">1</span></p>
 </footer>
+<script>
+function dwTcAccept(btn) {
+  var el = btn.closest('ins.dw-ins, del.dw-del');
+  if (!el) return;
+  if (el.tagName === 'INS') {
+    _dwTcUnwrap(el);   // accept insert  → keep text, remove markup
+  } else {
+    el.parentNode.removeChild(el);  // accept delete → remove text
+  }
+}
+function dwTcReject(btn) {
+  var el = btn.closest('ins.dw-ins, del.dw-del');
+  if (!el) return;
+  if (el.tagName === 'DEL') {
+    _dwTcUnwrap(el);   // reject delete  → keep text, remove markup
+  } else {
+    el.parentNode.removeChild(el);  // reject insert → remove text
+  }
+}
+function _dwTcUnwrap(el) {
+  var parent = el.parentNode;
+  Array.from(el.childNodes).forEach(function(child) {
+    if (!(child.classList && child.classList.contains('dw-tc-popup'))) {
+      parent.insertBefore(child, el);
+    }
+  });
+  parent.removeChild(el);
+}
+</script>
 </body>
 </html>

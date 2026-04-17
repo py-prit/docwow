@@ -57,7 +57,7 @@ doc.save("updated.docx")
 - **Bookmarks** — parse `w:bookmarkStart` elements, render as `<a id="…">` HTML anchors, full round-trip, and `MutableBookmark` API
 - **Table of Contents** — parse `w:sdt` TOC blocks, render as `<nav class="dw-toc">` with level-indented links, full round-trip, and `MutableTableOfContents` API
 - **Comments** — parse `word/comments.xml`, render as superscript markers with CSS hover popups in HTML, full round-trip, and `MutableComment` API
-- **Track changes** — parse `w:ins`/`w:del`, render as green underline / red strikethrough in HTML, full round-trip, and `MutableTrackedChange` API
+- **Track changes** — parse `w:ins`/`w:del`, render as green underline / red strikethrough with hover popup (author, date, Accept/Reject buttons) in HTML, accepted/rejected state preserved on HTML→DOCX round-trip, and `MutableTrackedChange` API
 - **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, `MutableTableOfContents`, `MutableComment`, and friends; build documents from scratch including tables, footnotes, bookmarks, TOC, comments, and lists; save to DOCX or render to HTML
 
 ## Design principles

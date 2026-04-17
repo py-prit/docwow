@@ -306,7 +306,7 @@ for comment in doc.comments:
 
 ## 13. Track Changes
 
-Track changes records reviewer insertions and deletions. In HTML, insertions render as green underlined text and deletions as red strikethrough. In DOCX they appear in Word's review pane.
+Track changes records reviewer insertions and deletions. In HTML, insertions render as green underlined text and deletions as red strikethrough. Hovering over either shows a popup with the author, date, and **Accept** / **Reject** buttons — accepting or rejecting in the browser is preserved when converting back to DOCX. In DOCX they appear in Word's review pane.
 
 ```python
 para = doc.paragraphs.add_paragraph()

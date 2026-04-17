@@ -76,6 +76,7 @@ def render_document(
         f"{endnotes_html}"
         f"{comments_html}"
         f"{footer_html}"
+        f"<script>\n{_TRACK_CHANGES_JS}\n</script>\n"
         "</body>\n"
         "</html>"
     )
@@ -209,3 +210,37 @@ def _render_page_break(page_num: int, page_view: bool) -> str:
     # Always hidden in HTML — preserved only for round-trip DOCX fidelity.
     # Visual page-view rendering is a planned future feature.
     return f'<div class="dw-page-break" data-dw-page="{page_num}"></div>'
+
+
+# ---------------------------------------------------------------------------
+# Track-changes accept / reject JavaScript
+# ---------------------------------------------------------------------------
+
+_TRACK_CHANGES_JS = """\
+function dwTcAccept(btn) {
+  var el = btn.closest('ins.dw-ins, del.dw-del');
+  if (!el) return;
+  if (el.tagName === 'INS') {
+    _dwTcUnwrap(el);   // accept insert  → keep text, remove markup
+  } else {
+    el.parentNode.removeChild(el);  // accept delete → remove text
+  }
+}
+function dwTcReject(btn) {
+  var el = btn.closest('ins.dw-ins, del.dw-del');
+  if (!el) return;
+  if (el.tagName === 'DEL') {
+    _dwTcUnwrap(el);   // reject delete  → keep text, remove markup
+  } else {
+    el.parentNode.removeChild(el);  // reject insert → remove text
+  }
+}
+function _dwTcUnwrap(el) {
+  var parent = el.parentNode;
+  Array.from(el.childNodes).forEach(function(child) {
+    if (!(child.classList && child.classList.contains('dw-tc-popup'))) {
+      parent.insertBefore(child, el);
+    }
+  });
+  parent.removeChild(el);
+}"""
