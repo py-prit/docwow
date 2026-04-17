@@ -6,7 +6,7 @@ import base64
 from docwow.html_parser._utils import has_class, pt_val
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 
 
@@ -68,6 +68,8 @@ def _parse_runs(p_el) -> list[Run]:
             fn = _parse_footnote_ref(child)
             if fn is not None:
                 runs.append(fn)
+        elif child.tag == "a" and child.get("data-dw-bookmark"):
+            runs.append(BookmarkStart(name=child.get("data-dw-bookmark", "")))
     return runs
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import html
 
-from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.renderer.image_renderer import render_image
 from docwow.utils.units import pt_to_css
@@ -39,6 +39,8 @@ def _render_run(run: Run) -> str:
         return _render_page_number_field(run)
     if isinstance(run, FootnoteRef):
         return _render_footnote_ref(run)
+    if isinstance(run, BookmarkStart):
+        return _render_bookmark(run)
     return _render_text_run(run)
 
 
@@ -62,6 +64,11 @@ def _render_page_number_field(field: PageNumberField) -> str:
         f'<span class="dw-field" data-dw-field="{field.field_type}"{style_attr}>'
         f"{placeholder}</span>"
     )
+
+
+def _render_bookmark(start: BookmarkStart) -> str:
+    name = html.escape(start.name, quote=True)
+    return f'<a id="{name}" class="dw-bookmark" data-dw-bookmark="{name}"></a>'
 
 
 def _render_hyperlink(link: Hyperlink) -> str:

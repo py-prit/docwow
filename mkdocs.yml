@@ -57,6 +57,7 @@ nav:
     - Round-tripping to DOCX: user-guide/to-docx.md
     - Programmatic API: user-guide/open-api.md
     - Hyperlinks: user-guide/hyperlinks.md
+    - Bookmarks: user-guide/bookmarks.md
     - Headers, Footers & Page Numbers: user-guide/headers-footers.md
   - HTML Format:
     - Overview: html-format/overview.md

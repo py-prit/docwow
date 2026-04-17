@@ -22,7 +22,7 @@ from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
-from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
+from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer.docx_writer import write_docx
@@ -303,7 +303,27 @@ def build_showcase() -> Document:
     ))
 
     # -----------------------------------------------------------------------
-    # Section 11: Footnotes and endnotes
+    # Section 11: Bookmarks
+    # -----------------------------------------------------------------------
+    body.append(_p("Bookmarks", style_id="Heading2"))
+    body.append(Paragraph(
+        runs=(
+            BookmarkStart(name="bookmark-demo"),
+            TextRun(text="This paragraph has a named bookmark anchor ('bookmark-demo') at its start."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="This hyperlink jumps to the bookmark above: "),
+            Hyperlink(url="#bookmark-demo", runs=(TextRun(text="go to bookmark-demo"),)),
+            TextRun(text="."),
+        ),
+        formatting=ParagraphFormatting(),
+    ))
+
+    # -----------------------------------------------------------------------
+    # Section 12: Footnotes and endnotes
     # -----------------------------------------------------------------------
     body.append(_p("Footnotes and Endnotes", style_id="Heading2"))
 

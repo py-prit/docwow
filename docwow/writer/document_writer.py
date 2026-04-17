@@ -5,7 +5,7 @@ from lxml import etree
 
 from docwow.models.document import Document
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.writer._xml import (
@@ -56,13 +56,14 @@ def build_document_xml(
     root = etree.Element(f"{{{W}}}document", nsmap=DOC_NSMAP)
     body = etree.SubElement(root, f"{{{W}}}body")
 
-    _draw_counter = [1]   # mutable counter for image drawing IDs
+    _draw_counter = [1]     # mutable counter for image drawing IDs
+    _bookmark_counter = [0]  # mutable counter for w:bookmarkStart/End w:id values
 
     for element in doc.body:
         if isinstance(element, Paragraph):
-            _write_paragraph(body, element, image_rids, _draw_counter, _hyperlink_rids)
+            _write_paragraph(body, element, image_rids, _draw_counter, _hyperlink_rids, _bookmark_counter)
         elif isinstance(element, Table):
-            _write_table(body, element, image_rids, _draw_counter, _hyperlink_rids)
+            _write_table(body, element, image_rids, _draw_counter, _hyperlink_rids, _bookmark_counter)
         elif isinstance(element, PageBreak):
             _write_page_break(body)
 
@@ -94,6 +95,7 @@ def _write_paragraph(
     image_rids: dict[str, str],
     draw_counter: list[int],
     hyperlink_rids: dict[str, str] | None = None,
+    bookmark_counter: list[int] | None = None,
 ) -> None:
     p_el = etree.SubElement(parent, f"{{{W}}}p")
     ppr = etree.SubElement(p_el, f"{{{W}}}pPr")
@@ -119,8 +121,9 @@ def _write_paragraph(
     _write_para_fmt(ppr, fmt, skip_keep_flags=True)
 
     _hl_rids = hyperlink_rids or {}
+    _bm_counter = bookmark_counter if bookmark_counter is not None else [0]
     for run in para.runs:
-        _write_run(p_el, run, image_rids, draw_counter, _hl_rids)
+        _write_run(p_el, run, image_rids, draw_counter, _hl_rids, _bm_counter)
 
 
 # ---------------------------------------------------------------------------
@@ -133,6 +136,7 @@ def _write_run(
     image_rids: dict[str, str],
     draw_counter: list[int],
     hyperlink_rids: dict[str, str] | None = None,
+    bookmark_counter: list[int] | None = None,
 ) -> None:
     if isinstance(run, Hyperlink):
         _write_hyperlink(parent, run, hyperlink_rids or {})
@@ -142,6 +146,9 @@ def _write_run(
         _write_page_number_field(parent, run)
     elif isinstance(run, FootnoteRef):
         _write_footnote_ref(parent, run)
+    elif isinstance(run, BookmarkStart):
+        _bm_counter = bookmark_counter if bookmark_counter is not None else [0]
+        _write_bookmark(parent, run, _bm_counter)
     else:
         _write_text_run(parent, run)
 
@@ -162,6 +169,27 @@ def _write_hyperlink(
         hl.set(f"{{{R}}}id", hyperlink_rids.get(link.url, ""))
     for run in link.runs:
         _write_text_run(hl, run)
+
+
+# ---------------------------------------------------------------------------
+# Bookmark
+# ---------------------------------------------------------------------------
+
+def _write_bookmark(
+    parent: etree._Element,
+    start: BookmarkStart,
+    bookmark_counter: list[int],
+) -> None:
+    """Write <w:bookmarkStart> + <w:bookmarkEnd> as a point anchor."""
+    bm_id = str(bookmark_counter[0])
+    bookmark_counter[0] += 1
+
+    bm_start = etree.SubElement(parent, f"{{{W}}}bookmarkStart")
+    bm_start.set(f"{{{W}}}id", bm_id)
+    bm_start.set(f"{{{W}}}name", start.name)
+
+    bm_end = etree.SubElement(parent, f"{{{W}}}bookmarkEnd")
+    bm_end.set(f"{{{W}}}id", bm_id)
 
 
 # ---------------------------------------------------------------------------
@@ -346,6 +374,7 @@ def _write_table(
     image_rids: dict[str, str],
     draw_counter: list[int],
     hyperlink_rids: dict[str, str] | None = None,
+    bookmark_counter: list[int] | None = None,
 ) -> None:
     tbl = etree.SubElement(parent, f"{{{W}}}tbl")
     _write_tbl_pr(tbl, table)
@@ -358,7 +387,7 @@ def _write_table(
             col.set(f"{{{W}}}w", pt_tw(w_pt))
 
     for row in table.rows:
-        _write_row(tbl, row, image_rids, draw_counter, hyperlink_rids)
+        _write_row(tbl, row, image_rids, draw_counter, hyperlink_rids, bookmark_counter)
 
 
 def _write_tbl_pr(tbl: etree._Element, table: Table) -> None:
@@ -389,6 +418,7 @@ def _write_row(
     image_rids: dict[str, str],
     draw_counter: list[int],
     hyperlink_rids: dict[str, str] | None = None,
+    bookmark_counter: list[int] | None = None,
 ) -> None:
     tr = etree.SubElement(tbl, f"{{{W}}}tr")
 
@@ -398,7 +428,7 @@ def _write_row(
         trh.set(f"{{{W}}}val", pt_tw(row.height_pt))
 
     for cell in row.cells:
-        _write_cell(tr, cell, image_rids, draw_counter, hyperlink_rids)
+        _write_cell(tr, cell, image_rids, draw_counter, hyperlink_rids, bookmark_counter)
 
 
 def _write_cell(
@@ -407,6 +437,7 @@ def _write_cell(
     image_rids: dict[str, str],
     draw_counter: list[int],
     hyperlink_rids: dict[str, str] | None = None,
+    bookmark_counter: list[int] | None = None,
 ) -> None:
     tc = etree.SubElement(tr, f"{{{W}}}tc")
     tcpr = etree.SubElement(tc, f"{{{W}}}tcPr")
@@ -429,7 +460,7 @@ def _write_cell(
     # Each cell must have at least one paragraph
     if cell.paragraphs:
         for para in cell.paragraphs:
-            _write_paragraph(tc, para, image_rids, draw_counter, hyperlink_rids)
+            _write_paragraph(tc, para, image_rids, draw_counter, hyperlink_rids, bookmark_counter)
     else:
         etree.SubElement(tc, f"{{{W}}}p")
 

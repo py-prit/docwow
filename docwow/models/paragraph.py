@@ -60,8 +60,20 @@ class FootnoteRef:
     note_type: str = "footnote"
 
 
+@dataclass(frozen=True)
+class BookmarkStart:
+    """An inline bookmark anchor.
+
+    In OOXML a bookmark is a start/end pair; docwow models only the start
+    (a point anchor) because HTML ``<a id="…">`` has no concept of a range.
+    The matching ``w:bookmarkEnd`` is synthesised automatically on write.
+    """
+
+    name: str
+
+
 # A paragraph's content is a sequence of runs.
-Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | FootnoteRef
+Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | FootnoteRef | BookmarkStart
 
 
 @dataclass(frozen=True)

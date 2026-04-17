@@ -54,7 +54,8 @@ doc.save("updated.docx")
 - **Headers & footers** — text content and page number fields across default, first-page, and even-page slots
 - **Page breaks** — explicit page breaks parsed, written, and round-tripped
 - **Footnotes & endnotes** — parse, render to HTML with anchor links, HTML→DOCX round-trip, and programmatic API
-- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableTable`, and friends; build documents from scratch including tables, footnotes, and lists; save to DOCX or render to HTML
+- **Bookmarks** — parse `w:bookmarkStart` elements, render as `<a id="…">` HTML anchors, full round-trip, and `MutableBookmark` API
+- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, and friends; build documents from scratch including tables, footnotes, bookmarks, and lists; save to DOCX or render to HTML
 
 ## Design principles
 

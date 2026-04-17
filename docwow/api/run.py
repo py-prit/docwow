@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Iterator
 
 from docwow.models.image import InlineImage
-from docwow.models.paragraph import Hyperlink, ImageRun, PageNumberField, Run, TextRun
+from docwow.models.paragraph import BookmarkStart, Hyperlink, ImageRun, PageNumberField, Run, TextRun
 from docwow.models.styles import RunFormatting
 
 
@@ -339,12 +339,47 @@ class MutablePageNumberField:
         return f"MutablePageNumberField({self._field_type!r})"
 
 
+class MutableBookmark:
+    """A mutable bookmark anchor.
+
+    When converted to a frozen model (at save time) this produces a
+    :class:`~docwow.models.paragraph.BookmarkStart` which the writer
+    renders as a ``<w:bookmarkStart>`` / ``<w:bookmarkEnd>`` pair.
+    """
+
+    def __init__(self, name: str = "") -> None:
+        self._name = name
+
+    # ---- Setter --------------------------------------------------------------
+
+    def set_name(self, name: str) -> "MutableBookmark":
+        """Replace the bookmark name."""
+        self._name = name
+        return self
+
+    # ---- Read-back -----------------------------------------------------------
+
+    @property
+    def name(self) -> str:
+        """The bookmark name used as the HTML ``id`` and OOXML ``w:name``."""
+        return self._name
+
+    # ---- Internal conversion -------------------------------------------------
+
+    def _to_frozen(self) -> BookmarkStart:
+        """Convert to a frozen BookmarkStart for pipeline use."""
+        return BookmarkStart(name=self._name)
+
+    def __repr__(self) -> str:
+        return f"MutableBookmark({self._name!r})"
+
+
 class RunCollection:
     """Ordered mutable collection of run instances."""
 
-    _ALLOWED = (MutableRun, MutableImageRun, MutableHyperlink, MutablePageNumberField)
+    _ALLOWED = (MutableRun, MutableImageRun, MutableHyperlink, MutablePageNumberField, MutableBookmark)
 
-    _AnyRun = MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField
+    _AnyRun = MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField | MutableBookmark
 
     def __init__(self) -> None:
         self._items: list[RunCollection._AnyRun] = []
@@ -427,6 +462,18 @@ class RunCollection:
         self._items.append(field)
         return field
 
+    def add_bookmark(self, name: str) -> MutableBookmark:
+        """Create a bookmark anchor, append it, and return it.
+
+        Args:
+            name: The bookmark name used as the ``id`` attribute in HTML and
+                  the ``w:name`` attribute in OOXML.  Must be unique within
+                  the document.
+        """
+        bm = MutableBookmark(name=name)
+        self._items.append(bm)
+        return bm
+
     def add_footnote_ref(self, note_id: int, note_type: str = "footnote") -> "MutableFootnoteRef":
         """Create a footnote or endnote reference marker, append it, and return it.
 
@@ -451,15 +498,16 @@ class RunCollection:
         from docwow.api.footnote import MutableFootnoteRef
         allowed = self._ALLOWED + (MutableFootnoteRef,)
         if not isinstance(run, allowed):
-            if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField)):
+            if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField, BookmarkStart)):
                 raise TypeError(
                     f"Cannot add a frozen {type(run).__name__} directly. "
                     "Use MutableRun, MutableHyperlink, MutablePageNumberField, "
-                    "or the add_* factory methods instead."
+                    "MutableBookmark, or the add_* factory methods instead."
                 )
             raise TypeError(
                 f"Expected MutableRun, MutableImageRun, MutableHyperlink, "
-                f"MutablePageNumberField, or MutableFootnoteRef; got {type(run).__name__!r}"
+                f"MutablePageNumberField, MutableBookmark, or MutableFootnoteRef; "
+                f"got {type(run).__name__!r}"
             )
 
     def __repr__(self) -> str:
