@@ -128,6 +128,7 @@ BM = {
     "comments":    "showcase-comments",
     "track":       "showcase-track-changes",
     "shading":     "showcase-shading",
+    "sections":    "showcase-sections",
     "pagebreaks":  "showcase-pagebreaks",
     "pagefields":  "showcase-pagefields",
     "hf":          "showcase-hf",
@@ -173,6 +174,7 @@ def build_showcase() -> Document:
             TocEntry("Comments",                    f"#{BM['comments']}",   1),
             TocEntry("Track Changes",               f"#{BM['track']}",      1),
             TocEntry("Shading",                     f"#{BM['shading']}",    1),
+            TocEntry("Multiple Sections",           f"#{BM['sections']}",   1),
             TocEntry("Page Breaks",                 f"#{BM['pagebreaks']}", 1),
             TocEntry("Page Number Fields",          f"#{BM['pagefields']}", 1),
             TocEntry("Headers and Footers",         f"#{BM['hf']}",         1),
@@ -727,6 +729,7 @@ def build_showcase() -> Document:
     # 13. Multiple Sections
     # -----------------------------------------------------------------------
     from docwow.models.section import SectionBreak, SectionProperties
+    body.append(_ph("Multiple Sections", "showcase-sections", style_id="Heading1"))
     body.append(_p(
         "Section breaks divide the document into sections with independent page geometry. "
         "The paragraph below ends Section A; what follows is in Section B (landscape A4)."
