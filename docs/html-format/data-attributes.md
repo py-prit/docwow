@@ -80,6 +80,20 @@ When a paragraph belongs to a list, it gains two additional attributes:
 | `data-dw-num-id` | string | Numbering definition ID (matches `data-dw-num-id` on the `<ul>`/`<ol>`) |
 | `data-dw-level` | integer | List nesting level, 0-based |
 
+### Section break attributes
+
+Section breaks render as `<div class="dw-section-break">` elements (always `display:none`):
+
+| Attribute | Type | Description |
+|---|---|---|
+| `data-dw-break-type` | string | `nextPage` \| `evenPage` \| `oddPage` \| `continuous` |
+| `data-dw-page-width` | float (pt) | Page width of the section |
+| `data-dw-page-height` | float (pt) | Page height of the section |
+| `data-dw-margin-top` | float (pt) | Top margin |
+| `data-dw-margin-bottom` | float (pt) | Bottom margin |
+| `data-dw-margin-left` | float (pt) | Left margin |
+| `data-dw-margin-right` | float (pt) | Right margin |
+
 ### Cross-reference attributes
 
 Cross-references render as `<a class="dw-xref">` elements:

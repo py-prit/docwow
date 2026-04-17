@@ -18,6 +18,7 @@ from lxml import etree
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
 from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.section import SectionBreak
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.parser.image_parser import extract_image
@@ -49,7 +50,11 @@ def parse_body(
             if _is_page_break_paragraph(child):
                 elements.append(PageBreak())
             else:
-                elements.append(_parse_paragraph(child, zf, relationships, _style_num_map))
+                para = _parse_paragraph(child, zf, relationships, _style_num_map)
+                elements.append(para)
+                sect_br = _parse_section_break(child)
+                if sect_br is not None:
+                    elements.append(sect_br)
         elif tag == qn("w:tbl"):
             elements.append(_parse_table(child, zf, relationships, _style_num_map))
         elif tag == qn("w:sdt"):
@@ -261,6 +266,22 @@ def _parse_list_info(
             return ListInfo(num_id=num_id, level=level)
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# Section breaks
+# ---------------------------------------------------------------------------
+
+def _parse_section_break(p_el: etree._Element) -> SectionBreak | None:
+    """Return a SectionBreak if this paragraph carries a w:pPr/w:sectPr."""
+    pPr = find(p_el, "w:pPr")
+    if pPr is None:
+        return None
+    sect_pr = find(pPr, "w:sectPr")
+    if sect_pr is None:
+        return None
+    from docwow.parser.docx_parser import parse_sect_pr
+    return SectionBreak(properties=parse_sect_pr(sect_pr))
 
 
 # ---------------------------------------------------------------------------

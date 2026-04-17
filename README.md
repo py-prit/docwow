@@ -50,6 +50,7 @@ doc.to_docx("output.docx")
 | Run formatting | Bold, italic, underline, strikethrough, small caps, all caps, font name/size, colour, highlight, superscript/subscript |
 | Tab stops | Custom paragraph tab stops (`w:tabs`), tab character runs (`w:tab`), `set_tab_stops()` API, full round-trip |
 | Cross-references | REF fields linking to named bookmarks; renders as `<a class="dw-xref">`, `MutableCrossRef` API, full round-trip |
+| Multiple sections | Multiple `w:sectPr` with independent page size, margins, and break type; `MutableSectionBreak` API, full round-trip |
 | Inline images | PNG, JPEG, GIF, BMP, TIFF, WebP, SVG, EMF, WMF |
 | Tables | Column spans, row spans (vMerge), column/row widths, table-level styles; fully editable via programmatic API |
 | Lists | Bullet and numbered, up to 9 nesting levels, decimal/lowerLetter/upperLetter/lowerRoman/upperRoman formats |

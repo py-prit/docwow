@@ -8,12 +8,13 @@ from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.lists import NumberingDefinition
 from docwow.models.paragraph import PageBreak, Paragraph
+from docwow.models.section import SectionBreak
 from docwow.models.styles import Style
 from docwow.models.table import Table
 from docwow.models.toc import TableOfContents
 
 # Top-level body elements
-BodyElement: TypeAlias = Paragraph | Table | PageBreak | TableOfContents
+BodyElement: TypeAlias = Paragraph | Table | PageBreak | TableOfContents | SectionBreak
 
 
 @dataclass(frozen=True)

@@ -22,6 +22,7 @@ from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.lists import ListLevel, NumberingDefinition
 from docwow.models.paragraph import PageBreak, Paragraph
+from docwow.models.section import SectionBreak, SectionProperties
 from docwow.models.styles import Style
 from docwow.models.table import Table
 from docwow.models.toc import TableOfContents
@@ -165,7 +166,23 @@ def _parse_body(
         elif tag == "div" and has_class(child, "dw-page-break"):
             body.append(PageBreak())
 
+        elif tag == "div" and has_class(child, "dw-section-break"):
+            body.append(_parse_section_break(child))
+
     return tuple(body), _build_numbering(numbering_levels), style_ids
+
+
+def _parse_section_break(div_el) -> SectionBreak:
+    g = div_el.get
+    return SectionBreak(properties=SectionProperties(
+        page_width_pt=pt_val(g("data-dw-page-width"), 595.28),
+        page_height_pt=pt_val(g("data-dw-page-height"), 841.89),
+        margin_top_pt=pt_val(g("data-dw-margin-top"), 72.0),
+        margin_bottom_pt=pt_val(g("data-dw-margin-bottom"), 72.0),
+        margin_left_pt=pt_val(g("data-dw-margin-left"), 72.0),
+        margin_right_pt=pt_val(g("data-dw-margin-right"), 72.0),
+        break_type=g("data-dw-break-type") or "nextPage",
+    ))
 
 
 def _collect_list(

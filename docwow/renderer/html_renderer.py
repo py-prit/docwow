@@ -17,6 +17,7 @@ import re
 from docwow.models.document import Document
 from docwow.models.header_footer import HeaderFooter
 from docwow.models.paragraph import PageBreak, PageNumberField, Paragraph, TextRun
+from docwow.models.section import SectionBreak
 from docwow.models.table import Table
 from docwow.models.toc import TableOfContents
 from docwow.renderer.css_generator import generate_css
@@ -201,6 +202,9 @@ def _render_body(doc: Document, page_view: bool = False) -> str:
             flush_list()
             page_num[0] += 1
             parts.append(_render_page_break(page_num[0], page_view))
+        elif isinstance(element, SectionBreak):
+            flush_list()
+            parts.append(_render_section_break(element))
 
     flush_list()
     return "\n".join(parts)
@@ -210,6 +214,21 @@ def _render_page_break(page_num: int, page_view: bool) -> str:
     # Always hidden in HTML — preserved only for round-trip DOCX fidelity.
     # Visual page-view rendering is a planned future feature.
     return f'<div class="dw-page-break" data-dw-page="{page_num}"></div>'
+
+
+def _render_section_break(sb: SectionBreak) -> str:
+    p = sb.properties
+    attrs = (
+        f'class="dw-section-break"'
+        f' data-dw-break-type="{p.break_type}"'
+        f' data-dw-page-width="{pt_to_css(p.page_width_pt)}"'
+        f' data-dw-page-height="{pt_to_css(p.page_height_pt)}"'
+        f' data-dw-margin-top="{pt_to_css(p.margin_top_pt)}"'
+        f' data-dw-margin-bottom="{pt_to_css(p.margin_bottom_pt)}"'
+        f' data-dw-margin-left="{pt_to_css(p.margin_left_pt)}"'
+        f' data-dw-margin-right="{pt_to_css(p.margin_right_pt)}"'
+    )
+    return f'<div {attrs}></div>'
 
 
 # ---------------------------------------------------------------------------

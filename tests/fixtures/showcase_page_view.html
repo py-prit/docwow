@@ -59,6 +59,10 @@
   display: none;
 }
 
+.dw-section-break {
+  display: none;
+}
+
 .dw-page-only {
   display: none;
 }
@@ -394,6 +398,7 @@ del.dw-del .dw-tc-popup-label {
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-comments">Comments</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-track-changes">Track Changes</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-shading">Shading</a></li>
+<li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-sections">Multiple Sections</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-pagebreaks">Page Breaks</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-pagefields">Page Number Fields</a></li>
 <li class="dw-toc-entry dw-toc-level-1" data-dw-toc-level="1"><a class="dw-toc-link" href="#showcase-hf">Headers and Footers</a></li>
@@ -550,6 +555,10 @@ del.dw-del .dw-tc-popup-label {
 <p class="dw-p"><span class="dw-r">Tab stops define custom horizontal positions for the tab character. The paragraph below has left (72pt), center (216pt), and right (360pt) stops.</span></p>
 <p class="dw-p" data-dw-tab-stops="72pt:left,216pt:center,360pt:right"><span class="dw-r">Left</span><span class="dw-r">	</span><span class="dw-r">Center</span><span class="dw-r">	</span><span class="dw-r">Right</span></p>
 <p class="dw-p" data-dw-tab-stops="360pt:right:dot"><span class="dw-r">TOC entry</span><span class="dw-r">	</span><span class="dw-r">42</span></p>
+<p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-sections" class="dw-bookmark" data-dw-bookmark="showcase-sections"></a><span class="dw-r">Multiple Sections</span></p>
+<p class="dw-p"><span class="dw-r">Section breaks divide the document into sections with independent page geometry. The paragraph below ends Section A; what follows is in Section B (landscape A4).</span></p>
+<div class="dw-section-break" data-dw-break-type="nextPage" data-dw-page-width="841.89pt" data-dw-page-height="595.28pt" data-dw-margin-top="54pt" data-dw-margin-bottom="54pt" data-dw-margin-left="72pt" data-dw-margin-right="72pt"></div>
+<p class="dw-p"><span class="dw-r">This paragraph is in Section B (landscape A4, 54pt top/bottom margins). In Word, the section above uses portrait A4 and this one uses landscape A4. Section break metadata (page size, margins) has no browser equivalent, so it is stored as a hidden data-dw-section-break element and restores on HTML→DOCX.</span></p>
 <p class="dw-p dw-style-Heading1" data-dw-style="Heading1"><a id="showcase-hf" class="dw-bookmark" data-dw-bookmark="showcase-hf"></a><span class="dw-r">Headers and Footers</span></p>
 <p class="dw-p"><span class="dw-r">This document has a default header and footer defined at the Document level. The header (top of each page in Word) shows the document title in italics. The footer (bottom of each page) shows &#x27;Page N of M&#x27;.</span></p>
 <p class="dw-p"><span class="dw-r">In HTML, headers and footers are rendered as &lt;header&gt; and &lt;footer&gt; elements. Page-number-only footer paragraphs are hidden (display:none) in the browser but survive the HTML → DOCX round-trip so Word can display the correct values.</span></p>

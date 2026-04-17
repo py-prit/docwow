@@ -159,6 +159,16 @@ para.set_tab_stops((
 # Cross-references — link to a named bookmark
 para.runs.add_bookmark("my_target")          # define a target anchor
 para.runs.add_cross_ref("my_target", "Section 1")  # insert a REF field
+
+# Section breaks — divide the document into sections with different page geometry
+doc.paragraphs.add_paragraph("Section 1 content")
+doc.paragraphs.add_section_break(
+    break_type="nextPage",        # "nextPage" | "evenPage" | "oddPage" | "continuous"
+    page_width_pt=841.89,         # landscape A4
+    page_height_pt=595.28,
+    margin_top_pt=54.0,
+)
+doc.paragraphs.add_paragraph("Section 2 content (landscape A4)")
 ```
 
 ## Building a document from scratch

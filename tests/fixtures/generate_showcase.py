@@ -128,6 +128,7 @@ BM = {
     "comments":    "showcase-comments",
     "track":       "showcase-track-changes",
     "shading":     "showcase-shading",
+    "sections":    "showcase-sections",
     "pagebreaks":  "showcase-pagebreaks",
     "pagefields":  "showcase-pagefields",
     "hf":          "showcase-hf",
@@ -173,6 +174,7 @@ def build_showcase() -> Document:
             TocEntry("Comments",                    f"#{BM['comments']}",   1),
             TocEntry("Track Changes",               f"#{BM['track']}",      1),
             TocEntry("Shading",                     f"#{BM['shading']}",    1),
+            TocEntry("Multiple Sections",           f"#{BM['sections']}",   1),
             TocEntry("Page Breaks",                 f"#{BM['pagebreaks']}", 1),
             TocEntry("Page Number Fields",          f"#{BM['pagefields']}", 1),
             TocEntry("Headers and Footers",         f"#{BM['hf']}",         1),
@@ -724,7 +726,32 @@ def build_showcase() -> Document:
     ))
 
     # -----------------------------------------------------------------------
-    # 13. Headers and Footers
+    # 13. Multiple Sections
+    # -----------------------------------------------------------------------
+    from docwow.models.section import SectionBreak, SectionProperties
+    body.append(_ph("Multiple Sections", "showcase-sections", style_id="Heading1"))
+    body.append(_p(
+        "Section breaks divide the document into sections with independent page geometry. "
+        "The paragraph below ends Section A; what follows is in Section B (landscape A4)."
+    ))
+    body.append(SectionBreak(properties=SectionProperties(
+        page_width_pt=841.89,
+        page_height_pt=595.28,
+        margin_top_pt=54.0,
+        margin_bottom_pt=54.0,
+        margin_left_pt=72.0,
+        margin_right_pt=72.0,
+        break_type="nextPage",
+    )))
+    body.append(_p(
+        "This paragraph is in Section B (landscape A4, 54pt top/bottom margins). "
+        "In Word, the section above uses portrait A4 and this one uses landscape A4. "
+        "Section break metadata (page size, margins) has no browser equivalent, so it "
+        "is stored as a hidden data-dw-section-break element and restores on HTML→DOCX."
+    ))
+
+    # -----------------------------------------------------------------------
+    # 14. Headers and Footers
     # -----------------------------------------------------------------------
     body.append(_ph("Headers and Footers", BM["hf"], style_id="Heading1"))
     body.append(_p(

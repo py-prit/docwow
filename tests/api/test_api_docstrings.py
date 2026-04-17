@@ -45,6 +45,7 @@ PUBLIC_CLASSES = [
     _api.MutableComment,
     _api.MutableCommentRef,
     _api.MutableTrackedChange,
+    _api.MutableSectionBreak,
 ]
 
 
