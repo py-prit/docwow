@@ -669,6 +669,8 @@ def _write_sect_pr_props(sect: etree._Element, props: SectionProperties) -> None
     pgsz = etree.SubElement(sect, f"{{{W}}}pgSz")
     pgsz.set(f"{{{W}}}w", pt_tw(props.page_width_pt))
     pgsz.set(f"{{{W}}}h", pt_tw(props.page_height_pt))
+    if props.page_width_pt > props.page_height_pt:
+        pgsz.set(f"{{{W}}}orient", "landscape")
 
     pgmar = etree.SubElement(sect, f"{{{W}}}pgMar")
     pgmar.set(f"{{{W}}}top",    pt_tw(props.margin_top_pt))

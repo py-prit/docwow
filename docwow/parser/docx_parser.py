@@ -170,6 +170,10 @@ def parse_sect_pr(sect_pr, break_type: str = "nextPage") -> SectionProperties:
             page_width_pt = twips_to_pt(int(w_val))
         if h_val is not None:
             page_height_pt = twips_to_pt(int(h_val))
+        # w:orient="landscape" means Word stores short side as w:w and long side as w:h
+        # but swaps them visually — honour the orient attribute to get correct dimensions
+        if attrib(pgSz, "w:orient") == "landscape" and page_width_pt < page_height_pt:
+            page_width_pt, page_height_pt = page_height_pt, page_width_pt
 
     margin_top_pt = _ONE_INCH
     margin_bottom_pt = _ONE_INCH
