@@ -63,6 +63,8 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperl
             italic=fmt.italic,
             underline=fmt.underline,
             strike=fmt.strike,
+            small_caps=fmt.small_caps,
+            all_caps=fmt.all_caps,
             font_name=fmt.font_name,
             font_size=fmt.font_size_pt,
             color=fmt.color,

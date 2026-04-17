@@ -170,6 +170,8 @@ def _parse_run_formatting(span_el) -> RunFormatting:
         italic=g("data-dw-italic") == "true",
         underline=g("data-dw-underline") == "true",
         strike=g("data-dw-strike") == "true",
+        small_caps=g("data-dw-small-caps") == "true",
+        all_caps=g("data-dw-all-caps") == "true",
         font_name=g("data-dw-font-name"),
         font_size_pt=pt_val(g("data-dw-font-size")),
         color=g("data-dw-color"),

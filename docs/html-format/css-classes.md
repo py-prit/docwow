@@ -205,6 +205,8 @@ The visual formatting of the character style (bold, italic, color, etc.) is carr
 | `italic` | `font-style: italic` |
 | `underline` | `text-decoration: underline` |
 | `strike` | `text-decoration: line-through` |
+| `small_caps` | `font-variant: small-caps` |
+| `all_caps` | `text-transform: uppercase` |
 | `font_name` | `font-family` |
 | `font_size_pt` | `font-size` |
 | `color` | `color` |

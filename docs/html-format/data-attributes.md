@@ -105,6 +105,8 @@ When a paragraph belongs to a list, it gains two additional attributes:
 | `data-dw-italic` | `"true"` | Italic |
 | `data-dw-underline` | `"true"` | Underline |
 | `data-dw-strike` | `"true"` | Strikethrough |
+| `data-dw-small-caps` | `"true"` | Small caps (lowercase letters rendered as smaller uppercase) |
+| `data-dw-all-caps` | `"true"` | All caps (all letters rendered as uppercase) |
 | `data-dw-font` | string | Font family name |
 | `data-dw-size` | float (pt) | Font size |
 | `data-dw-color` | string | Font color as 6-digit hex, no `#` (e.g. `FF0000`) |

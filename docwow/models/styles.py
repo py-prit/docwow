@@ -11,6 +11,8 @@ class RunFormatting:
     italic: bool = False
     underline: bool = False
     strike: bool = False
+    small_caps: bool = False
+    all_caps: bool = False
     font_name: str | None = None
     font_size_pt: float | None = None  # points; converted from half-points at parse time
     color: str | None = None           # hex RGB e.g. "FF0000"; None = auto
