@@ -135,11 +135,9 @@ Entry point: `docwow/html_parser/generic/`.
 
 `wp:anchor` positioned images, text wrapping modes, and `w:txbx` inline text boxes. Currently anchored images are silently skipped.
 
-Estimated effort: 4–6 hours.
-
 #### Phase 3 — Tier 2 Word features
 
-Individual features, each ~1–3 hours, all following the same 5-layer pattern (parser → renderer → html_parser → writer → API):
+Individual features, all following the same 5-layer pattern (parser → renderer → html_parser → writer → API):
 
 | Feature | OOXML element | Notes |
 |---|---|---|
