@@ -130,6 +130,7 @@ Cross-references render as `<a class="dw-xref">` elements:
 | `data-dw-strike` | `"true"` | Strikethrough |
 | `data-dw-small-caps` | `"true"` | Small caps (lowercase letters rendered as smaller uppercase) |
 | `data-dw-all-caps` | `"true"` | All caps (all letters rendered as uppercase) |
+| `data-dw-vanish` | `"true"` | Hidden text (`w:vanish`); rendered as `display:none` in HTML |
 | `data-dw-font` | string | Font family name |
 | `data-dw-size` | float (pt) | Font size |
 | `data-dw-color` | string | Font color as 6-digit hex, no `#` (e.g. `FF0000`) |

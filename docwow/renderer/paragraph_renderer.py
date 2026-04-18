@@ -228,6 +228,8 @@ def _run_data_attrs(fmt: RunFormatting) -> dict[str, str]:
         attrs["data-dw-small-caps"] = "true"
     if fmt.all_caps:
         attrs["data-dw-all-caps"] = "true"
+    if fmt.vanish:
+        attrs["data-dw-vanish"] = "true"
     if fmt.font_name:
         attrs["data-dw-font-name"] = fmt.font_name
     if fmt.font_size_pt is not None:
@@ -285,6 +287,8 @@ def _run_inline_style(fmt: RunFormatting) -> str:
         rules.append("font-variant:small-caps")
     if fmt.all_caps:
         rules.append("text-transform:uppercase")
+    if fmt.vanish:
+        rules.append("display:none")
     if fmt.font_name:
         rules.append(f"font-family:{fmt.font_name}")
     if fmt.font_size_pt is not None:
