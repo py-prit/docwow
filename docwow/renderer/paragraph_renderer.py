@@ -5,9 +5,9 @@ from __future__ import annotations
 import html
 
 from docwow.models.comment import Comment
-from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FloatingImageRun, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting, TabStop
-from docwow.renderer.image_renderer import render_image
+from docwow.renderer.image_renderer import render_floating_image, render_image
 from docwow.utils.units import pt_to_css
 
 
@@ -36,6 +36,8 @@ def render_paragraph(
 
 
 def _render_run(run: Run, comments: dict[int, Comment] | None = None) -> str:
+    if isinstance(run, FloatingImageRun):
+        return render_floating_image(run.image)
     if isinstance(run, ImageRun):
         return render_image(run.image)
     if isinstance(run, Hyperlink):

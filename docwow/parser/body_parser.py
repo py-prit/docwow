@@ -15,9 +15,9 @@ import zipfile
 
 from lxml import etree
 
-from docwow.models.image import InlineImage
+from docwow.models.image import FloatingImage, InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FloatingImageRun, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.section import SectionBreak
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
@@ -406,9 +406,13 @@ def _parse_run(
             result.append(TextRun(text=text, formatting=fmt))
 
         elif tag == qn("w:drawing"):
-            image = _parse_drawing(child, zf, relationships)
-            if image is not None:
-                result.append(ImageRun(image=image, formatting=fmt))
+            floating = _parse_drawing_anchor(child, zf, relationships)
+            if floating is not None:
+                result.append(FloatingImageRun(image=floating))
+            else:
+                image = _parse_drawing(child, zf, relationships)
+                if image is not None:
+                    result.append(ImageRun(image=image, formatting=fmt))
 
         elif tag == qn("w:tab"):
             result.append(TextRun(text="\t", formatting=fmt))
@@ -450,15 +454,92 @@ def _parse_run(
 # Drawing / inline image
 # ---------------------------------------------------------------------------
 
+def _parse_drawing_anchor(
+    drawing: etree._Element,
+    zf: zipfile.ZipFile,
+    relationships: dict[str, str],
+) -> FloatingImage | None:
+    """Parse a ``wp:anchor`` drawing element into a :class:`FloatingImage`."""
+    anchor = find(drawing, "wp:anchor")
+    if anchor is None:
+        return None
+
+    extent = find(anchor, "wp:extent")
+    if extent is None:
+        return None
+    cx = _int(attrib(extent, "cx") or "0", "wp:extent/@cx")
+    cy = _int(attrib(extent, "cy") or "0", "wp:extent/@cy")
+
+    blip = _find_blip(anchor)
+    if blip is None:
+        return None
+    rid = attrib(blip, "r:embed")
+    if rid is None:
+        return None
+
+    # Horizontal position
+    pos_h_el = find(anchor, "wp:positionH")
+    h_anchor = attrib(pos_h_el, "relativeFrom") or "column" if pos_h_el is not None else "column"
+    pos_h_off = find(pos_h_el, "wp:posOffset") if pos_h_el is not None else None
+    pos_h_pt = emu_to_pt(int(pos_h_off.text or "0")) if pos_h_off is not None and pos_h_off.text else 0.0
+
+    # Vertical position
+    pos_v_el = find(anchor, "wp:positionV")
+    v_anchor = attrib(pos_v_el, "relativeFrom") or "paragraph" if pos_v_el is not None else "paragraph"
+    pos_v_off = find(pos_v_el, "wp:posOffset") if pos_v_el is not None else None
+    pos_v_pt = emu_to_pt(int(pos_v_off.text or "0")) if pos_v_off is not None and pos_v_off.text else 0.0
+
+    # Wrap mode
+    wrap = "square"
+    for child in anchor:
+        local = etree.QName(child.tag).localname
+        if local == "wrapNone":
+            wrap = "none"
+            break
+        elif local == "wrapSquare":
+            wrap = "square"
+            break
+        elif local == "wrapTight":
+            wrap = "tight"
+            break
+        elif local == "wrapThrough":
+            wrap = "through"
+            break
+        elif local == "wrapTopAndBottom":
+            wrap = "topAndBottom"
+            break
+
+    behind_doc = attrib(anchor, "behindDoc") in ("1", "true")
+
+    docPr = find(anchor, "wp:docPr")
+    alt_text = attrib(docPr, "descr") or attrib(docPr, "title") or "" if docPr is not None else ""
+
+    inline_img = extract_image(zf, rid, relationships, cx, cy, alt_text)
+    if inline_img is None:
+        return None
+
+    return FloatingImage(
+        relationship_id=inline_img.relationship_id,
+        content_type=inline_img.content_type,
+        data=inline_img.data,
+        width_pt=inline_img.width_pt,
+        height_pt=inline_img.height_pt,
+        pos_h_pt=pos_h_pt,
+        pos_v_pt=pos_v_pt,
+        h_anchor=h_anchor,
+        v_anchor=v_anchor,
+        wrap=wrap,
+        behind_doc=behind_doc,
+        alt_text=alt_text,
+    )
+
+
 def _parse_drawing(
     drawing: etree._Element,
     zf: zipfile.ZipFile,
     relationships: dict[str, str],
 ) -> InlineImage | None:
-    # Both wp:inline and wp:anchor contain the same child structure
     inline = find(drawing, "wp:inline")
-    if inline is None:
-        inline = find(drawing, "wp:anchor")
     if inline is None:
         return None
 

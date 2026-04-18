@@ -7,6 +7,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Floating images (`wp:anchor`)** — positioned images with `square`, `tight`, `topAndBottom`, `through`, and `none` text wrapping; `pos_h_pt`/`pos_v_pt` offsets, `h_anchor`/`v_anchor` reference frames, `behind_doc` z-order; `MutableFloatingImageRun` API; `add_floating_image()` on `RunCollection`; full round-trip via `<figure class="dw-float-img">` with `data-dw-float-*` attributes
+
 ## [0.10.0] - 2026-04-18
 
 ### Added

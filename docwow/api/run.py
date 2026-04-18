@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Iterator
 
-from docwow.models.image import InlineImage
-from docwow.models.paragraph import BookmarkStart, CrossRef, Hyperlink, ImageRun, PageNumberField, Run, TextRun, TrackedChange
+from docwow.models.image import FloatingImage, InlineImage
+from docwow.models.paragraph import BookmarkStart, CrossRef, FloatingImageRun, Hyperlink, ImageRun, PageNumberField, Run, TextRun, TrackedChange
 from docwow.models.styles import RunFormatting
 
 
@@ -332,6 +332,158 @@ class MutableImageRun:
         )
 
 
+class MutableFloatingImageRun:
+    """A mutable floating (anchored) image run.
+
+    Wraps a :class:`~docwow.models.image.FloatingImage` and exposes setters
+    for the properties most commonly changed after parsing.
+
+    Use :meth:`RunCollection.add_floating_image` to insert a new floating
+    image into a paragraph.
+    """
+
+    def __init__(self, image: FloatingImage) -> None:
+        self._image = image
+
+    def get_image(self) -> FloatingImage:
+        """Return the underlying FloatingImage model."""
+        return self._image
+
+    @property
+    def width_pt(self) -> float:
+        """Rendered width in points."""
+        return self._image.width_pt
+
+    @property
+    def height_pt(self) -> float:
+        """Rendered height in points."""
+        return self._image.height_pt
+
+    @property
+    def wrap(self) -> str:
+        """Text wrapping mode (``'square'``, ``'tight'``, ``'none'``, etc.)."""
+        return self._image.wrap
+
+    @property
+    def pos_h_pt(self) -> float:
+        """Horizontal offset from the anchor point in points."""
+        return self._image.pos_h_pt
+
+    @property
+    def pos_v_pt(self) -> float:
+        """Vertical offset from the anchor point in points."""
+        return self._image.pos_v_pt
+
+    @property
+    def h_anchor(self) -> str:
+        """Horizontal anchor reference (``'page'``, ``'margin'``, ``'column'``)."""
+        return self._image.h_anchor
+
+    @property
+    def v_anchor(self) -> str:
+        """Vertical anchor reference (``'page'``, ``'margin'``, ``'paragraph'``)."""
+        return self._image.v_anchor
+
+    @property
+    def behind_doc(self) -> bool:
+        """Whether the image appears behind body text."""
+        return self._image.behind_doc
+
+    @property
+    def alt_text(self) -> str:
+        """Accessibility description."""
+        return self._image.alt_text
+
+    @property
+    def content_type(self) -> str:
+        """MIME type of the image data."""
+        return self._image.content_type
+
+    def set_position(
+        self,
+        pos_h_pt: float,
+        pos_v_pt: float,
+        h_anchor: str = "column",
+        v_anchor: str = "paragraph",
+    ) -> "MutableFloatingImageRun":
+        """Set the floating position and anchor references.
+
+        ``h_anchor`` / ``v_anchor`` accept ``'page'``, ``'margin'``,
+        ``'column'``, ``'paragraph'``, or ``'line'``.
+        Returns ``self`` for chaining.
+        """
+        self._image = FloatingImage(
+            relationship_id=self._image.relationship_id,
+            content_type=self._image.content_type,
+            data=self._image.data,
+            width_pt=self._image.width_pt,
+            height_pt=self._image.height_pt,
+            pos_h_pt=pos_h_pt,
+            pos_v_pt=pos_v_pt,
+            h_anchor=h_anchor,
+            v_anchor=v_anchor,
+            wrap=self._image.wrap,
+            behind_doc=self._image.behind_doc,
+            alt_text=self._image.alt_text,
+        )
+        return self
+
+    def set_wrap(self, wrap: str) -> "MutableFloatingImageRun":
+        """Set the text wrapping mode.
+
+        Accepted values: ``'none'``, ``'square'``, ``'tight'``,
+        ``'through'``, ``'topAndBottom'``.
+        Returns ``self`` for chaining.
+        """
+        _VALID_WRAPS = ("none", "square", "tight", "through", "topAndBottom")
+        if wrap not in _VALID_WRAPS:
+            raise ValueError(f"wrap must be one of {_VALID_WRAPS}, got {wrap!r}")
+        self._image = FloatingImage(
+            relationship_id=self._image.relationship_id,
+            content_type=self._image.content_type,
+            data=self._image.data,
+            width_pt=self._image.width_pt,
+            height_pt=self._image.height_pt,
+            pos_h_pt=self._image.pos_h_pt,
+            pos_v_pt=self._image.pos_v_pt,
+            h_anchor=self._image.h_anchor,
+            v_anchor=self._image.v_anchor,
+            wrap=wrap,
+            behind_doc=self._image.behind_doc,
+            alt_text=self._image.alt_text,
+        )
+        return self
+
+    def set_size(self, width_pt: float, height_pt: float) -> "MutableFloatingImageRun":
+        """Set the rendered size in points. Returns ``self`` for chaining."""
+        self._image = FloatingImage(
+            relationship_id=self._image.relationship_id,
+            content_type=self._image.content_type,
+            data=self._image.data,
+            width_pt=width_pt,
+            height_pt=height_pt,
+            pos_h_pt=self._image.pos_h_pt,
+            pos_v_pt=self._image.pos_v_pt,
+            h_anchor=self._image.h_anchor,
+            v_anchor=self._image.v_anchor,
+            wrap=self._image.wrap,
+            behind_doc=self._image.behind_doc,
+            alt_text=self._image.alt_text,
+        )
+        return self
+
+    def _to_frozen(self) -> FloatingImageRun:
+        """Convert to a frozen FloatingImageRun for pipeline use."""
+        return FloatingImageRun(image=self._image)
+
+    def __repr__(self) -> str:
+        return (
+            f"MutableFloatingImageRun({self._image.content_type!r}, "
+            f"{self._image.width_pt:.1f}x{self._image.height_pt:.1f}pt, "
+            f"wrap={self._image.wrap!r})"
+        )
+
+
 class MutableHyperlink:
     """A mutable hyperlink run with a single text string and a URL."""
 
@@ -575,9 +727,9 @@ class MutableTrackedChange:
 class RunCollection:
     """Ordered mutable collection of run instances."""
 
-    _ALLOWED = (MutableRun, MutableImageRun, MutableHyperlink, MutablePageNumberField, MutableBookmark, MutableCrossRef)
+    _ALLOWED = (MutableRun, MutableImageRun, MutableFloatingImageRun, MutableHyperlink, MutablePageNumberField, MutableBookmark, MutableCrossRef)
 
-    _AnyRun = MutableRun | MutableImageRun | MutableHyperlink | MutablePageNumberField | MutableBookmark | MutableCrossRef
+    _AnyRun = MutableRun | MutableImageRun | MutableFloatingImageRun | MutableHyperlink | MutablePageNumberField | MutableBookmark | MutableCrossRef
 
     def __init__(self) -> None:
         self._items: list[RunCollection._AnyRun] = []
@@ -706,6 +858,56 @@ class RunCollection:
         self._items.append(ref)
         return ref
 
+    def add_floating_image(
+        self,
+        data: bytes,
+        content_type: str,
+        width_pt: float,
+        height_pt: float,
+        pos_h_pt: float = 0.0,
+        pos_v_pt: float = 0.0,
+        h_anchor: str = "column",
+        v_anchor: str = "paragraph",
+        wrap: str = "square",
+        behind_doc: bool = False,
+        alt_text: str = "",
+    ) -> MutableFloatingImageRun:
+        """Create a floating image anchored to this paragraph, append it, and return it.
+
+        The image floats outside the normal text flow and is positioned by
+        ``pos_h_pt`` / ``pos_v_pt`` offsets relative to ``h_anchor`` / ``v_anchor``.
+
+        Args:
+            data:         Raw image bytes (PNG, JPEG, etc.).
+            content_type: MIME type, e.g. ``'image/png'``.
+            width_pt:     Rendered width in points.
+            height_pt:    Rendered height in points.
+            pos_h_pt:     Horizontal offset from the anchor in points.
+            pos_v_pt:     Vertical offset from the anchor in points.
+            h_anchor:     Horizontal anchor — ``'page'``, ``'margin'``, or ``'column'``.
+            v_anchor:     Vertical anchor — ``'page'``, ``'margin'``, or ``'paragraph'``.
+            wrap:         Text wrap mode — ``'square'``, ``'tight'``, ``'none'``,
+                          ``'through'``, or ``'topAndBottom'``.
+            behind_doc:   If ``True``, the image appears behind body text.
+            alt_text:     Accessibility description.
+        """
+        fi = MutableFloatingImageRun(FloatingImage(
+            relationship_id=f"rId_float_{id(self)}_{len(self._items)}",
+            content_type=content_type,
+            data=data,
+            width_pt=width_pt,
+            height_pt=height_pt,
+            pos_h_pt=pos_h_pt,
+            pos_v_pt=pos_v_pt,
+            h_anchor=h_anchor,
+            v_anchor=v_anchor,
+            wrap=wrap,
+            behind_doc=behind_doc,
+            alt_text=alt_text,
+        ))
+        self._items.append(fi)
+        return fi
+
     def add_comment_ref(self, comment_id: int) -> "MutableCommentRef":
         """Create a comment reference marker, append it, and return it.
 
@@ -774,14 +976,14 @@ class RunCollection:
         from docwow.api.comment import MutableCommentRef
         allowed = self._ALLOWED + (MutableFootnoteRef, MutableCommentRef, MutableTrackedChange)
         if not isinstance(run, allowed):
-            if isinstance(run, (TextRun, ImageRun, Hyperlink, PageNumberField, CrossRef, BookmarkStart, TrackedChange)):
+            if isinstance(run, (TextRun, ImageRun, FloatingImageRun, Hyperlink, PageNumberField, CrossRef, BookmarkStart, TrackedChange)):
                 raise TypeError(
                     f"Cannot add a frozen {type(run).__name__} directly. "
                     "Use MutableRun, MutableHyperlink, MutablePageNumberField, MutableCrossRef, "
                     "MutableBookmark, or the add_* factory methods instead."
                 )
             raise TypeError(
-                f"Expected MutableRun, MutableImageRun, MutableHyperlink, "
+                f"Expected MutableRun, MutableImageRun, MutableFloatingImageRun, MutableHyperlink, "
                 f"MutablePageNumberField, MutableBookmark, MutableFootnoteRef, "
                 f"MutableCommentRef, or MutableTrackedChange; got {type(run).__name__!r}"
             )

@@ -18,8 +18,8 @@ import zipfile
 from pathlib import Path
 
 from docwow.models.document import Document
-from docwow.models.image import InlineImage
-from docwow.models.paragraph import Hyperlink, ImageRun, Paragraph
+from docwow.models.image import FloatingImage, InlineImage
+from docwow.models.paragraph import FloatingImageRun, Hyperlink, ImageRun, Paragraph
 from docwow.models.table import Table
 from docwow.models.header_footer import HeaderFooter
 from docwow.writer._xml import (
@@ -228,21 +228,21 @@ def _build_zip(doc: Document) -> bytes:
 # Image collection
 # ---------------------------------------------------------------------------
 
-def _collect_images(doc: Document) -> list[InlineImage]:
-    """Walk the entire body and return all InlineImage objects in order."""
-    images: list[InlineImage] = []
+def _collect_images(doc: Document) -> list[InlineImage | FloatingImage]:
+    """Walk the entire body and return all image objects in order."""
+    images: list[InlineImage | FloatingImage] = []
     _walk_body(doc.body, images)
     return images
 
 
-def _walk_body(body, images: list[InlineImage]) -> None:
+def _walk_body(body, images: list[InlineImage | FloatingImage]) -> None:
     for element in body:
         if isinstance(element, Paragraph):
             for run in element.runs:
                 if isinstance(run, ImageRun):
                     images.append(run.image)
-                elif isinstance(run, Hyperlink):
-                    pass  # hyperlinks don't contribute images
+                elif isinstance(run, FloatingImageRun):
+                    images.append(run.image)
         elif isinstance(element, Table):
             for row in element.rows:
                 for cell in row.cells:

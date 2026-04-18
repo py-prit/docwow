@@ -30,6 +30,7 @@ PUBLIC_CLASSES = [
     _api.RunCollection,
     _api.MutableRun,
     _api.MutableImageRun,
+    _api.MutableFloatingImageRun,
     _api.MutableHyperlink,
     _api.MutablePageNumberField,
     _api.MutableHeaderFooter,
