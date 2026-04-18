@@ -21,6 +21,7 @@ class MutableRun:
         strike: bool = False,
         small_caps: bool = False,
         all_caps: bool = False,
+        vanish: bool = False,
         font_name: str | None = None,
         font_size: float | None = None,
         color: str | None = None,
@@ -35,6 +36,7 @@ class MutableRun:
         self._strike = strike
         self._small_caps = small_caps
         self._all_caps = all_caps
+        self._vanish = vanish
         self._font_name = font_name
         self._font_size = font_size
         self._color = color
@@ -83,6 +85,11 @@ class MutableRun:
     def set_all_caps(self, value: bool = True) -> "MutableRun":
         """Set all-caps formatting (renders all letters as uppercase)."""
         self._all_caps = value
+        return self
+
+    def set_vanish(self, value: bool = True) -> "MutableRun":
+        """Hide or show this run (Word's hidden text / w:vanish)."""
+        self._vanish = value
         return self
 
     # ---- Font ----------------------------------------------------------------
@@ -160,6 +167,11 @@ class MutableRun:
         return self._all_caps
 
     @property
+    def vanish(self) -> bool:
+        """True if the run is hidden (w:vanish)."""
+        return self._vanish
+
+    @property
     def font_name(self) -> str | None:
         """Font family name, or None to inherit from the style."""
         return self._font_name
@@ -202,6 +214,7 @@ class MutableRun:
                 strike=self._strike,
                 small_caps=self._small_caps,
                 all_caps=self._all_caps,
+                vanish=self._vanish,
                 font_name=self._font_name,
                 font_size_pt=self._font_size,
                 color=self._color,
@@ -611,6 +624,7 @@ class RunCollection:
         strike: bool = False,
         small_caps: bool = False,
         all_caps: bool = False,
+        vanish: bool = False,
         font_name: str | None = None,
         font_size: float | None = None,
         color: str | None = None,
@@ -627,6 +641,7 @@ class RunCollection:
             strike=strike,
             small_caps=small_caps,
             all_caps=all_caps,
+            vanish=vanish,
             font_name=font_name,
             font_size=font_size,
             color=color,
