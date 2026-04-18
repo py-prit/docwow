@@ -7,8 +7,15 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-18
+
 ### Added
 - **Floating images (`wp:anchor`)** — positioned images with `square`, `tight`, `topAndBottom`, `through`, and `none` text wrapping; `pos_h_pt`/`pos_v_pt` offsets, `h_anchor`/`v_anchor` reference frames, `behind_doc` z-order; `MutableFloatingImageRun` API; `add_floating_image()` on `RunCollection`; full round-trip via `<figure class="dw-float-img">` with `data-dw-float-*` attributes
+- **Semantic round-trip stress test** (`tests/stress/run_stress.py`) — 176 real-world DOCX files from the Apache POI corpus; fingerprints every supported feature (run text + all formatting flags, paragraph formatting, list info, tables/cells, inline/floating images, hyperlinks, footnotes, bookmarks, cross-refs, comments, tracked changes, page fields) and diffs original vs round-tripped document; result: 159 OK, 0 Partial, 17 Crash (all invalid/encrypted files)
+
+### Fixed
+- **Tab and line-break run merging** — `<w:tab>` and `<w:br>` children within a single `<w:r>` element are now merged into one `TextRun` instead of being emitted as separate runs; previously each tab or newline expanded into three tiny runs on round-trip, causing structural drift across 23 real-world files
+- **Section break inline placement** — `w:sectPr` is now embedded as the last child of the preceding paragraph's `w:pPr` (correct OOXML) rather than written as a standalone empty `<w:p>`; previously each section break produced a spurious extra paragraph on re-parse, shifting all subsequent body element indices
 
 ## [0.10.0] - 2026-04-18
 

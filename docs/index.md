@@ -63,7 +63,8 @@ doc.save("updated.docx")
 - **Track changes** — parse `w:ins`/`w:del`, render as green underline / red strikethrough with hover popup (author, date, Accept/Reject buttons) in HTML, accepted/rejected state preserved on HTML→DOCX round-trip, and `MutableTrackedChange` API
 - **Paragraph borders** — box, rule, and partial borders (`w:pBdr`); `set_borders()` API; full round-trip via `data-dw-borders`; CSS `border-*` in HTML
 - **Field codes** — `DATE`, `TIME`, `AUTHOR`, `TITLE`, `FILENAME` alongside `PAGE`/`NUMPAGES`/`SECTIONPAGES`; static placeholders in HTML; full round-trip
-- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, `MutableTableOfContents`, `MutableComment`, and friends; build documents from scratch including tables, footnotes, bookmarks, TOC, comments, and lists; `doc.find()`, `doc.remove_footnote()`, `doc.remove_comment()`, and more; save to DOCX or render to HTML
+- **Floating images** — positioned (`wp:anchor`) images with `square`, `tight`, `topAndBottom`, `through`, and `none` text wrapping; horizontal/vertical offsets and anchor frames; `behind_doc` z-order; `MutableFloatingImageRun` API; full round-trip via `<figure class="dw-float-img">` with `data-dw-float-*` attributes
+- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, `MutableTableOfContents`, `MutableComment`, `MutableFloatingImageRun`, and friends; build documents from scratch including tables, footnotes, bookmarks, TOC, comments, and lists; `doc.find()`, `doc.remove_footnote()`, `doc.remove_comment()`, and more; save to DOCX or render to HTML
 
 ## Design principles
 

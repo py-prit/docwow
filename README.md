@@ -85,6 +85,7 @@ docwow.strict_warnings()     # raise on any unsupported construct (useful in CI)
 | Paragraph borders | Box, rule, and partial borders (`w:pBdr`); `set_borders()` API, full round-trip via `data-dw-borders` |
 | Field codes | `DATE`, `TIME`, `AUTHOR`, `TITLE`, `FILENAME` fields alongside `PAGE`/`NUMPAGES`/`SECTIONPAGES`; static placeholders in HTML, full round-trip |
 | Hidden text | `w:vanish` → `display:none` in HTML; `set_vanish()` API, full round-trip |
+| Floating images | Positioned (`wp:anchor`) images with `square`, `tight`, `topAndBottom`, `through`, and `none` text wrapping; `MutableFloatingImageRun` API, full round-trip |
 | Programmatic API | Open, edit, and save documents in pure Python; `doc.find()`, `doc.remove_footnote()`, `doc.remove_comment()`, and more |
 
 ### ⚠️ Headers, Footers & Page Numbers — Known Limitations
@@ -124,7 +125,6 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 
 | Feature | Notes |
 |---|---|
-| Floating images | Positioned (`wp:anchor`) images and text wrapping modes |
 | Multi-column layouts | `w:cols` in section properties |
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, the architecture pattern, and the PR process.
