@@ -484,7 +484,7 @@ docwow.suppress_warnings()
 # Download <link rel="stylesheet"> stylesheets before converting
 docwow.to_docx(html, "out.docx", is_foreign_html=True, fetch_external_css=True)
 
-# Download <img src="https://..."> images (coming in a later release)
+# Download <img src="https://..."> images from remote URLs
 docwow.to_docx(html, "out.docx", is_foreign_html=True, fetch_images=True)
 ```
 
