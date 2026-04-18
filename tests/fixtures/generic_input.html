@@ -290,5 +290,17 @@ hello("docwow")</pre>
   <p><b>Outer bold — <i>inner bold-italic — <u>innermost bold-italic-underline</u></i></b> then plain.</p>
   <p>Tail text: <b>bold <i>italic</i> still bold</b> plain.</p>
 
+  <!-- ============================================================
+       13. IMAGES — data: URI, inline, with alt and dimensions
+       Expected: blue rectangle rendered at explicit size; natural size
+       ============================================================ -->
+  <h2>Images</h2>
+
+  <p>Inline image at 90pt × 45pt (explicit dimensions via attributes):</p>
+  <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAA8CAIAAAAiz+n/AAAAn0lEQVR4nO3SQQ0AIBADwQPFSEQaKtjXjIEmm645d/hvBxsI3fHoiNARoSNCR4SOCB0ROiJ0ROiI0BGhI0JHhI4IHRE6InRE6IjQEaEjQkeEjggdEToidEToiNARoSNCR4SOCB0ROiJ0ROiI0BGhI0JHhI4IHRE6InRE6IjQEaEjQkeEjggdEToidEToiNARoSNCR4SOCB0ROiJ0ROhpPKZUAahd5LXWAAAAAElFTkSuQmCC" alt="docwow blue rectangle" width="120" height="60"></p>
+
+  <p>Natural-size image (no width/height — Pillow reads pixel dimensions):</p>
+  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAA8CAIAAAAiz+n/AAAAn0lEQVR4nO3SQQ0AIBADwQPFSEQaKtjXjIEmm645d/hvBxsI3fHoiNARoSNCR4SOCB0ROiJ0ROiI0BGhI0JHhI4IHRE6InRE6IjQEaEjQkeEjggdEToidEToiNARoSNCR4SOCB0ROiJ0ROiI0BGhI0JHhI4IHRE6InRE6IjQEaEjQkeEjggdEToidEToiNARoSNCR4SOCB0ROiJ0ROhpPKZUAahd5LXWAAAAAElFTkSuQmCC" alt="natural size">
+
 </body>
 </html>

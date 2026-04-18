@@ -672,6 +672,8 @@ logging.basicConfig(filename="conversion.log")
 | `<span>` | Run with CSS-resolved formatting |
 | `<a href="...">` | Hyperlink (URL preserved) |
 | `<br>` | Line break within a paragraph |
+| `<img src="data:...">` | Inline image from base64 data URI |
+| `<img src="https://...">` | Inline image fetched from URL (requires `fetch_images=True`) |
 
 **CSS on inline elements** (`<span style="...">` or class/ID selectors):
 
@@ -714,4 +716,4 @@ Each `<ul>`/`<ol>` element gets its own numbering definition so that counters re
 
 Supported border styles: `solid` → `single`, `dashed`, `dotted`, `double`, `groove`, `ridge`, `inset`, `outset`, `none`.
 
-Images are added in a subsequent release.
+**Image sizing** — dimensions are resolved in priority order: CSS `width`/`height` → HTML `width`/`height` attributes → Pillow natural pixel size (converted at 96 dpi). If only one dimension is specified, the other is scaled proportionally.
