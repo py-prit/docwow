@@ -113,6 +113,19 @@ Follow Semantic Versioning (`MAJOR.MINOR.PATCH`):
 Bump version in `pyproject.toml` on its own `chore/bump-X.Y.Z` branch after merging
 the feature branch. Then upload to PyPI.
 
+### On every version bump — mandatory checklist
+
+Every `chore/bump-X.Y.Z` branch **must** include all of these:
+
+1. **`pyproject.toml`** — update `version`
+2. **`docwow/__init__.py`** — update `__version__`
+3. **`CHANGELOG.md`** — add a new `## [X.Y.Z] - YYYY-MM-DD` section with Added/Changed/Fixed entries
+4. **`README.md`** — verify feature table and roadmap are current
+5. **`docs/index.md`** — verify feature bullets match
+
+Never bump the version without updating CHANGELOG.md — this is how users and contributors
+track what changed.
+
 ## Testing standards
 
 Three layers of tests are expected for every feature:
@@ -141,6 +154,26 @@ Mutable wrapper classes live in `docwow/api/`. Naming pattern:
 - Old `<Thing>View` names are backward-compat aliases — new code uses `Mutable<Thing>`
 
 Setters return `self` (chainable). All public methods have docstrings.
+
+## CI and infra rules
+
+The project uses GitHub Actions CI (`.github/workflows/ci.yml`). It runs on every PR and
+push to `main`. **CI must be green before merging any PR** — no exceptions.
+
+CI checks:
+- `pytest` with coverage on Python 3.10, 3.11, 3.12
+- Coverage must stay ≥ 90% (`--cov-fail-under=90` in pyproject.toml)
+
+If CI fails on a PR, investigate and fix the underlying issue. Never bypass with
+`--no-verify` or skip the coverage check.
+
+### Maintaining CHANGELOG.md
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com) format.
+
+- Every merged feature/fix PR adds an entry under `## [Unreleased]`
+- On version bump, rename `[Unreleased]` → `[X.Y.Z] - YYYY-MM-DD` and add a fresh `[Unreleased]` section above it
+- Categories: `Added`, `Changed`, `Fixed`, `Removed`, `Deprecated`
 
 ## Useful commands
 

@@ -1,5 +1,10 @@
 # docwow
 
+[![PyPI version](https://img.shields.io/pypi/v/docwow)](https://pypi.org/project/docwow/)
+[![CI](https://github.com/py-prit/docwow/actions/workflows/ci.yml/badge.svg)](https://github.com/py-prit/docwow/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/pypi/pyversions/docwow)](https://pypi.org/project/docwow/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Pure Python Word (DOCX) ↔ HTML conversion with guaranteed round-trip fidelity.**
 
 docwow converts Word documents to a self-contained HTML representation and back again — without losing a single paragraph indent, table merge, list level, or inline image.
