@@ -7,8 +7,8 @@ best-effort heuristics.  Unsupported constructs emit
 Built incrementally across Phase 2 sub-features:
   feat/generic-block-elements   — h1-h6, p, div, blockquote, pre, hr, br
   feat/generic-inline-elements  — b/i/u/s/code/mark/sub/sup/span/a + CSS
-  feat/generic-lists             — ul/ol/li, nesting  ← this PR
-  feat/generic-tables            — table/tr/td/th
+  feat/generic-lists             — ul/ol/li, nesting
+  feat/generic-tables            — table/tr/td/th, colspan/rowspan  ← this PR
   feat/generic-images            — img
 """
 from __future__ import annotations
@@ -26,6 +26,7 @@ from docwow.models.document import Document
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import Hyperlink, PageBreak, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
+from docwow.models.table import Table, TableCell, TableRow
 from docwow.warnings import warn as _warn
 
 # ---------------------------------------------------------------------------
@@ -253,9 +254,7 @@ class ElementParser:
                 continue
 
             if tag == "table":
-                _warn(
-                    "<table> parsing is not yet supported — element skipped."
-                )
+                yield from self._parse_table(child, resolver, blockquote_depth)
                 continue
 
             # img — stub until feat/generic-images
@@ -392,6 +391,132 @@ class ElementParser:
                     yield from self._parse_list(
                         grandchild, resolver, blockquote_depth, depth=depth + 1,
                     )
+
+    # -----------------------------------------------------------------------
+    # Table parsing
+    # -----------------------------------------------------------------------
+
+    def _parse_table(
+        self,
+        table_el,
+        resolver: CssResolver,
+        blockquote_depth: int,
+    ) -> Iterator[Table]:
+        """Parse a <table> element into a :class:`~docwow.models.table.Table`.
+
+        Handles colspan and rowspan by building a logical grid first, then
+        emitting OOXML-style v_merge_start / v_merge_continue cells.
+        """
+        tr_els = _collect_tr_elements(table_el)
+        if not tr_els:
+            return
+
+        grid, num_rows, max_col = _build_table_grid(tr_els)
+        if not grid or max_col == 0:
+            return
+
+        table_css = resolver.resolve(table_el)
+        table_width_pt = (
+            css_value_to_pt(table_css["width"]) if "width" in table_css else None
+        )
+        col_widths = _extract_col_widths(table_el, resolver, max_col)
+
+        rows = []
+        for row_idx in range(num_rows):
+            cells = []
+            col = 0
+            while col < max_col:
+                if (row_idx, col) not in grid:
+                    col += 1
+                    continue
+
+                cell_el, cell_tag, colspan, rowspan, start_row, start_col = grid[
+                    (row_idx, col)
+                ]
+
+                if row_idx == start_row and col == start_col:
+                    # Origin cell — emit with full content
+                    paras = self._parse_cell_content(
+                        cell_el, resolver, blockquote_depth, is_header=cell_tag == "th"
+                    )
+                    cell_css = resolver.resolve(cell_el)
+                    shading = _css_color_to_hex(cell_css.get("background-color"))
+                    cells.append(
+                        TableCell(
+                            paragraphs=tuple(paras),
+                            col_span=colspan,
+                            row_span=rowspan,
+                            v_merge_start=rowspan > 1,
+                            shading=shading,
+                        )
+                    )
+                    col += colspan
+
+                elif col == start_col:
+                    # Continuation row of a rowspan — emit empty vMerge placeholder
+                    cells.append(
+                        TableCell(
+                            paragraphs=(
+                                Paragraph(
+                                    runs=(TextRun(text=""),),
+                                    formatting=ParagraphFormatting(),
+                                ),
+                            ),
+                            col_span=colspan,
+                            v_merge_continue=True,
+                        )
+                    )
+                    col += colspan
+
+                else:
+                    # Colspan continuation slot — already covered by origin/vMerge cell
+                    col += 1
+
+            if cells:
+                rows.append(TableRow(cells=tuple(cells)))
+
+        if rows:
+            yield Table(
+                rows=tuple(rows),
+                col_widths_pt=tuple(col_widths),
+                width_pt=table_width_pt,
+                style_id="TableGrid",
+            )
+
+    def _parse_cell_content(
+        self,
+        cell_el,
+        resolver: CssResolver,
+        blockquote_depth: int,
+        is_header: bool,
+    ) -> list[Paragraph]:
+        """Parse the content of a <td>/<th> into Paragraph objects."""
+        if _has_block_children(cell_el):
+            paras = []
+            for el in self._walk(cell_el, resolver, blockquote_depth):
+                if isinstance(el, Paragraph):
+                    paras.append(el)
+                elif isinstance(el, Table):
+                    self._warn_once(
+                        "nested-table",
+                        "Nested <table> inside <td>/<th> is not supported — inner table skipped.",
+                    )
+        else:
+            para = self._parse_paragraph(cell_el, resolver, blockquote_depth)
+            paras = [para] if para else []
+
+        if is_header:
+            paras = [_bold_paragraph(p) for p in paras]
+
+        if not paras:
+            paras = [
+                Paragraph(
+                    runs=(TextRun(text=""),),
+                    formatting=ParagraphFormatting(),
+                )
+            ]
+
+        return paras
 
     # -----------------------------------------------------------------------
     # Run building — inline content walker
@@ -870,3 +995,105 @@ def _css_color_to_hex(value: str | None) -> str | None:
         return f"{r:02X}{g:02X}{b:02X}"
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# Table helpers
+# ---------------------------------------------------------------------------
+
+def _collect_tr_elements(table_el) -> list:
+    """Collect <tr> elements from a <table>, handling thead/tbody/tfoot sections."""
+    tr_els = []
+    for child in table_el:
+        if not isinstance(child.tag, str):
+            continue
+        tag = child.tag.lower()
+        if tag == "tr":
+            tr_els.append(child)
+        elif tag in ("thead", "tbody", "tfoot"):
+            for grandchild in child:
+                if (
+                    isinstance(grandchild.tag, str)
+                    and grandchild.tag.lower() == "tr"
+                ):
+                    tr_els.append(grandchild)
+    return tr_els
+
+
+def _build_table_grid(
+    tr_els: list,
+) -> tuple[dict[tuple[int, int], tuple], int, int]:
+    """Build a (row, col) → cell-info grid from <tr>/<td>/<th> elements.
+
+    HTML rowspan/colspan are expanded so every occupied slot maps back to the
+    cell element that owns it plus its origin coordinates.
+
+    Returns ``(grid, num_rows, max_col)``.
+    """
+    grid: dict[tuple[int, int], tuple] = {}
+
+    for row_idx, tr_el in enumerate(tr_els):
+        col_idx = 0
+        for cell_el in tr_el:
+            if not isinstance(cell_el.tag, str):
+                continue
+            cell_tag = cell_el.tag.lower()
+            if cell_tag not in ("td", "th"):
+                continue
+
+            # Skip slots already claimed by a rowspan from a previous row
+            while (row_idx, col_idx) in grid:
+                col_idx += 1
+
+            try:
+                colspan = max(1, int(cell_el.get("colspan") or "1"))
+                rowspan = max(1, int(cell_el.get("rowspan") or "1"))
+            except (ValueError, TypeError):
+                colspan = rowspan = 1
+
+            for r in range(row_idx, row_idx + rowspan):
+                for c in range(col_idx, col_idx + colspan):
+                    grid[(r, c)] = (
+                        cell_el, cell_tag, colspan, rowspan, row_idx, col_idx
+                    )
+
+            col_idx += colspan
+
+    if not grid:
+        return {}, 0, 0
+
+    num_rows = max(r for r, _ in grid) + 1
+    max_col = max(c for _, c in grid) + 1
+    return grid, num_rows, max_col
+
+
+def _extract_col_widths(table_el, resolver: CssResolver, max_col: int) -> list[float]:
+    """Extract per-column widths (in pt) from <colgroup>/<col> elements.
+
+    Returns an empty list if no explicit widths are found — the DOCX writer
+    omits ``w:tblGrid`` in that case, letting Word auto-fit.
+    """
+    for child in table_el:
+        if not isinstance(child.tag, str):
+            continue
+        if child.tag.lower() == "colgroup":
+            widths: list[float] = []
+            for col_el in child:
+                if isinstance(col_el.tag, str) and col_el.tag.lower() == "col":
+                    props = resolver.resolve(col_el)
+                    w = css_value_to_pt(props.get("width", ""))
+                    widths.append(w if w is not None else 0.0)
+            if any(w > 0 for w in widths):
+                return widths[:max_col]
+    return []
+
+
+def _bold_paragraph(para: Paragraph) -> Paragraph:
+    """Return a copy of *para* with bold=True on every TextRun."""
+    new_runs = tuple(
+        dataclasses.replace(r, formatting=dataclasses.replace(r.formatting, bold=True))
+        if isinstance(r, TextRun)
+        else r
+        for r in para.runs
+    )
+    return dataclasses.replace(para, runs=new_runs)
