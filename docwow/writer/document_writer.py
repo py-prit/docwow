@@ -452,7 +452,7 @@ def _write_text_run(parent: etree._Element, run: TextRun) -> None:
 def _has_run_fmt(fmt: RunFormatting) -> bool:
     return any([
         fmt.bold, fmt.italic, fmt.underline, fmt.strike,
-        fmt.small_caps, fmt.all_caps,
+        fmt.small_caps, fmt.all_caps, fmt.vanish,
         fmt.font_name, fmt.font_size_pt is not None,
         fmt.color, fmt.highlight, fmt.vertical_align,
         fmt.char_style_id,

@@ -166,6 +166,7 @@ def _parse_run_fmt(rPr: etree._Element | None) -> RunFormatting | None:
     strike = _toggle(rPr, "w:strike")
     small_caps = _toggle(rPr, "w:smallCaps")
     all_caps = _toggle(rPr, "w:caps")
+    vanish = _toggle(rPr, "w:vanish")
 
     font_name: str | None = None
     fonts_el = find(rPr, "w:rFonts")
@@ -222,6 +223,7 @@ def _parse_run_fmt(rPr: etree._Element | None) -> RunFormatting | None:
         highlight=highlight,
         vertical_align=vertical_align,
         char_style_id=char_style_id,
+        vanish=vanish,
     )
 
 

@@ -125,6 +125,7 @@ run.set_underline(True)
 run.set_strike(True)
 run.set_small_caps(True)               # lowercase letters rendered as smaller uppercase
 run.set_all_caps(True)                 # all letters rendered as uppercase
+run.set_vanish(True)                   # hide run (Word hidden text)
 run.set_font_name("Arial")
 run.set_font_size(14.0)               # in points
 run.set_color("FF0000")               # hex RGB, no '#'
