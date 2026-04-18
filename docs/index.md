@@ -45,7 +45,7 @@ doc.save("updated.docx")
 ## What's supported
 
 - **Paragraphs** — alignment, indentation (left/right/first-line/hanging), spacing (before/after/line), page-break-before, keep-together, keep-with-next
-- **Run formatting** — bold, italic, underline, strikethrough, small caps, all caps, font name, font size, color, highlight, superscript/subscript
+- **Run formatting** — bold, italic, underline, strikethrough, small caps, all caps, font name, font size, color, highlight, superscript/subscript, hidden text (`w:vanish`)
 - **Tab stops** — custom paragraph tab stops (`w:tabs`), tab character runs (`w:tab`), full round-trip via `data-dw-tab-stops`
 - **Cross-references** — REF fields linking to named bookmarks; renders as `<a class="dw-xref">`, full round-trip, `MutableCrossRef` API
 - **Multiple sections** — multiple `w:sectPr` with independent page size, margins, and break type; `MutableSectionBreak` API, full round-trip via `data-dw-section-break`
@@ -61,7 +61,9 @@ doc.save("updated.docx")
 - **Table of Contents** — parse `w:sdt` TOC blocks, render as `<nav class="dw-toc">` with level-indented links, full round-trip, and `MutableTableOfContents` API
 - **Comments** — parse `word/comments.xml`, render as superscript markers with CSS hover popups in HTML, full round-trip, and `MutableComment` API
 - **Track changes** — parse `w:ins`/`w:del`, render as green underline / red strikethrough with hover popup (author, date, Accept/Reject buttons) in HTML, accepted/rejected state preserved on HTML→DOCX round-trip, and `MutableTrackedChange` API
-- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, `MutableTableOfContents`, `MutableComment`, and friends; build documents from scratch including tables, footnotes, bookmarks, TOC, comments, and lists; save to DOCX or render to HTML
+- **Paragraph borders** — box, rule, and partial borders (`w:pBdr`); `set_borders()` API; full round-trip via `data-dw-borders`; CSS `border-*` in HTML
+- **Field codes** — `DATE`, `TIME`, `AUTHOR`, `TITLE`, `FILENAME` alongside `PAGE`/`NUMPAGES`/`SECTIONPAGES`; static placeholders in HTML; full round-trip
+- **Programmatic API** — read and edit documents in Python via `DocumentWrapper`, `MutableParagraph`, `MutableRun`, `MutableBookmark`, `MutableTable`, `MutableTableOfContents`, `MutableComment`, and friends; build documents from scratch including tables, footnotes, bookmarks, TOC, comments, and lists; `doc.find()`, `doc.remove_footnote()`, `doc.remove_comment()`, and more; save to DOCX or render to HTML
 
 ## Design principles
 
