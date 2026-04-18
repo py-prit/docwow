@@ -701,11 +701,17 @@ Formatting accumulates through nested elements: `<b><i>text</i></b>` produces a 
 
 Each `<ul>`/`<ol>` element gets its own numbering definition so that counters restart independently and mixed nesting (e.g. `<ul>` inside `<ol>`) preserves the correct format at each level.
 
-**CSS on table cells:**
+**CSS on tables and cells:**
 
-| CSS property | Word output |
-|---|---|
-| `background-color` | Cell shading |
-| `width` (on `<col>`) | Column width |
+| CSS property | Where | Word output |
+|---|---|---|
+| `border` shorthand | `<table>`, `<td>`, `<th>` | Border on all sides (style, width, color) |
+| `border-top/right/bottom/left` | `<table>`, `<td>`, `<th>` | Per-side border |
+| `border: none` | `<table>`, `<td>`, `<th>` | Suppress borders |
+| `border` attribute | `<table>` | HTML legacy border width (0 = none) |
+| `background-color` | `<td>`, `<th>` | Cell shading |
+| `width` | `<col>` (inside `<colgroup>`) | Column width |
+
+Supported border styles: `solid` → `single`, `dashed`, `dotted`, `double`, `groove`, `ridge`, `inset`, `outset`, `none`.
 
 Images are added in a subsequent release.

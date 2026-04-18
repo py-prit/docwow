@@ -243,6 +243,85 @@ class TestColWidths:
 
 
 # ---------------------------------------------------------------------------
+# Border parsing
+# ---------------------------------------------------------------------------
+
+class TestTableBorders:
+    def test_no_border_css_returns_none(self):
+        t = _table("<table><tr><td>A</td></tr></table>")
+        assert t.borders is None  # writer uses its default
+
+    def test_border_shorthand_all_sides(self):
+        t = _table('<table style="border: 2pt solid #FF0000"><tr><td>A</td></tr></table>')
+        assert t.borders is not None
+        assert t.borders.top.style == "single"
+        assert t.borders.top.color == "FF0000"
+        assert t.borders.left.style == "single"
+
+    def test_border_none_suppresses(self):
+        t = _table('<table style="border: none"><tr><td>A</td></tr></table>')
+        assert t.borders is not None
+        assert t.borders.top.style == "none"
+        assert t.borders.inside_h.style == "none"
+
+    def test_border_dashed(self):
+        t = _table('<table style="border: 1pt dashed"><tr><td>A</td></tr></table>')
+        assert t.borders.top.style == "dashed"
+
+    def test_border_dotted(self):
+        t = _table('<table style="border: 1pt dotted"><tr><td>A</td></tr></table>')
+        assert t.borders.top.style == "dotted"
+
+    def test_border_double(self):
+        t = _table('<table style="border: 3pt double"><tr><td>A</td></tr></table>')
+        assert t.borders.top.style == "double"
+
+    def test_per_side_border(self):
+        t = _table('<table style="border-top: 2pt solid; border-bottom: 1pt dashed"><tr><td>A</td></tr></table>')
+        assert t.borders.top.style == "single"
+        assert t.borders.bottom.style == "dashed"
+        assert t.borders.left is None
+
+    def test_html_border_attr_positive(self):
+        t = _table('<table border="1"><tr><td>A</td></tr></table>')
+        assert t.borders is not None
+        assert t.borders.top.style == "single"
+
+    def test_html_border_attr_zero(self):
+        t = _table('<table border="0"><tr><td>A</td></tr></table>')
+        assert t.borders.top.style == "none"
+
+    def test_border_width_captured(self):
+        t = _table('<table style="border: 2pt solid"><tr><td>A</td></tr></table>')
+        assert t.borders.top.width_pt == pytest.approx(2.0)
+
+
+class TestCellBorders:
+    def test_no_border_css_cell_returns_none(self):
+        t = _table("<table><tr><td>A</td></tr></table>")
+        assert t.rows[0].cells[0].borders is None
+
+    def test_cell_border_shorthand(self):
+        t = _table('<table><tr><td style="border: 1pt solid red">A</td></tr></table>')
+        cb = t.rows[0].cells[0].borders
+        assert cb is not None
+        assert cb.top.style == "single"
+        assert cb.top.color == "FF0000"
+
+    def test_cell_border_none(self):
+        t = _table('<table><tr><td style="border: none">A</td></tr></table>')
+        cb = t.rows[0].cells[0].borders
+        assert cb.top.style == "none"
+
+    def test_cell_per_side_border(self):
+        t = _table('<table><tr><td style="border-right: 2pt dashed">A</td></tr></table>')
+        cb = t.rows[0].cells[0].borders
+        assert cb.right.style == "dashed"
+        assert cb.top is None
+        assert cb.left is None
+
+
+# ---------------------------------------------------------------------------
 # Integration
 # ---------------------------------------------------------------------------
 

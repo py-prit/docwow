@@ -26,7 +26,7 @@ from docwow.models.document import Document
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import Hyperlink, PageBreak, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
-from docwow.models.table import Table, TableCell, TableRow
+from docwow.models.table import BorderDef, Table, TableBorders, TableCell, TableRow
 from docwow.warnings import warn as _warn
 
 # ---------------------------------------------------------------------------
@@ -428,6 +428,8 @@ class ElementParser:
         if not col_widths and max_col > 0:
             col_widths = [table_width_pt / max_col] * max_col
 
+        table_borders = _parse_table_borders(table_el, table_css)
+
         rows = []
         for row_idx in range(num_rows):
             cells = []
@@ -448,6 +450,7 @@ class ElementParser:
                     )
                     cell_css = resolver.resolve(cell_el)
                     shading = _css_color_to_hex(cell_css.get("background-color"))
+                    cell_borders = _parse_cell_borders(cell_css)
                     cells.append(
                         TableCell(
                             paragraphs=tuple(paras),
@@ -455,6 +458,7 @@ class ElementParser:
                             row_span=rowspan,
                             v_merge_start=rowspan > 1,
                             shading=shading,
+                            borders=cell_borders,
                         )
                     )
                     col += colspan
@@ -488,6 +492,7 @@ class ElementParser:
                 col_widths_pt=tuple(col_widths),
                 width_pt=table_width_pt,
                 style_id="TableGrid",
+                borders=table_borders,
             )
 
     def _parse_cell_content(
@@ -1093,6 +1098,126 @@ def _extract_col_widths(table_el, resolver: CssResolver, max_col: int) -> list[f
             if any(w > 0 for w in widths):
                 return widths[:max_col]
     return []
+
+
+# CSS border-style → OOXML w:val
+_CSS_BORDER_STYLE: dict[str, str] = {
+    "solid":   "single",
+    "dashed":  "dashed",
+    "dotted":  "dotted",
+    "double":  "double",
+    "groove":  "threeDEngrave",
+    "ridge":   "threeDEmboss",
+    "inset":   "inset",
+    "outset":  "outset",
+    "none":    "none",
+    "hidden":  "none",
+}
+
+# CSS named border widths → pt
+_CSS_BORDER_WIDTH: dict[str, float] = {
+    "thin": 0.75, "medium": 2.25, "thick": 3.75,
+}
+
+# HTML <table border="N"> attribute — any positive value → default visible border
+_HTML_BORDER_ATTR_DEFAULT = BorderDef(style="single", width_pt=0.5)
+
+
+def _parse_border_shorthand(value: str) -> BorderDef | None:
+    """Parse a CSS border shorthand ``'<width> <style> <color>'`` into a BorderDef.
+
+    Returns ``BorderDef(style="none", width_pt=0)`` for ``border: none/0``,
+    or ``None`` if the value is empty or unrecognised.
+    """
+    v = (value or "").strip()
+    if not v:
+        return None
+    vl = v.lower()
+    if vl in ("none", "0", "hidden"):
+        return BorderDef(style="none", width_pt=0.0)
+
+    style = "single"
+    width_pt = 0.5
+    color: str | None = None
+
+    for part in v.split():
+        pl = part.lower()
+        if pl in _CSS_BORDER_STYLE:
+            style = _CSS_BORDER_STYLE[pl]
+        elif pl in _CSS_BORDER_WIDTH:
+            width_pt = _CSS_BORDER_WIDTH[pl]
+        else:
+            pt = css_value_to_pt(part)
+            if pt is not None:
+                width_pt = max(0.0, pt)
+            else:
+                hex_color = _css_color_to_hex(part)
+                if hex_color:
+                    color = hex_color
+
+    return BorderDef(style=style, width_pt=width_pt, color=color)
+
+
+def _parse_table_borders(table_el, css: dict[str, str]) -> TableBorders | None:
+    """Build a TableBorders from <table> CSS and the HTML ``border`` attribute.
+
+    Returns ``None`` when no border CSS is present (writer will use its default).
+    """
+    # CSS ``border`` shorthand applies to all sides including inside rules
+    if "border" in css:
+        bd = _parse_border_shorthand(css["border"])
+        if bd is not None:
+            return TableBorders(
+                top=bd, right=bd, bottom=bd, left=bd, inside_h=bd, inside_v=bd
+            )
+
+    # Per-side CSS
+    top    = _parse_border_shorthand(css["border-top"])    if "border-top"    in css else None
+    right  = _parse_border_shorthand(css["border-right"])  if "border-right"  in css else None
+    bottom = _parse_border_shorthand(css["border-bottom"]) if "border-bottom" in css else None
+    left   = _parse_border_shorthand(css["border-left"])   if "border-left"   in css else None
+    if any(x is not None for x in (top, right, bottom, left)):
+        return TableBorders(top=top, right=right, bottom=bottom, left=left)
+
+    # HTML ``border`` attribute — legacy but common
+    attr = (table_el.get("border") or "").strip()
+    if attr:
+        try:
+            n = int(attr)
+            if n == 0:
+                bd_none = BorderDef(style="none", width_pt=0.0)
+                return TableBorders(
+                    top=bd_none, right=bd_none, bottom=bd_none, left=bd_none,
+                    inside_h=bd_none, inside_v=bd_none,
+                )
+            # Positive value → visible single border, width proportional
+            bd_vis = BorderDef(style="single", width_pt=min(n * 0.75, 6.0))
+            return TableBorders(
+                top=bd_vis, right=bd_vis, bottom=bd_vis, left=bd_vis,
+                inside_h=bd_vis, inside_v=bd_vis,
+            )
+        except ValueError:
+            pass
+
+    return None  # no border CSS → writer uses its default
+
+
+def _parse_cell_borders(css: dict[str, str]) -> TableBorders | None:
+    """Build a TableBorders from <td>/<th> CSS for cell-level overrides."""
+    if "border" in css:
+        bd = _parse_border_shorthand(css["border"])
+        if bd is not None:
+            return TableBorders(top=bd, right=bd, bottom=bd, left=bd)
+
+    top    = _parse_border_shorthand(css["border-top"])    if "border-top"    in css else None
+    right  = _parse_border_shorthand(css["border-right"])  if "border-right"  in css else None
+    bottom = _parse_border_shorthand(css["border-bottom"]) if "border-bottom" in css else None
+    left   = _parse_border_shorthand(css["border-left"])   if "border-left"   in css else None
+
+    if any(x is not None for x in (top, right, bottom, left)):
+        return TableBorders(top=top, right=right, bottom=bottom, left=left)
+
+    return None
 
 
 def _bold_paragraph(para: Paragraph) -> Paragraph:

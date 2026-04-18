@@ -194,6 +194,21 @@ hello("docwow")</pre>
     <tr><td>Bob</td><td>Designer</td><td>88</td></tr>
   </table>
 
+  <p>Custom borders — red outer, dashed inner cells, no-border cell:</p>
+  <table style="border: 2pt solid #C00000">
+    <tr>
+      <td>Default cell</td>
+      <td style="border: 1pt dashed #0070C0">Dashed blue border</td>
+      <td style="border: none">No border</td>
+    </tr>
+  </table>
+
+  <p>Table with border=0 (no borders):</p>
+  <table border="0">
+    <tr><th>Col A</th><th>Col B</th></tr>
+    <tr><td>Data 1</td><td>Data 2</td></tr>
+  </table>
+
   <!-- ============================================================
        10. CSS FROM &lt;style&gt; BLOCK AND INLINE STYLES
        Expected: classes and inline styles both applied correctly

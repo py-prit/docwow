@@ -8,7 +8,7 @@ from docwow.models.image import InlineImage
 from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.section import SectionBreak, SectionProperties
-from docwow.models.table import Table, TableCell, TableRow
+from docwow.models.table import BorderDef, Table, TableBorders, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.writer._xml import (
     DOC_NSMAP, W, R, WP, A, PIC, XML_SPACE,
@@ -576,6 +576,17 @@ def _write_table(
         _write_row(tbl, row, image_rids, draw_counter, hyperlink_rids, bookmark_counter)
 
 
+_DEFAULT_BORDER = BorderDef(style="single", width_pt=0.5, color=None)
+
+
+def _write_border_el(parent: etree._Element, xml_name: str, bd: BorderDef) -> None:
+    b = etree.SubElement(parent, f"{{{W}}}{xml_name}")
+    b.set(f"{{{W}}}val", bd.style)
+    b.set(f"{{{W}}}sz", str(max(0, round(bd.width_pt * 8))))
+    b.set(f"{{{W}}}space", "0")
+    b.set(f"{{{W}}}color", bd.color or "auto")
+
+
 def _write_tbl_pr(tbl: etree._Element, table: Table) -> None:
     tpr = etree.SubElement(tbl, f"{{{W}}}tblPr")
 
@@ -588,14 +599,19 @@ def _write_tbl_pr(tbl: etree._Element, table: Table) -> None:
         tw.set(f"{{{W}}}w", pt_tw(table.width_pt))
         tw.set(f"{{{W}}}type", "dxa")
 
-    # Default single-line borders so the table is visible
-    borders = etree.SubElement(tpr, f"{{{W}}}tblBorders")
-    for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
-        b = etree.SubElement(borders, f"{{{W}}}{side}")
-        b.set(f"{{{W}}}val", "single")
-        b.set(f"{{{W}}}sz", "4")
-        b.set(f"{{{W}}}space", "0")
-        b.set(f"{{{W}}}color", "auto")
+    # Borders — use table.borders when set, fall back to single-line default
+    tb = table.borders
+    borders_el = etree.SubElement(tpr, f"{{{W}}}tblBorders")
+    for xml_name, bd in (
+        ("top",     tb.top      if tb else None),
+        ("left",    tb.left     if tb else None),
+        ("bottom",  tb.bottom   if tb else None),
+        ("right",   tb.right    if tb else None),
+        ("insideH", tb.inside_h if tb else None),
+        ("insideV", tb.inside_v if tb else None),
+    ):
+        bd = bd if bd is not None else _DEFAULT_BORDER
+        _write_border_el(borders_el, xml_name, bd)
 
 
 def _write_row(
@@ -642,6 +658,18 @@ def _write_cell(
         vm.set(f"{{{W}}}val", "restart")
     elif cell.v_merge_continue:
         etree.SubElement(tcpr, f"{{{W}}}vMerge")
+
+    if cell.borders:
+        cb = cell.borders
+        borders_el = etree.SubElement(tcpr, f"{{{W}}}tcBorders")
+        for xml_name, bd in (
+            ("top",    cb.top),
+            ("left",   cb.left),
+            ("bottom", cb.bottom),
+            ("right",  cb.right),
+        ):
+            if bd is not None:
+                _write_border_el(borders_el, xml_name, bd)
 
     if cell.shading:
         shd = etree.SubElement(tcpr, f"{{{W}}}shd")
