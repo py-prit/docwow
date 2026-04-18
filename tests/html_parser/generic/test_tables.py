@@ -235,9 +235,11 @@ class TestColWidths:
         t = _table(html)
         assert t.col_widths_pt == (100.0, 200.0)
 
-    def test_no_colgroup_gives_empty_widths(self):
-        t = _table("<table><tr><td>A</td></tr></table>")
-        assert t.col_widths_pt == ()
+    def test_no_colgroup_auto_distributes_evenly(self):
+        # Without a <colgroup>, columns get equal shares of the default text width.
+        t = _table("<table><tr><td>A</td><td>B</td></tr></table>")
+        assert len(t.col_widths_pt) == 2
+        assert t.col_widths_pt[0] == t.col_widths_pt[1]
 
 
 # ---------------------------------------------------------------------------

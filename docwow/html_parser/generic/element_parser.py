@@ -419,7 +419,14 @@ class ElementParser:
         table_width_pt = (
             css_value_to_pt(table_css["width"]) if "width" in table_css else None
         )
+        # Default to full text width so tables don't render at minimum content width
+        if table_width_pt is None:
+            table_width_pt = _DEFAULT_PAGE_WIDTH_PT - 2.0 * _DEFAULT_MARGINS_PT
+
         col_widths = _extract_col_widths(table_el, resolver, max_col)
+        # If no explicit column widths, distribute evenly across columns
+        if not col_widths and max_col > 0:
+            col_widths = [table_width_pt / max_col] * max_col
 
         rows = []
         for row_idx in range(num_rows):
