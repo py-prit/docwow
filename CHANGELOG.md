@@ -8,6 +8,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Paragraph borders (`w:pBdr`)** — `para.set_borders(ParagraphBorders(...))` adds box/rule/partial borders; `BorderDef` controls style, width, and color per side; full round-trip via `data-dw-borders`; CSS `border-*` in HTML
 - **Document field codes** — `DATE`, `TIME`, `AUTHOR`, `TITLE`, `FILENAME` field types now supported alongside existing `PAGE`/`NUMPAGES`/`SECTIONPAGES`; full round-trip via `add_page_number("DATE")` etc.
 - **Hidden text (`w:vanish`)** — `run.set_vanish(True)` hides a run in Word; renders as `display:none` in HTML; full round-trip support across DOCX ↔ HTML ↔ DOCX
 - `doc.find(text)` — search document body for paragraphs containing a string (case-sensitive)

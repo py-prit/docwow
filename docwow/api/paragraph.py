@@ -244,6 +244,16 @@ class MutableParagraph:
         self._fmt = dataclasses.replace(self._fmt, tab_stops=tuple(stops))
         return self
 
+    @property
+    def borders(self):
+        """Paragraph borders as a :class:`~docwow.models.styles.ParagraphBorders`, or ``None``."""
+        return self._fmt.borders
+
+    def set_borders(self, borders) -> "MutableParagraph":
+        """Set paragraph borders.  Pass a :class:`~docwow.models.styles.ParagraphBorders` or ``None`` to clear."""
+        self._fmt = dataclasses.replace(self._fmt, borders=borders)
+        return self
+
     # ---- List info (internal use; MutableListItem provides nicer surface) ----
 
     @property

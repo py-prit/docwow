@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from docwow.models.borders import BorderDef
 
 
 @dataclass(frozen=True)
@@ -10,6 +11,16 @@ class TabStop:
     position_pt: float
     alignment: str        # "left" | "right" | "center" | "decimal" | "bar"
     leader: str | None = None  # "dot" | "hyphen" | "underscore" | None
+
+
+@dataclass(frozen=True)
+class ParagraphBorders:
+    """Per-side border lines on a paragraph (w:pBdr)."""
+
+    top: BorderDef | None = None
+    left: BorderDef | None = None
+    bottom: BorderDef | None = None
+    right: BorderDef | None = None
 
 
 @dataclass(frozen=True)
@@ -48,6 +59,7 @@ class ParagraphFormatting:
     page_break_before: bool = False
     shading: str | None = None          # hex RGB background e.g. "4472C4"; None = none
     tab_stops: tuple[TabStop, ...] = ()  # custom tab stop definitions
+    borders: ParagraphBorders | None = None  # w:pBdr; None = no borders
 
 
 @dataclass(frozen=True)

@@ -4,10 +4,11 @@ from __future__ import annotations
 import base64
 
 from docwow.html_parser._utils import has_class, pt_val
+from docwow.models.borders import BorderDef
 from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo
 from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
-from docwow.models.styles import ParagraphFormatting, RunFormatting, TabStop
+from docwow.models.styles import ParagraphBorders, ParagraphFormatting, RunFormatting, TabStop
 
 
 def parse_paragraph(p_el) -> Paragraph:
@@ -39,6 +40,7 @@ def _parse_para_formatting(p_el) -> ParagraphFormatting:
         page_break_before=g("data-dw-page-break-before") == "true",
         shading=g("data-dw-shading") or None,
         tab_stops=_parse_tab_stops(g("data-dw-tab-stops")),
+        borders=_parse_para_borders(g("data-dw-borders")),
     )
 
 
@@ -58,6 +60,28 @@ def _parse_tab_stops(raw: str | None) -> tuple[TabStop, ...]:
         leader = parts[2] if len(parts) >= 3 else None
         stops.append(TabStop(position_pt=pos, alignment=alignment, leader=leader or None))
     return tuple(stops)
+
+
+def _parse_para_borders(raw: str | None) -> ParagraphBorders | None:
+    """Decode a 'side:style:width_pt:color|...' string into ParagraphBorders."""
+    if not raw:
+        return None
+    sides: dict[str, BorderDef | None] = {"top": None, "left": None, "bottom": None, "right": None}
+    for entry in raw.split("|"):
+        parts = entry.strip().split(":")
+        if len(parts) < 3:
+            continue
+        side, style, width_str = parts[0], parts[1], parts[2]
+        color = parts[3] if len(parts) >= 4 and parts[3] else None
+        try:
+            width_pt = float(width_str)
+        except ValueError:
+            width_pt = 0.5
+        if side in sides:
+            sides[side] = BorderDef(style=style, width_pt=width_pt, color=color or None)
+    if all(v is None for v in sides.values()):
+        return None
+    return ParagraphBorders(**sides)
 
 
 def _parse_list_info(p_el) -> ListInfo | None:

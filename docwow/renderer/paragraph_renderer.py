@@ -223,6 +223,8 @@ def _para_data_attrs(fmt: ParagraphFormatting) -> dict[str, str]:
         attrs["data-dw-shading"] = fmt.shading
     if fmt.tab_stops:
         attrs["data-dw-tab-stops"] = _serialize_tab_stops(fmt.tab_stops)
+    if fmt.borders:
+        attrs["data-dw-borders"] = _serialize_para_borders(fmt.borders)
     return attrs
 
 
@@ -279,6 +281,12 @@ def _para_inline_style(fmt: ParagraphFormatting) -> str:
         rules.append(f"line-height:{pt_to_css(fmt.line_spacing_pt)}")
     if fmt.shading:
         rules.append(f"background-color:#{fmt.shading}")
+    if fmt.borders:
+        b = fmt.borders
+        for side, bd in (("top", b.top), ("right", b.right), ("bottom", b.bottom), ("left", b.left)):
+            if bd and bd.style != "none":
+                color = f"#{bd.color}" if bd.color else "#000000"
+                rules.append(f"border-{side}:{pt_to_css(bd.width_pt)} solid {color}")
     return ";".join(rules)
 
 
@@ -329,6 +337,17 @@ def _serialize_tab_stops(stops: tuple[TabStop, ...]) -> str:
             entry += f":{s.leader}"
         parts.append(entry)
     return ",".join(parts)
+
+
+def _serialize_para_borders(b) -> str:
+    """Encode paragraph borders as 'side:style:width_pt:color|...'."""
+    from docwow.models.styles import ParagraphBorders
+    parts = []
+    for side, bd in (("top", b.top), ("left", b.left), ("bottom", b.bottom), ("right", b.right)):
+        if bd is not None:
+            color = bd.color or ""
+            parts.append(f"{side}:{bd.style}:{bd.width_pt}:{color}")
+    return "|".join(parts)
 
 
 def _tag(

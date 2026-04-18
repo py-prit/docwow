@@ -140,6 +140,26 @@ def _write_para_fmt(ppr: etree._Element, fmt: ParagraphFormatting, *, skip_keep_
             if stop.leader:
                 tab.set(f"{{{W}}}leader", stop.leader)
 
+    if fmt.borders:
+        _write_para_borders(ppr, fmt.borders)
+
+
+def _write_para_borders(ppr: etree._Element, borders) -> None:
+    pBdr = etree.SubElement(ppr, f"{{{W}}}pBdr")
+    for xml_name, bd in (
+        ("top",    borders.top),
+        ("left",   borders.left),
+        ("bottom", borders.bottom),
+        ("right",  borders.right),
+    ):
+        if bd is None:
+            continue
+        el = etree.SubElement(pBdr, f"{{{W}}}{xml_name}")
+        el.set(f"{{{W}}}val", bd.style)
+        el.set(f"{{{W}}}sz", str(max(0, round(bd.width_pt * 8))))
+        el.set(f"{{{W}}}space", "1")
+        el.set(f"{{{W}}}color", bd.color or "auto")
+
 
 def _write_run_fmt(rpr: etree._Element, fmt: RunFormatting) -> None:
     """Emit run formatting children inside a w:rPr element."""

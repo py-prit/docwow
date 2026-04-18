@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from lxml import etree
 
-from docwow.models.styles import ParagraphFormatting, RunFormatting, Style, TabStop
+from docwow.models.borders import BorderDef
+from docwow.models.styles import ParagraphBorders, ParagraphFormatting, RunFormatting, Style, TabStop
 from docwow.utils.units import half_pt_to_pt, twips_to_pt
 from docwow.utils.xml_utils import attrib, find, findall, qn
 from docwow.warnings import DocwowParseError
@@ -135,6 +136,8 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
             ))
         tab_stops = tuple(stops)
 
+    borders = _parse_para_borders(find(pPr, "w:pBdr"))
+
     return ParagraphFormatting(
         style_id=style_id,
         alignment=alignment,
@@ -149,6 +152,7 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
         page_break_before=page_break_before,
         shading=shading,
         tab_stops=tab_stops,
+        borders=borders,
     )
 
 
@@ -226,6 +230,30 @@ def _parse_run_fmt(rPr: etree._Element | None) -> RunFormatting | None:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+def _parse_para_borders(pBdr: etree._Element | None) -> ParagraphBorders | None:
+    """Parse a w:pBdr element into a ParagraphBorders, or None if absent."""
+    if pBdr is None:
+        return None
+    sides: dict[str, BorderDef | None] = {}
+    for side in ("top", "left", "bottom", "right"):
+        el = find(pBdr, f"w:{side}")
+        if el is None:
+            sides[side] = None
+            continue
+        val = attrib(el, "w:val") or "single"
+        if val == "none":
+            sides[side] = None
+            continue
+        sz_raw = attrib(el, "w:sz")
+        width_pt = (int(sz_raw) / 8.0) if sz_raw and sz_raw.isdigit() else 0.5
+        color_raw = attrib(el, "w:color")
+        color = color_raw.upper() if color_raw and color_raw.lower() not in ("auto", "") else None
+        sides[side] = BorderDef(style=val, width_pt=width_pt, color=color)
+    if all(v is None for v in sides.values()):
+        return None
+    return ParagraphBorders(**sides)
+
 
 def _toggle(rPr: etree._Element, tag: str) -> bool:
     """Return True if *tag* is present and not explicitly set to w:val="0"."""
