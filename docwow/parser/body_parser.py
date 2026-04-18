@@ -397,15 +397,30 @@ def _parse_run(
     fmt = formatting if formatting is not None else RunFormatting()
 
     result: list[Run] = []
+    _text_buf: list[str] = []
+
+    def _flush_text() -> None:
+        if _text_buf:
+            result.append(TextRun(text="".join(_text_buf), formatting=fmt))
+            _text_buf.clear()
 
     for child in r_el:
         tag = child.tag
 
         if tag == qn("w:t"):
-            text = child.text or ""
-            result.append(TextRun(text=text, formatting=fmt))
+            _text_buf.append(child.text or "")
+
+        elif tag == qn("w:tab"):
+            _text_buf.append("\t")
+
+        elif tag == qn("w:br"):
+            br_type = attrib(child, "w:type")
+            if br_type in (None, "textWrapping"):
+                _text_buf.append("\n")
+            # Page breaks handled at paragraph level by _is_page_break_paragraph
 
         elif tag == qn("w:drawing"):
+            _flush_text()
             floating = _parse_drawing_anchor(child, zf, relationships)
             if floating is not None:
                 result.append(FloatingImageRun(image=floating))
@@ -414,16 +429,8 @@ def _parse_run(
                 if image is not None:
                     result.append(ImageRun(image=image, formatting=fmt))
 
-        elif tag == qn("w:tab"):
-            result.append(TextRun(text="\t", formatting=fmt))
-
-        elif tag == qn("w:br"):
-            br_type = attrib(child, "w:type")
-            if br_type in (None, "textWrapping"):
-                result.append(TextRun(text="\n", formatting=fmt))
-            # Page breaks handled at paragraph level by _is_page_break_paragraph
-
         elif tag == qn("w:footnoteReference"):
+            _flush_text()
             note_id_str = attrib(child, "w:id") or ""
             if note_id_str:
                 try:
@@ -432,6 +439,7 @@ def _parse_run(
                     pass
 
         elif tag == qn("w:endnoteReference"):
+            _flush_text()
             note_id_str = attrib(child, "w:id") or ""
             if note_id_str:
                 try:
@@ -440,6 +448,7 @@ def _parse_run(
                     pass
 
         elif tag == qn("w:commentReference"):
+            _flush_text()
             comment_id_str = attrib(child, "w:id") or ""
             if comment_id_str:
                 try:
@@ -447,6 +456,7 @@ def _parse_run(
                 except DocwowParseError:
                     pass
 
+    _flush_text()
     return result
 
 
