@@ -32,7 +32,8 @@ from docwow.models.paragraph import (
     BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun,
     PageBreak, PageNumberField, Paragraph, TextRun, TrackedChange,
 )
-from docwow.models.styles import ParagraphFormatting, RunFormatting, Style, TabStop
+from docwow.models.borders import BorderDef
+from docwow.models.styles import ParagraphBorders, ParagraphFormatting, RunFormatting, Style, TabStop
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.writer.docx_writer import write_docx
@@ -133,6 +134,9 @@ BM = {
     "pagefields":  "showcase-pagefields",
     "hf":          "showcase-hf",
     "toc":         "showcase-toc",
+    "vanish":      "showcase-vanish",
+    "metafields":  "showcase-metafields",
+    "borders":     "showcase-borders",
 }
 
 
@@ -178,6 +182,9 @@ def build_showcase() -> Document:
             TocEntry("Page Breaks",                 f"#{BM['pagebreaks']}", 1),
             TocEntry("Page Number Fields",          f"#{BM['pagefields']}", 1),
             TocEntry("Headers and Footers",         f"#{BM['hf']}",         1),
+            TocEntry("Hidden Text (vanish)",        f"#{BM['vanish']}",     1),
+            TocEntry("Document Metadata Fields",    f"#{BM['metafields']}", 1),
+            TocEntry("Paragraph Borders",           f"#{BM['borders']}",    1),
         ),
     ))
 
@@ -764,6 +771,92 @@ def build_showcase() -> Document:
         "Page-number-only footer paragraphs are hidden (display:none) in the browser "
         "but survive the HTML → DOCX round-trip so Word can display the correct values."
     ))
+
+    # -----------------------------------------------------------------------
+    # 15. Hidden Text (vanish)
+    # -----------------------------------------------------------------------
+    body.append(_ph("Hidden Text (vanish)", BM["vanish"], style_id="Heading1"))
+    body.append(_p(
+        "The w:vanish property hides a run in Word. "
+        "In the paragraph below the word 'HIDDEN' is vanished — "
+        "it should be invisible in Word but visible as display:none in HTML source."
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Visible start — "),
+            TextRun(text="HIDDEN WORD", formatting=RunFormatting(vanish=True)),
+            TextRun(text=" — visible end."),
+        ),
+    ))
+    body.append(_p(
+        "All-vanished paragraph (entire run hidden):"
+    ))
+    body.append(Paragraph(
+        runs=(TextRun(
+            text="This entire paragraph run is hidden via vanish.",
+            formatting=RunFormatting(vanish=True),
+        ),),
+    ))
+
+    # -----------------------------------------------------------------------
+    # 16. Document Metadata Fields
+    # -----------------------------------------------------------------------
+    body.append(_ph("Document Metadata Fields", BM["metafields"], style_id="Heading1"))
+    body.append(_p(
+        "Word field codes for document metadata render as static placeholders in HTML "
+        "and round-trip back to DOCX field codes."
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Date field: "),
+            PageNumberField(field_type="DATE"),
+            TextRun(text="   |   Time field: "),
+            PageNumberField(field_type="TIME"),
+        ),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Author: "),
+            PageNumberField(field_type="AUTHOR"),
+            TextRun(text="   |   Title: "),
+            PageNumberField(field_type="TITLE"),
+        ),
+    ))
+    body.append(Paragraph(
+        runs=(
+            TextRun(text="Filename: "),
+            PageNumberField(field_type="FILENAME"),
+        ),
+    ))
+
+    # -----------------------------------------------------------------------
+    # 17. Paragraph Borders
+    # -----------------------------------------------------------------------
+    body.append(_ph("Paragraph Borders", BM["borders"], style_id="Heading1"))
+    body.append(_p(
+        "Paragraph borders (w:pBdr) add ruled lines or box borders around paragraphs. "
+        "Each side can be styled independently."
+    ))
+    _single = BorderDef(style="single", width_pt=0.5)
+    _thick  = BorderDef(style="single", width_pt=2.0)
+    _red    = BorderDef(style="single", width_pt=1.0, color="FF0000")
+    body.append(Paragraph(
+        runs=(TextRun(text="Box border — all four sides, 0.5pt single."),),
+        formatting=ParagraphFormatting(borders=ParagraphBorders(
+            top=_single, left=_single, bottom=_single, right=_single,
+        )),
+    ))
+    body.append(Paragraph(
+        runs=(TextRun(text="Top and bottom rule only, 2pt thick."),),
+        formatting=ParagraphFormatting(borders=ParagraphBorders(
+            top=_thick, bottom=_thick,
+        )),
+    ))
+    body.append(Paragraph(
+        runs=(TextRun(text="Left border only, red 1pt — like a block-quote rule."),),
+        formatting=ParagraphFormatting(borders=ParagraphBorders(left=_red)),
+    ))
+    body.append(_p("Plain paragraph (no borders) — for comparison."))
 
     # -----------------------------------------------------------------------
     # Numbering, styles, headers/footers, footnotes/endnotes
