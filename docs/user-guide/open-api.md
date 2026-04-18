@@ -150,6 +150,13 @@ para.set_keep_with_next(True)
 para.set_page_break_before(True)
 para.set_shading("4472C4")   # solid background color (hex RGB)
 
+from docwow.models.borders import BorderDef
+from docwow.models.styles import ParagraphBorders
+bd = BorderDef(style="single", width_pt=0.5)
+para.set_borders(ParagraphBorders(top=bd, left=bd, bottom=bd, right=bd))  # box border
+para.set_borders(ParagraphBorders(bottom=bd))  # bottom rule only
+para.set_borders(None)                          # remove all borders
+
 from docwow.models.styles import TabStop
 para.set_tab_stops((
     TabStop(position_pt=72.0, alignment="left"),

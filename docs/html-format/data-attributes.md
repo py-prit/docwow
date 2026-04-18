@@ -70,6 +70,7 @@ All dimension values are in **points (pt)**.
 | `data-dw-keep-with-next` | `"true"` | Keep this paragraph on same page as the next |
 | `data-dw-shading` | hex RGB string | Paragraph background shading color (e.g. `4472C4`). Absent = no shading |
 | `data-dw-tab-stops` | string | Comma-separated tab stops: `pos:align` or `pos:align:leader` (e.g. `36pt:left,144pt:right:dot`). Absent = no custom stops |
+| `data-dw-borders` | string | Pipe-separated paragraph borders: `side:style:width_pt:color` (e.g. `top:single:0.5:FF0000\|bottom:single:0.5:`). Absent = no borders |
 
 ### List paragraph attributes
 

@@ -8,6 +8,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Paragraph borders (`w:pBdr`)** — `para.set_borders(ParagraphBorders(...))` adds box/rule/partial borders; `BorderDef` controls style, width, and color per side; full round-trip via `data-dw-borders`; CSS `border-*` in HTML
 - `doc.find(text)` — search document body for paragraphs containing a string (case-sensitive)
 - `doc.paragraphs.find(text)` / `para.find(text)` — search at collection and run level
 - `doc.remove_footnote(note_id)` / `doc.remove_endnote(note_id)` — delete a note and all its reference markers
