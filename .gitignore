@@ -26,6 +26,11 @@ site/
 # Stress test downloaded files
 tests/stress_files/
 
+# Generated test fixtures (rebuilt automatically by the test suite on every run)
+tests/fixtures/showcase.docx
+tests/fixtures/showcase.html
+tests/fixtures/showcase_page_view.html
+
 # Claude Code
 .claude/
 
