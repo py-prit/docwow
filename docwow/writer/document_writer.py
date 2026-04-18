@@ -61,9 +61,20 @@ def build_document_xml(
     _draw_counter = [1]     # mutable counter for image drawing IDs
     _bookmark_counter = [0]  # mutable counter for w:bookmarkStart/End w:id values
 
-    for element in doc.body:
+    body_elements = list(doc.body)
+    i = 0
+    while i < len(body_elements):
+        element = body_elements[i]
+        next_el = body_elements[i + 1] if i + 1 < len(body_elements) else None
+
         if isinstance(element, Paragraph):
-            _write_paragraph(body, element, image_rids, _draw_counter, _hyperlink_rids, _bookmark_counter)
+            # OOXML requires w:sectPr inside the preceding paragraph's w:pPr.
+            # Look ahead: if the next body element is a SectionBreak, embed it inline.
+            inline_sect = next_el.properties if isinstance(next_el, SectionBreak) else None
+            _write_paragraph(body, element, image_rids, _draw_counter, _hyperlink_rids, _bookmark_counter,
+                             inline_sect_pr=inline_sect)
+            if inline_sect is not None:
+                i += 1  # consumed — skip the SectionBreak on the next iteration
         elif isinstance(element, Table):
             _write_table(body, element, image_rids, _draw_counter, _hyperlink_rids, _bookmark_counter)
         elif isinstance(element, TableOfContents):
@@ -71,7 +82,10 @@ def build_document_xml(
         elif isinstance(element, PageBreak):
             _write_page_break(body)
         elif isinstance(element, SectionBreak):
+            # Only reached when not preceded by a Paragraph (e.g. after a Table).
+            # Emit as a standalone empty paragraph with w:sectPr, which is valid OOXML.
             _write_section_break(body, element.properties)
+        i += 1
 
     # w:sectPr — page geometry + header/footer references
     _write_sect_pr(body, doc, hf_rids or {})
@@ -169,6 +183,7 @@ def _write_paragraph(
     draw_counter: list[int],
     hyperlink_rids: dict[str, str] | None = None,
     bookmark_counter: list[int] | None = None,
+    inline_sect_pr: SectionProperties | None = None,
 ) -> None:
     p_el = etree.SubElement(parent, f"{{{W}}}p")
     ppr = etree.SubElement(p_el, f"{{{W}}}pPr")
@@ -192,6 +207,11 @@ def _write_paragraph(
 
     # spacing, ind, jc — keep flags already written above
     _write_para_fmt(ppr, fmt, skip_keep_flags=True)
+
+    # w:sectPr must be the last child of w:pPr (OOXML schema requirement)
+    if inline_sect_pr is not None:
+        sect_pr_el = etree.SubElement(ppr, f"{{{W}}}sectPr")
+        _write_sect_pr_props(sect_pr_el, inline_sect_pr)
 
     _hl_rids = hyperlink_rids or {}
     _bm_counter = bookmark_counter if bookmark_counter is not None else [0]
