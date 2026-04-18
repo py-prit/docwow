@@ -6,8 +6,8 @@ best-effort heuristics.  Unsupported constructs emit
 
 Built incrementally across Phase 2 sub-features:
   feat/generic-block-elements   — h1-h6, p, div, blockquote, pre, hr, br
-  feat/generic-inline-elements  — b/i/u/s/code/mark/sub/sup/span/a + CSS  ← this PR
-  feat/generic-lists             — ul/ol/li
+  feat/generic-inline-elements  — b/i/u/s/code/mark/sub/sup/span/a + CSS
+  feat/generic-lists             — ul/ol/li, nesting  ← this PR
   feat/generic-tables            — table/tr/td/th
   feat/generic-images            — img
 """
@@ -23,6 +23,7 @@ import lxml.html
 from docwow.html_parser.generic.css_resolver import CssResolver, parse_inline_style
 from docwow.html_parser.generic.css_units import css_value_to_pt
 from docwow.models.document import Document
+from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import Hyperlink, PageBreak, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.warnings import warn as _warn
@@ -134,6 +135,8 @@ class ElementParser:
         self.fetch_images = fetch_images
         self.fetch_external_css = fetch_external_css
         self._warned_tags: set[str] = set()
+        self._next_num_id: int = 0
+        self._numbering_defs: list[NumberingDefinition] = []
 
     def parse(self, html: str) -> Document:
         """Parse an HTML string into a :class:`~docwow.models.document.Document`."""
@@ -177,7 +180,7 @@ class ElementParser:
         return Document(
             body=tuple(body_elements),
             styles=styles,
-            numbering=(),
+            numbering=tuple(self._numbering_defs),
         )
 
     # -----------------------------------------------------------------------
@@ -238,16 +241,12 @@ class ElementParser:
                 yield self._parse_hr(resolver)
                 continue
 
-            # Lists and tables — stubs until their sub-features land
             if tag in ("ul", "ol"):
-                _warn(
-                    f"<{tag}> list parsing is not yet supported — "
-                    "text content will be extracted as plain paragraphs."
-                )
-                yield from self._walk(child, resolver, blockquote_depth)
+                yield from self._parse_list(child, resolver, blockquote_depth)
                 continue
 
             if tag == "li":
+                # Orphan <li> outside a list — treat as plain paragraph
                 para = self._parse_paragraph(child, resolver, blockquote_depth)
                 if para is not None:
                     yield para
@@ -340,6 +339,62 @@ class ElementParser:
             formatting=ParagraphFormatting(),
         )
 
+    def _parse_list(
+        self,
+        el,
+        resolver: CssResolver,
+        blockquote_depth: int,
+        depth: int = 0,
+        num_id: str | None = None,
+    ) -> Iterator[Paragraph]:
+        """Parse a <ul> or <ol> into list-item Paragraphs.
+
+        Top-level lists create a new NumberingDefinition; nested lists reuse
+        the parent's num_id at a deeper depth level.
+        """
+        if depth == 0:
+            self._next_num_id += 1
+            num_id = str(self._next_num_id)
+            nd = _make_numbering_def(num_id, el.tag.lower() if isinstance(el.tag, str) else "ul")
+            self._numbering_defs.append(nd)
+
+        assert num_id is not None
+
+        for child in el:
+            child_tag = child.tag if isinstance(child.tag, str) else ""
+            child_tag = child_tag.lower()
+
+            if child_tag != "li":
+                continue
+
+            # Inline runs for this item (ul/ol children are handled recursively below)
+            runs = self._runs_from_element(child, resolver)
+            has_content = any(
+                (r.text.strip() if isinstance(r, TextRun) else True) for r in runs
+            )
+            if runs and has_content:
+                list_info = ListInfo(num_id=num_id, level=depth)
+                fmt = self._para_fmt_from_css(resolver.resolve(child))
+                yield Paragraph(runs=tuple(runs), formatting=fmt, list_info=list_info)
+            elif not has_content or not runs:
+                # Emit even if only whitespace so the bullet renders
+                list_info = ListInfo(num_id=num_id, level=depth)
+                yield Paragraph(
+                    runs=(TextRun(text=""),),
+                    formatting=ParagraphFormatting(),
+                    list_info=list_info,
+                )
+
+            # Recurse into nested lists inside this <li>
+            for grandchild in child:
+                gc_tag = grandchild.tag if isinstance(grandchild.tag, str) else ""
+                gc_tag = gc_tag.lower()
+                if gc_tag in ("ul", "ol"):
+                    yield from self._parse_list(
+                        grandchild, resolver, blockquote_depth,
+                        depth=depth + 1, num_id=num_id,
+                    )
+
     # -----------------------------------------------------------------------
     # Run building — inline content walker
     # -----------------------------------------------------------------------
@@ -379,10 +434,12 @@ class ElementParser:
                 pass  # handled in feat/generic-images
 
             elif child_tag in _BLOCK_TAGS:
-                # A block element nested inside inline content — treat as inline
-                child_fmt = _apply_tag_fmt(child_tag, inherited_fmt)
-                child_fmt = _apply_css_run_fmt(resolver.resolve(child), child_fmt)
-                self._walk_inline(child, resolver, child_fmt, out)
+                if child_tag not in ("ul", "ol"):
+                    # Recurse non-list block elements as inline
+                    child_fmt = _apply_tag_fmt(child_tag, inherited_fmt)
+                    child_fmt = _apply_css_run_fmt(resolver.resolve(child), child_fmt)
+                    self._walk_inline(child, resolver, child_fmt, out)
+                # ul/ol inside inline content are skipped; tail text still emitted below
 
             elif child_tag == "a":
                 href = child.get("href", "").strip()
@@ -545,6 +602,40 @@ def _has_block_children(el) -> bool:
         if isinstance(child.tag, str) and child.tag.lower() in _BLOCK_TAGS:
             return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# List helpers
+# ---------------------------------------------------------------------------
+
+# CSS list-style-type → Word num_fmt
+_LIST_STYLE_TYPE_MAP: dict[str, str] = {
+    "disc": "bullet", "circle": "bullet", "square": "bullet",
+    "decimal": "decimal", "decimal-leading-zero": "decimal",
+    "lower-alpha": "lowerLetter", "lower-latin": "lowerLetter",
+    "upper-alpha": "upperLetter", "upper-latin": "upperLetter",
+    "lower-roman": "lowerRoman", "upper-roman": "upperRoman",
+    "none": "none",
+}
+
+_DEFAULT_INDENT_PT = 36.0   # 0.5 inch per level
+_DEFAULT_HANGING_PT = 18.0  # bullet/number protrudes 0.25 inch
+
+
+def _make_numbering_def(num_id: str, tag: str) -> NumberingDefinition:
+    """Build a NumberingDefinition for a <ul> or <ol> element."""
+    default_fmt = "bullet" if tag == "ul" else "decimal"
+    levels = tuple(
+        ListLevel(
+            level=i,
+            num_fmt=default_fmt,
+            start_value=1,
+            indent_pt=_DEFAULT_INDENT_PT * (i + 1),
+            hanging_pt=_DEFAULT_HANGING_PT,
+        )
+        for i in range(9)
+    )
+    return NumberingDefinition(abstract_num_id=num_id, levels=levels)
 
 
 # ---------------------------------------------------------------------------

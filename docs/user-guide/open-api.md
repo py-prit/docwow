@@ -646,6 +646,9 @@ logging.basicConfig(filename="conversion.log")
 | `<pre>` | Paragraph in Courier New, whitespace preserved |
 | `<section>`, `<article>`, `<main>` | Transparent containers |
 | `<hr>` | Empty paragraph separator |
+| `<ul>` | Bulleted list |
+| `<ol>` | Numbered list (decimal) |
+| `<li>` | List item (nested `<ul>`/`<ol>` increase the indent level) |
 
 **Inline elements (character formatting):**
 
@@ -690,4 +693,6 @@ logging.basicConfig(filename="conversion.log")
 
 Formatting accumulates through nested elements: `<b><i>text</i></b>` produces a bold-italic run.
 
-Lists, tables, and images are added in subsequent releases.
+Nested lists share a single numbering definition and increment the indent level per nesting depth.
+
+Tables and images are added in subsequent releases.

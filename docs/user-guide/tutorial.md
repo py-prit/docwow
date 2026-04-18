@@ -425,7 +425,7 @@ docwow.to_docx(html, "update.docx", is_foreign_html=True)
 
 ### What gets converted
 
-Block structure maps to Word paragraphs and headings:
+Block structure maps to Word paragraphs, headings, and lists:
 
 | HTML | Word |
 |---|---|
@@ -433,6 +433,9 @@ Block structure maps to Word paragraphs and headings:
 | `<p>`, `<div>` | Normal paragraph |
 | `<blockquote>` | Indented paragraph |
 | `<pre>` | Monospace paragraph |
+| `<ul>` | Bulleted list |
+| `<ol>` | Numbered list |
+| `<li>` | List item (nesting increases indent level) |
 
 Inline elements become character formatting within runs:
 
