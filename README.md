@@ -82,7 +82,10 @@ docwow.strict_warnings()     # raise on any unsupported construct (useful in CI)
 | Table of Contents | Parse `w:sdt` TOC blocks, render as `<nav class="dw-toc">`, full round-trip, `MutableTableOfContents` API |
 | Comments | Parse `word/comments.xml`, render as superscript markers with CSS hover popups in HTML, full round-trip, `MutableComment` API |
 | Track changes | Parse `w:ins`/`w:del`, render as green underline / red strikethrough with hover popup (author, date, Accept/Reject buttons) in HTML, full round-trip, `MutableTrackedChange` API |
-| Programmatic API | Open, edit, and save documents in pure Python |
+| Paragraph borders | Box, rule, and partial borders (`w:pBdr`); `set_borders()` API, full round-trip via `data-dw-borders` |
+| Field codes | `DATE`, `TIME`, `AUTHOR`, `TITLE`, `FILENAME` fields alongside `PAGE`/`NUMPAGES`/`SECTIONPAGES`; static placeholders in HTML, full round-trip |
+| Hidden text | `w:vanish` → `display:none` in HTML; `set_vanish()` API, full round-trip |
+| Programmatic API | Open, edit, and save documents in pure Python; `doc.find()`, `doc.remove_footnote()`, `doc.remove_comment()`, and more |
 
 ### ⚠️ Headers, Footers & Page Numbers — Known Limitations
 
@@ -122,9 +125,6 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 | Feature | Notes |
 |---|---|
 | Floating images | Positioned (`wp:anchor`) images and text wrapping modes |
-| Paragraph borders | Box, shadow, and bar borders (`w:pBdr`) |
-| Field codes | DATE, AUTHOR, TITLE fields |
-| Hidden text | `w:vanish` → `display:none` in HTML |
 | Multi-column layouts | `w:cols` in section properties |
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, the architecture pattern, and the PR process.

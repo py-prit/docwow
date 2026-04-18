@@ -7,6 +7,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-04-18
+
 ### Added
 - **Paragraph borders (`w:pBdr`)** — `para.set_borders(ParagraphBorders(...))` adds box/rule/partial borders; `BorderDef` controls style, width, and color per side; full round-trip via `data-dw-borders`; CSS `border-*` in HTML
 - **Document field codes** — `DATE`, `TIME`, `AUTHOR`, `TITLE`, `FILENAME` field types now supported alongside existing `PAGE`/`NUMPAGES`/`SECTIONPAGES`; full round-trip via `add_page_number("DATE")` etc.
@@ -101,7 +103,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - Inline images — PNG, JPEG, GIF, BMP, TIFF, WebP, SVG, EMF, WMF
 - Page geometry — page size and margins
 
-[Unreleased]: https://github.com/py-prit/docwow/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/py-prit/docwow/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/py-prit/docwow/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/py-prit/docwow/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/py-prit/docwow/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/py-prit/docwow/compare/v0.6.0...v0.7.0

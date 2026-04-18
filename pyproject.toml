@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docwow"
-version = "0.9.0"
+version = "0.10.0"
 description = "Pure Python Word (DOCX) ↔ HTML conversion with guaranteed round-trip fidelity"
 readme = "README.md"
 license = "MIT"
