@@ -7,8 +7,8 @@ best-effort heuristics.  Unsupported constructs emit
 Built incrementally across Phase 2 sub-features:
   feat/generic-block-elements   — h1-h6, p, div, blockquote, pre, hr, br
   feat/generic-inline-elements  — b/i/u/s/code/mark/sub/sup/span/a + CSS
-  feat/generic-lists             — ul/ol/li, nesting  ← this PR
-  feat/generic-tables            — table/tr/td/th
+  feat/generic-lists             — ul/ol/li, nesting
+  feat/generic-tables            — table/tr/td/th, colspan/rowspan  ← this PR
   feat/generic-images            — img
 """
 from __future__ import annotations
@@ -26,6 +26,7 @@ from docwow.models.document import Document
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import Hyperlink, PageBreak, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
+from docwow.models.table import BorderDef, Table, TableBorders, TableCell, TableRow
 from docwow.warnings import warn as _warn
 
 # ---------------------------------------------------------------------------
@@ -253,9 +254,7 @@ class ElementParser:
                 continue
 
             if tag == "table":
-                _warn(
-                    "<table> parsing is not yet supported — element skipped."
-                )
+                yield from self._parse_table(child, resolver, blockquote_depth)
                 continue
 
             # img — stub until feat/generic-images
@@ -392,6 +391,144 @@ class ElementParser:
                     yield from self._parse_list(
                         grandchild, resolver, blockquote_depth, depth=depth + 1,
                     )
+
+    # -----------------------------------------------------------------------
+    # Table parsing
+    # -----------------------------------------------------------------------
+
+    def _parse_table(
+        self,
+        table_el,
+        resolver: CssResolver,
+        blockquote_depth: int,
+    ) -> Iterator[Table]:
+        """Parse a <table> element into a :class:`~docwow.models.table.Table`.
+
+        Handles colspan and rowspan by building a logical grid first, then
+        emitting OOXML-style v_merge_start / v_merge_continue cells.
+        """
+        tr_els = _collect_tr_elements(table_el)
+        if not tr_els:
+            return
+
+        grid, num_rows, max_col = _build_table_grid(tr_els)
+        if not grid or max_col == 0:
+            return
+
+        table_css = resolver.resolve(table_el)
+        table_width_pt = (
+            css_value_to_pt(table_css["width"]) if "width" in table_css else None
+        )
+        # Default to full text width so tables don't render at minimum content width
+        if table_width_pt is None:
+            table_width_pt = _DEFAULT_PAGE_WIDTH_PT - 2.0 * _DEFAULT_MARGINS_PT
+
+        col_widths = _extract_col_widths(table_el, resolver, max_col)
+        # If no explicit column widths, distribute evenly across columns
+        if not col_widths and max_col > 0:
+            col_widths = [table_width_pt / max_col] * max_col
+
+        table_borders = _parse_table_borders(table_el, table_css)
+
+        rows = []
+        for row_idx in range(num_rows):
+            cells = []
+            col = 0
+            while col < max_col:
+                if (row_idx, col) not in grid:
+                    col += 1
+                    continue
+
+                cell_el, cell_tag, colspan, rowspan, start_row, start_col = grid[
+                    (row_idx, col)
+                ]
+
+                if row_idx == start_row and col == start_col:
+                    # Origin cell — emit with full content
+                    paras = self._parse_cell_content(
+                        cell_el, resolver, blockquote_depth, is_header=cell_tag == "th"
+                    )
+                    cell_css = resolver.resolve(cell_el)
+                    shading = _css_color_to_hex(cell_css.get("background-color"))
+                    cell_borders = _parse_cell_borders(cell_css)
+                    cells.append(
+                        TableCell(
+                            paragraphs=tuple(paras),
+                            col_span=colspan,
+                            row_span=rowspan,
+                            v_merge_start=rowspan > 1,
+                            shading=shading,
+                            borders=cell_borders,
+                        )
+                    )
+                    col += colspan
+
+                elif col == start_col:
+                    # Continuation row of a rowspan — emit empty vMerge placeholder
+                    cells.append(
+                        TableCell(
+                            paragraphs=(
+                                Paragraph(
+                                    runs=(TextRun(text=""),),
+                                    formatting=ParagraphFormatting(),
+                                ),
+                            ),
+                            col_span=colspan,
+                            v_merge_continue=True,
+                        )
+                    )
+                    col += colspan
+
+                else:
+                    # Colspan continuation slot — already covered by origin/vMerge cell
+                    col += 1
+
+            if cells:
+                rows.append(TableRow(cells=tuple(cells)))
+
+        if rows:
+            yield Table(
+                rows=tuple(rows),
+                col_widths_pt=tuple(col_widths),
+                width_pt=table_width_pt,
+                style_id="TableGrid",
+                borders=table_borders,
+            )
+
+    def _parse_cell_content(
+        self,
+        cell_el,
+        resolver: CssResolver,
+        blockquote_depth: int,
+        is_header: bool,
+    ) -> list[Paragraph]:
+        """Parse the content of a <td>/<th> into Paragraph objects."""
+        if _has_block_children(cell_el):
+            paras = []
+            for el in self._walk(cell_el, resolver, blockquote_depth):
+                if isinstance(el, Paragraph):
+                    paras.append(el)
+                elif isinstance(el, Table):
+                    self._warn_once(
+                        "nested-table",
+                        "Nested <table> inside <td>/<th> is not supported — inner table skipped.",
+                    )
+        else:
+            para = self._parse_paragraph(cell_el, resolver, blockquote_depth)
+            paras = [para] if para else []
+
+        if is_header:
+            paras = [_bold_paragraph(p) for p in paras]
+
+        if not paras:
+            paras = [
+                Paragraph(
+                    runs=(TextRun(text=""),),
+                    formatting=ParagraphFormatting(),
+                )
+            ]
+
+        return paras
 
     # -----------------------------------------------------------------------
     # Run building — inline content walker
@@ -870,3 +1007,225 @@ def _css_color_to_hex(value: str | None) -> str | None:
         return f"{r:02X}{g:02X}{b:02X}"
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# Table helpers
+# ---------------------------------------------------------------------------
+
+def _collect_tr_elements(table_el) -> list:
+    """Collect <tr> elements from a <table>, handling thead/tbody/tfoot sections."""
+    tr_els = []
+    for child in table_el:
+        if not isinstance(child.tag, str):
+            continue
+        tag = child.tag.lower()
+        if tag == "tr":
+            tr_els.append(child)
+        elif tag in ("thead", "tbody", "tfoot"):
+            for grandchild in child:
+                if (
+                    isinstance(grandchild.tag, str)
+                    and grandchild.tag.lower() == "tr"
+                ):
+                    tr_els.append(grandchild)
+    return tr_els
+
+
+def _build_table_grid(
+    tr_els: list,
+) -> tuple[dict[tuple[int, int], tuple], int, int]:
+    """Build a (row, col) → cell-info grid from <tr>/<td>/<th> elements.
+
+    HTML rowspan/colspan are expanded so every occupied slot maps back to the
+    cell element that owns it plus its origin coordinates.
+
+    Returns ``(grid, num_rows, max_col)``.
+    """
+    grid: dict[tuple[int, int], tuple] = {}
+
+    for row_idx, tr_el in enumerate(tr_els):
+        col_idx = 0
+        for cell_el in tr_el:
+            if not isinstance(cell_el.tag, str):
+                continue
+            cell_tag = cell_el.tag.lower()
+            if cell_tag not in ("td", "th"):
+                continue
+
+            # Skip slots already claimed by a rowspan from a previous row
+            while (row_idx, col_idx) in grid:
+                col_idx += 1
+
+            try:
+                colspan = max(1, int(cell_el.get("colspan") or "1"))
+                rowspan = max(1, int(cell_el.get("rowspan") or "1"))
+            except (ValueError, TypeError):
+                colspan = rowspan = 1
+
+            for r in range(row_idx, row_idx + rowspan):
+                for c in range(col_idx, col_idx + colspan):
+                    grid[(r, c)] = (
+                        cell_el, cell_tag, colspan, rowspan, row_idx, col_idx
+                    )
+
+            col_idx += colspan
+
+    if not grid:
+        return {}, 0, 0
+
+    num_rows = max(r for r, _ in grid) + 1
+    max_col = max(c for _, c in grid) + 1
+    return grid, num_rows, max_col
+
+
+def _extract_col_widths(table_el, resolver: CssResolver, max_col: int) -> list[float]:
+    """Extract per-column widths (in pt) from <colgroup>/<col> elements.
+
+    Returns an empty list if no explicit widths are found — the DOCX writer
+    omits ``w:tblGrid`` in that case, letting Word auto-fit.
+    """
+    for child in table_el:
+        if not isinstance(child.tag, str):
+            continue
+        if child.tag.lower() == "colgroup":
+            widths: list[float] = []
+            for col_el in child:
+                if isinstance(col_el.tag, str) and col_el.tag.lower() == "col":
+                    props = resolver.resolve(col_el)
+                    w = css_value_to_pt(props.get("width", ""))
+                    widths.append(w if w is not None else 0.0)
+            if any(w > 0 for w in widths):
+                return widths[:max_col]
+    return []
+
+
+# CSS border-style → OOXML w:val
+_CSS_BORDER_STYLE: dict[str, str] = {
+    "solid":   "single",
+    "dashed":  "dashed",
+    "dotted":  "dotted",
+    "double":  "double",
+    "groove":  "threeDEngrave",
+    "ridge":   "threeDEmboss",
+    "inset":   "inset",
+    "outset":  "outset",
+    "none":    "none",
+    "hidden":  "none",
+}
+
+# CSS named border widths → pt
+_CSS_BORDER_WIDTH: dict[str, float] = {
+    "thin": 0.75, "medium": 2.25, "thick": 3.75,
+}
+
+# HTML <table border="N"> attribute — any positive value → default visible border
+_HTML_BORDER_ATTR_DEFAULT = BorderDef(style="single", width_pt=0.5)
+
+
+def _parse_border_shorthand(value: str) -> BorderDef | None:
+    """Parse a CSS border shorthand ``'<width> <style> <color>'`` into a BorderDef.
+
+    Returns ``BorderDef(style="none", width_pt=0)`` for ``border: none/0``,
+    or ``None`` if the value is empty or unrecognised.
+    """
+    v = (value or "").strip()
+    if not v:
+        return None
+    vl = v.lower()
+    if vl in ("none", "0", "hidden"):
+        return BorderDef(style="none", width_pt=0.0)
+
+    style = "single"
+    width_pt = 0.5
+    color: str | None = None
+
+    for part in v.split():
+        pl = part.lower()
+        if pl in _CSS_BORDER_STYLE:
+            style = _CSS_BORDER_STYLE[pl]
+        elif pl in _CSS_BORDER_WIDTH:
+            width_pt = _CSS_BORDER_WIDTH[pl]
+        else:
+            pt = css_value_to_pt(part)
+            if pt is not None:
+                width_pt = max(0.0, pt)
+            else:
+                hex_color = _css_color_to_hex(part)
+                if hex_color:
+                    color = hex_color
+
+    return BorderDef(style=style, width_pt=width_pt, color=color)
+
+
+def _parse_table_borders(table_el, css: dict[str, str]) -> TableBorders | None:
+    """Build a TableBorders from <table> CSS and the HTML ``border`` attribute.
+
+    Returns ``None`` when no border CSS is present (writer will use its default).
+    """
+    # CSS ``border`` shorthand applies to all sides including inside rules
+    if "border" in css:
+        bd = _parse_border_shorthand(css["border"])
+        if bd is not None:
+            return TableBorders(
+                top=bd, right=bd, bottom=bd, left=bd, inside_h=bd, inside_v=bd
+            )
+
+    # Per-side CSS
+    top    = _parse_border_shorthand(css["border-top"])    if "border-top"    in css else None
+    right  = _parse_border_shorthand(css["border-right"])  if "border-right"  in css else None
+    bottom = _parse_border_shorthand(css["border-bottom"]) if "border-bottom" in css else None
+    left   = _parse_border_shorthand(css["border-left"])   if "border-left"   in css else None
+    if any(x is not None for x in (top, right, bottom, left)):
+        return TableBorders(top=top, right=right, bottom=bottom, left=left)
+
+    # HTML ``border`` attribute — legacy but common
+    attr = (table_el.get("border") or "").strip()
+    if attr:
+        try:
+            n = int(attr)
+            if n == 0:
+                bd_none = BorderDef(style="none", width_pt=0.0)
+                return TableBorders(
+                    top=bd_none, right=bd_none, bottom=bd_none, left=bd_none,
+                    inside_h=bd_none, inside_v=bd_none,
+                )
+            # Positive value → visible single border, width proportional
+            bd_vis = BorderDef(style="single", width_pt=min(n * 0.75, 6.0))
+            return TableBorders(
+                top=bd_vis, right=bd_vis, bottom=bd_vis, left=bd_vis,
+                inside_h=bd_vis, inside_v=bd_vis,
+            )
+        except ValueError:
+            pass
+
+    return None  # no border CSS → writer uses its default
+
+
+def _parse_cell_borders(css: dict[str, str]) -> TableBorders | None:
+    """Build a TableBorders from <td>/<th> CSS for cell-level overrides."""
+    if "border" in css:
+        bd = _parse_border_shorthand(css["border"])
+        if bd is not None:
+            return TableBorders(top=bd, right=bd, bottom=bd, left=bd)
+
+    top    = _parse_border_shorthand(css["border-top"])    if "border-top"    in css else None
+    right  = _parse_border_shorthand(css["border-right"])  if "border-right"  in css else None
+    bottom = _parse_border_shorthand(css["border-bottom"]) if "border-bottom" in css else None
+    left   = _parse_border_shorthand(css["border-left"])   if "border-left"   in css else None
+
+    if any(x is not None for x in (top, right, bottom, left)):
+        return TableBorders(top=top, right=right, bottom=bottom, left=left)
+
+    return None
+
+
+def _bold_paragraph(para: Paragraph) -> Paragraph:
+    """Return a copy of *para* with bold=True on every TextRun."""
+    new_runs = tuple(
+        dataclasses.replace(r, formatting=dataclasses.replace(r.formatting, bold=True))
+        if isinstance(r, TextRun)
+        else r
+        for r in para.runs
+    )
+    return dataclasses.replace(para, runs=new_runs)

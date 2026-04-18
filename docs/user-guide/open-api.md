@@ -649,6 +649,12 @@ logging.basicConfig(filename="conversion.log")
 | `<ul>` | Bulleted list (•/◦/▪ cycling per nesting level) |
 | `<ol>` | Numbered list; `type="a/A/i/I"` and `list-style-type` CSS set the format |
 | `<li>` | List item; nested `<ul>`/`<ol>` increase indent and get their own counter |
+| `<table>` | Word table with TableGrid style and single-line borders |
+| `<thead>`, `<tbody>`, `<tfoot>` | Row groups (all rows included, order preserved) |
+| `<tr>` | Table row |
+| `<th>` | Header cell — content is automatically bolded |
+| `<td>` | Data cell; `colspan`/`rowspan` attributes respected |
+| `<colgroup>`/`<col>` | Column widths via `width` CSS property |
 
 **Inline elements (character formatting):**
 
@@ -695,4 +701,17 @@ Formatting accumulates through nested elements: `<b><i>text</i></b>` produces a 
 
 Each `<ul>`/`<ol>` element gets its own numbering definition so that counters restart independently and mixed nesting (e.g. `<ul>` inside `<ol>`) preserves the correct format at each level.
 
-Tables and images are added in subsequent releases.
+**CSS on tables and cells:**
+
+| CSS property | Where | Word output |
+|---|---|---|
+| `border` shorthand | `<table>`, `<td>`, `<th>` | Border on all sides (style, width, color) |
+| `border-top/right/bottom/left` | `<table>`, `<td>`, `<th>` | Per-side border |
+| `border: none` | `<table>`, `<td>`, `<th>` | Suppress borders |
+| `border` attribute | `<table>` | HTML legacy border width (0 = none) |
+| `background-color` | `<td>`, `<th>` | Cell shading |
+| `width` | `<col>` (inside `<colgroup>`) | Column width |
+
+Supported border styles: `solid` → `single`, `dashed`, `dotted`, `double`, `groove`, `ridge`, `inset`, `outset`, `none`.
+
+Images are added in a subsequent release.

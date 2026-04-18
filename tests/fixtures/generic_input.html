@@ -154,7 +154,63 @@ hello("docwow")</pre>
   </ol>
 
   <!-- ============================================================
-       9. CSS FROM &lt;style&gt; BLOCK AND INLINE STYLES (now section 9)
+       9. TABLES — basic, colspan, rowspan, thead/th
+       Expected: TableGrid style, borders, bold headers, merged cells
+       ============================================================ -->
+  <h2>Tables</h2>
+
+  <p>Basic table with thead and tbody:</p>
+  <table>
+    <thead>
+      <tr><th>Product</th><th>Q1</th><th>Q2</th><th>Q3</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Widgets</td><td>120</td><td>145</td><td>160</td></tr>
+      <tr><td>Gadgets</td><td>80</td><td>95</td><td>110</td></tr>
+    </tbody>
+  </table>
+
+  <p>colspan — wide header cell spanning two columns:</p>
+  <table>
+    <tr><td colspan="2" style="background-color: #D9E1F2">Merged header (colspan=2)</td><td>Col 3</td></tr>
+    <tr><td>A</td><td>B</td><td>C</td></tr>
+  </table>
+
+  <p>rowspan — tall cell spanning two rows:</p>
+  <table>
+    <tr><td rowspan="2" style="background-color: #E2EFDA">Tall (rowspan=2)</td><td>Row 0, Col 1</td></tr>
+    <tr><td>Row 1, Col 1</td></tr>
+  </table>
+
+  <p>colgroup with explicit column widths:</p>
+  <table>
+    <colgroup>
+      <col style="width: 150pt">
+      <col style="width: 100pt">
+      <col style="width: 100pt">
+    </colgroup>
+    <tr><th>Name</th><th>Role</th><th>Score</th></tr>
+    <tr><td>Alice</td><td>Engineer</td><td>95</td></tr>
+    <tr><td>Bob</td><td>Designer</td><td>88</td></tr>
+  </table>
+
+  <p>Custom borders — red outer, dashed inner cells, no-border cell:</p>
+  <table style="border: 2pt solid #C00000">
+    <tr>
+      <td>Default cell</td>
+      <td style="border: 1pt dashed #0070C0">Dashed blue border</td>
+      <td style="border: none">No border</td>
+    </tr>
+  </table>
+
+  <p>Table with border=0 (no borders):</p>
+  <table border="0">
+    <tr><th>Col A</th><th>Col B</th></tr>
+    <tr><td>Data 1</td><td>Data 2</td></tr>
+  </table>
+
+  <!-- ============================================================
+       10. CSS FROM &lt;style&gt; BLOCK AND INLINE STYLES
        Expected: classes and inline styles both applied correctly
        ============================================================ -->
   <h2>CSS Resolution</h2>

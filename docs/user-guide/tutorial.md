@@ -436,6 +436,11 @@ Block structure maps to Word paragraphs, headings, and lists:
 | `<ul>` | Bulleted list (•/◦/▪ cycling per nesting level) |
 | `<ol>` | Numbered list; `type="a/A/i/I"` and CSS `list-style-type` set format |
 | `<li>` | List item; each nested list gets its own counter that restarts independently |
+| `<table>` | Word table (TableGrid style, single-line borders) |
+| `<thead>`, `<tbody>`, `<tfoot>` | Row groups — all rows included |
+| `<th>` | Header cell, automatically bolded |
+| `<td>` | Data cell; `colspan` and `rowspan` respected |
+| `<colgroup>`/`<col>` | Column widths via CSS `width` |
 
 Inline elements become character formatting within runs:
 
