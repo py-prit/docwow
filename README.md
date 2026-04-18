@@ -115,13 +115,21 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 
 The project follows a phased plan. Contributors are welcome at any level.
 
-#### Phase 2 — General HTML → DOCX (next)
+#### Phase 2 — General HTML → DOCX (in progress)
 
 Best-effort conversion of **arbitrary HTML** (not just docwow HTML) into DOCX. This makes docwow useful as a general-purpose HTML-to-Word exporter.
 
-Scope: `h1`–`h6`, `p`, `b`/`strong`, `i`/`em`, `u`, `s`, `span[style]`, `table`, `ul`/`ol`/`li`, `img`, `a`, `br`. Map inline CSS properties (font-size, color, font-weight, etc.) to Word run formatting. Nested structures and reasonable edge cases.
+| Sub-feature | Status |
+|---|---|
+| Warnings + `is_foreign_html` flag | ✅ shipped |
+| CSS cascade resolver + unit converter | ✅ shipped |
+| Block elements (`h1`–`h6`, `p`, `div`, `blockquote`, `pre`, `hr`) | ✅ shipped |
+| Inline elements (`b`/`i`/`u`/`s`/`code`/`mark`/`sub`/`sup`/`span`/`a` + CSS on runs) | ✅ shipped |
+| Lists (`ul`/`ol`/`li`, nesting) | pending |
+| Tables (`table`/`tr`/`td`/`th`, colspan/rowspan) | pending |
+| Images (`data:` URIs, `fetch_images` flag) | pending |
 
-Estimated effort: 1–2 days. Entry point: `docwow/html_parser/`.
+Entry point: `docwow/html_parser/generic/`.
 
 #### Phase 2b — Floating images and text boxes
 

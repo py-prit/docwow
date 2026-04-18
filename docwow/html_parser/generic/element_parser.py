@@ -5,14 +5,15 @@ best-effort heuristics.  Unsupported constructs emit
 :class:`~docwow.DocwowConversionWarning` and are skipped.
 
 Built incrementally across Phase 2 sub-features:
-  feat/generic-block-elements   — h1-h6, p, div, blockquote, pre, hr, br  ← this PR
-  feat/generic-inline-elements  — b/i/u/s/code/mark/sub/sup/span/a + CSS
+  feat/generic-block-elements   — h1-h6, p, div, blockquote, pre, hr, br
+  feat/generic-inline-elements  — b/i/u/s/code/mark/sub/sup/span/a + CSS  ← this PR
   feat/generic-lists             — ul/ol/li
   feat/generic-tables            — table/tr/td/th
   feat/generic-images            — img
 """
 from __future__ import annotations
 
+import dataclasses
 import re
 import urllib.request
 from collections.abc import Iterator
@@ -22,7 +23,7 @@ import lxml.html
 from docwow.html_parser.generic.css_resolver import CssResolver, parse_inline_style
 from docwow.html_parser.generic.css_units import css_value_to_pt
 from docwow.models.document import Document
-from docwow.models.paragraph import PageBreak, Paragraph, TextRun
+from docwow.models.paragraph import Hyperlink, PageBreak, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.warnings import warn as _warn
 
@@ -297,6 +298,12 @@ class ElementParser:
         runs = self._runs_from_element(el, resolver)
         if not runs:
             return None
+        # Skip paragraphs whose only content is whitespace
+        has_content = any(
+            (r.text.strip() if isinstance(r, TextRun) else True) for r in runs
+        )
+        if not has_content:
+            return None
         props = resolver.resolve(el)
         extra_indent = blockquote_depth * _BLOCKQUOTE_INDENT_PT
         fmt = self._para_fmt_from_css(props, extra_indent=extra_indent)
@@ -334,21 +341,71 @@ class ElementParser:
         )
 
     # -----------------------------------------------------------------------
-    # Run building (sub-feature 2: plain text only)
-    # Sub-feature 3 (inline elements) will replace _runs_from_element with
-    # a full inline content walker.
+    # Run building — inline content walker
     # -----------------------------------------------------------------------
 
-    def _runs_from_element(self, el, resolver: CssResolver) -> list[TextRun]:
-        """Extract runs from a block element.
+    def _runs_from_element(
+        self, el, resolver: CssResolver
+    ) -> list[TextRun | Hyperlink]:
+        """Walk the inline content of a block element, yielding formatted runs."""
+        out: list[TextRun | Hyperlink] = []
+        self._walk_inline(el, resolver, RunFormatting(), out)
+        return out
 
-        Sub-feature 2: plain text only — one run per element, no inline formatting.
-        Sub-feature 3 will replace this with a proper inline content walker.
-        """
-        text = _extract_text_block(el)
-        if not text:
-            return []
-        return [TextRun(text=text, formatting=RunFormatting())]
+    def _walk_inline(
+        self,
+        el,
+        resolver: CssResolver,
+        inherited_fmt: RunFormatting,
+        out: list[TextRun | Hyperlink],
+    ) -> None:
+        """Recursively collect inline runs from *el*, accumulating formatting."""
+        if el.text:
+            text = _normalize_inline_text(el.text)
+            if text:
+                out.append(TextRun(text=text, formatting=inherited_fmt))
+
+        for child in el:
+            child_tag = child.tag if isinstance(child.tag, str) else ""
+            child_tag = child_tag.lower()
+
+            if child_tag in _SILENT_SKIP_TAGS:
+                pass
+
+            elif child_tag == "br":
+                out.append(TextRun(text="\n", formatting=inherited_fmt))
+
+            elif child_tag == "img":
+                pass  # handled in feat/generic-images
+
+            elif child_tag in _BLOCK_TAGS:
+                # A block element nested inside inline content — treat as inline
+                child_fmt = _apply_tag_fmt(child_tag, inherited_fmt)
+                child_fmt = _apply_css_run_fmt(resolver.resolve(child), child_fmt)
+                self._walk_inline(child, resolver, child_fmt, out)
+
+            elif child_tag == "a":
+                href = child.get("href", "").strip()
+                child_fmt = _apply_tag_fmt(child_tag, inherited_fmt)
+                child_fmt = _apply_css_run_fmt(resolver.resolve(child), child_fmt)
+                inner: list[TextRun | Hyperlink] = []
+                self._walk_inline(child, resolver, child_fmt, inner)
+                text_runs = tuple(r for r in inner if isinstance(r, TextRun))
+                if href and text_runs:
+                    out.append(Hyperlink(url=href, runs=text_runs))
+                else:
+                    out.extend(inner)
+
+            else:
+                child_fmt = _apply_tag_fmt(child_tag, inherited_fmt)
+                child_fmt = _apply_css_run_fmt(resolver.resolve(child), child_fmt)
+                self._walk_inline(child, resolver, child_fmt, out)
+
+            # Tail text belongs to the *parent's* formatting, not the child's
+            if child.tail:
+                text = _normalize_inline_text(child.tail)
+                if text:
+                    out.append(TextRun(text=text, formatting=inherited_fmt))
 
     # -----------------------------------------------------------------------
     # CSS → ParagraphFormatting
@@ -402,6 +459,11 @@ class ElementParser:
 # ---------------------------------------------------------------------------
 # Text extraction helpers
 # ---------------------------------------------------------------------------
+
+def _normalize_inline_text(text: str) -> str:
+    """Collapse runs of whitespace to a single space (HTML inline rules)."""
+    return re.sub(r'[ \t\r\n]+', ' ', text)
+
 
 def _extract_text_block(el) -> str:
     """Extract normalised text content from a block element.
@@ -483,6 +545,143 @@ def _has_block_children(el) -> bool:
         if isinstance(child.tag, str) and child.tag.lower() in _BLOCK_TAGS:
             return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# Inline formatting helpers
+# ---------------------------------------------------------------------------
+
+# HTML tags that imply specific RunFormatting overrides
+_TAG_FMT_BOLD = frozenset({"b", "strong"})
+_TAG_FMT_ITALIC = frozenset({"i", "em", "cite", "dfn", "var"})
+_TAG_FMT_UNDERLINE = frozenset({"u", "ins"})
+_TAG_FMT_STRIKE = frozenset({"s", "del", "strike"})
+_TAG_FMT_CODE = frozenset({"code", "kbd", "samp", "tt"})
+_TAG_FMT_MARK = frozenset({"mark"})
+_TAG_FMT_SUB = frozenset({"sub"})
+_TAG_FMT_SUP = frozenset({"sup"})
+_TAG_FMT_SMALL_CAPS = frozenset({"abbr", "acronym"})
+
+
+def _apply_tag_fmt(tag: str, fmt: RunFormatting) -> RunFormatting:
+    """Return a new RunFormatting with overrides implied by *tag*."""
+    if tag in _TAG_FMT_BOLD:
+        return dataclasses.replace(fmt, bold=True)
+    if tag in _TAG_FMT_ITALIC:
+        return dataclasses.replace(fmt, italic=True)
+    if tag in _TAG_FMT_UNDERLINE:
+        return dataclasses.replace(fmt, underline=True)
+    if tag in _TAG_FMT_STRIKE:
+        return dataclasses.replace(fmt, strike=True)
+    if tag in _TAG_FMT_CODE:
+        return dataclasses.replace(fmt, font_name="Courier New")
+    if tag in _TAG_FMT_MARK:
+        return dataclasses.replace(fmt, highlight="yellow")
+    if tag in _TAG_FMT_SUB:
+        return dataclasses.replace(fmt, vertical_align="subscript")
+    if tag in _TAG_FMT_SUP:
+        return dataclasses.replace(fmt, vertical_align="superscript")
+    if tag in _TAG_FMT_SMALL_CAPS:
+        return dataclasses.replace(fmt, small_caps=True)
+    return fmt
+
+
+def _apply_css_run_fmt(props: dict[str, str], fmt: RunFormatting) -> RunFormatting:
+    """Apply CSS properties to *fmt*, returning a new RunFormatting."""
+    kwargs: dict = {}
+
+    fw = props.get("font-weight", "").strip().lower()
+    if fw in ("bold", "bolder") or (fw.isdigit() and int(fw) >= 600):
+        kwargs["bold"] = True
+    elif fw in ("normal", "lighter") or (fw.isdigit() and int(fw) < 600):
+        kwargs["bold"] = False
+
+    fs = props.get("font-style", "").strip().lower()
+    if fs == "italic" or fs == "oblique":
+        kwargs["italic"] = True
+    elif fs == "normal":
+        kwargs["italic"] = False
+
+    td = props.get("text-decoration", "").strip().lower()
+    if "underline" in td:
+        kwargs["underline"] = True
+    if "line-through" in td:
+        kwargs["strike"] = True
+
+    fv = props.get("font-variant", "").strip().lower()
+    if "small-caps" in fv:
+        kwargs["small_caps"] = True
+
+    tt = props.get("text-transform", "").strip().lower()
+    if tt == "uppercase":
+        kwargs["all_caps"] = True
+
+    va = props.get("vertical-align", "").strip().lower()
+    if va == "super":
+        kwargs["vertical_align"] = "superscript"
+    elif va == "sub":
+        kwargs["vertical_align"] = "subscript"
+
+    ff = props.get("font-family", "").strip()
+    if ff:
+        # Take the first family name, unquote and strip
+        first = ff.split(",")[0].strip().strip("'\"")
+        if first:
+            kwargs["font_name"] = first
+
+    fsize = props.get("font-size", "").strip()
+    if fsize:
+        pt = css_value_to_pt(fsize)
+        if pt is not None and pt > 0:
+            kwargs["font_size_pt"] = pt
+
+    color = props.get("color", "").strip()
+    if color:
+        hex_color = _css_color_to_hex(color)
+        if hex_color is not None:
+            kwargs["color"] = hex_color
+
+    bg = props.get("background-color", "").strip()
+    if bg:
+        hl = _css_bg_to_highlight(bg)
+        if hl is not None:
+            kwargs["highlight"] = hl
+
+    if not kwargs:
+        return fmt
+    return dataclasses.replace(fmt, **kwargs)
+
+
+# Approximate CSS background colors to the 15 Word highlight color names.
+# Word's palette: black, blue, cyan, darkBlue, darkCyan, darkGreen,
+# darkMagenta, darkRed, darkYellow, gray, green, lightGray, magenta, red, yellow
+_HIGHLIGHT_MAP: dict[str, str] = {
+    "yellow": "yellow", "ffff00": "yellow",
+    "green": "green", "00ff00": "green", "008000": "green",
+    "cyan": "cyan", "00ffff": "cyan",
+    "magenta": "magenta", "ff00ff": "magenta",
+    "red": "red", "ff0000": "red",
+    "blue": "blue", "0000ff": "blue",
+    "darkblue": "darkBlue", "000080": "darkBlue",
+    "darkcyan": "darkCyan", "008080": "darkCyan",
+    "darkgreen": "darkGreen",
+    "darkmagenta": "darkMagenta", "800080": "darkMagenta",
+    "darkred": "darkRed", "800000": "darkRed",
+    "darkyellow": "darkYellow", "808000": "darkYellow",
+    "gray": "gray", "808080": "gray", "grey": "gray",
+    "silver": "lightGray", "c0c0c0": "lightGray",
+    "black": "black", "000000": "black",
+    "white": "white", "ffffff": "white",
+}
+
+
+def _css_bg_to_highlight(value: str) -> str | None:
+    """Map a CSS background-color to a Word highlight name, or None if no match."""
+    hex_val = _css_color_to_hex(value)
+    if hex_val is None:
+        v = value.strip().lower()
+        return _HIGHLIGHT_MAP.get(v)
+    return _HIGHLIGHT_MAP.get(hex_val.lower())
 
 
 # ---------------------------------------------------------------------------

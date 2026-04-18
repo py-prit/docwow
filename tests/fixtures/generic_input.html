@@ -121,5 +121,76 @@ hello("docwow")</pre>
   <p class="highlight spaced">Multiple classes: yellow background + extra spacing.</p>
   <p style="margin-left: 36pt; text-align: center;">Inline style: centred + 36pt indent.</p>
 
+  <!-- ============================================================
+       9. INLINE ELEMENTS — semantic tags
+       Expected: bold, italic, underline, strikethrough, etc.
+       ============================================================ -->
+  <h2>Inline Elements — Semantic Tags</h2>
+
+  <p><b>Bold via &lt;b&gt;</b> and <strong>bold via &lt;strong&gt;</strong>.</p>
+  <p><i>Italic via &lt;i&gt;</i> and <em>italic via &lt;em&gt;</em>.</p>
+  <p><u>Underline via &lt;u&gt;</u> and <ins>underline via &lt;ins&gt;</ins>.</p>
+  <p><s>Strikethrough via &lt;s&gt;</s> and <del>strike via &lt;del&gt;</del>.</p>
+  <p>Code: <code>print("hello")</code> and keyboard: <kbd>Ctrl+C</kbd>.</p>
+  <p>Highlighted: <mark>important text</mark> in yellow.</p>
+  <p>Chemical formula: H<sub>2</sub>O. Einstein: E=mc<sup>2</sup>.</p>
+  <p>Mixed: <b>bold</b>, <i>italic</i>, <b><i>bold-italic</i></b>, and plain text.</p>
+
+  <!-- ============================================================
+       10. INLINE ELEMENTS — CSS on span
+       Expected: font size, color, family, background-color as highlight
+       ============================================================ -->
+  <h2>Inline Elements — CSS on &lt;span&gt;</h2>
+
+  <p>
+    <span style="font-weight: bold">CSS bold</span>,
+    <span style="font-style: italic">CSS italic</span>,
+    <span style="text-decoration: underline">CSS underline</span>,
+    <span style="text-decoration: line-through">CSS strikethrough</span>.
+  </p>
+
+  <p>
+    <span style="color: #C00000">Red text (#C00000)</span>,
+    <span style="color: rgb(0, 112, 192)">Blue text (rgb)</span>,
+    <span style="color: green">Named green</span>.
+  </p>
+
+  <p>
+    <span style="font-size: 18pt">18pt text</span>,
+    <span style="font-size: 10pt">10pt text</span>,
+    <span style="font-family: Georgia, serif">Georgia font</span>.
+  </p>
+
+  <p>
+    <span style="background-color: yellow">Yellow highlight via CSS</span>,
+    <span style="background-color: #00FFFF">Cyan highlight via hex</span>.
+  </p>
+
+  <p>
+    <span style="font-variant: small-caps">Small caps via CSS</span>,
+    <span style="text-transform: uppercase">all caps via CSS</span>,
+    <span style="vertical-align: super">superscript</span> and
+    <span style="vertical-align: sub">subscript</span>.
+  </p>
+
+  <!-- ============================================================
+       11. HYPERLINKS
+       Expected: Hyperlink with URL, runs inside carry formatting
+       ============================================================ -->
+  <h2>Hyperlinks</h2>
+
+  <p>Visit <a href="https://docwow.readthedocs.io">docwow documentation</a> for more.</p>
+  <p>Bold link: <a href="https://github.com/py-prit/docwow"><b>docwow on GitHub</b></a>.</p>
+  <p>Email: <a href="mailto:hello@example.com">hello@example.com</a>.</p>
+
+  <!-- ============================================================
+       12. NESTED INLINE FORMATTING
+       Expected: formatting accumulates through nesting
+       ============================================================ -->
+  <h2>Nested Inline Formatting</h2>
+
+  <p><b>Outer bold — <i>inner bold-italic — <u>innermost bold-italic-underline</u></i></b> then plain.</p>
+  <p>Tail text: <b>bold <i>italic</i> still bold</b> plain.</p>
+
 </body>
 </html>
