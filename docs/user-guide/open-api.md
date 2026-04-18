@@ -171,6 +171,77 @@ doc.paragraphs.add_section_break(
 doc.paragraphs.add_paragraph("Section 2 content (landscape A4)")
 ```
 
+## Searching a document
+
+`doc.find(text)` returns all paragraphs whose full text contains the search string (case-sensitive):
+
+```python
+# Find all paragraphs containing a phrase
+matches = doc.find("action item")
+for para in matches:
+    para.set_bold(True)
+
+# Same search on a ParagraphCollection directly
+matches = doc.paragraphs.find("action item")
+```
+
+`para.find(text)` searches at run level, returning individual runs:
+
+```python
+# Highlight every run that contains the word "total"
+for para in doc.paragraphs:
+    if isinstance(para, MutableParagraph):
+        for run in para.find("total"):
+            run.set_highlight("yellow")
+```
+
+## Deleting elements
+
+### Paragraphs and runs
+
+```python
+# Remove a paragraph by index
+doc.paragraphs.remove(0)
+
+# Remove all paragraphs
+doc.paragraphs.clear()
+
+# Remove a run by index
+para.runs.remove(0)
+```
+
+### Footnotes and endnotes
+
+`remove_footnote` / `remove_endnote` also removes any reference markers in the document body:
+
+```python
+# Remove the footnote with ID 2 (and its markers)
+doc.remove_footnote(2)
+
+# Remove an endnote
+doc.remove_endnote(1)
+```
+
+### Comments
+
+```python
+# Remove comment ID 1 and its superscript marker
+doc.remove_comment(1)
+```
+
+### Table of Contents entries
+
+```python
+toc = doc.paragraphs[0]  # assuming first element is a TOC
+
+# Remove a specific entry
+entry = toc.entries[1]
+toc.remove_entry(entry)
+
+# Remove all entries
+toc.clear_entries()
+```
+
 ## Building a document from scratch
 
 ```python
