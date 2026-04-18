@@ -116,47 +116,17 @@ The `title_pg` flag and even-page slots are preserved through DOCX round-trips b
 
 DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other than 1. Not currently parsed or written. *Possible approach:* add `page_num_start: int = 1` to the `Document` model and read/write it from `w:sectPr`.
 
-### 🗓 Roadmap
+### 🗓 Planned
 
-The project follows a phased plan. Contributors are welcome at any level.
-
-#### Phase 2 — General HTML → DOCX ✅ complete
-
-Best-effort conversion of **arbitrary HTML** (not just docwow HTML) into DOCX. This makes docwow useful as a general-purpose HTML-to-Word exporter.
-
-| Sub-feature | Status |
+| Feature | Notes |
 |---|---|
-| Warnings + `is_foreign_html` flag | ✅ shipped |
-| CSS cascade resolver + unit converter | ✅ shipped |
-| Block elements (`h1`–`h6`, `p`, `div`, `blockquote`, `pre`, `hr`) | ✅ shipped |
-| Inline elements (`b`/`i`/`u`/`s`/`code`/`mark`/`sub`/`sup`/`span`/`a` + CSS on runs) | ✅ shipped |
-| Lists (`ul`/`ol`/`li`, nesting) | ✅ shipped |
-| Tables (`table`/`tr`/`td`/`th`, colspan/rowspan) | ✅ shipped |
-| Images (`data:` URIs, `fetch_images` flag) | ✅ shipped |
+| Floating images | Positioned (`wp:anchor`) images and text wrapping modes |
+| Paragraph borders | Box, shadow, and bar borders (`w:pBdr`) |
+| Field codes | DATE, AUTHOR, TITLE fields |
+| Hidden text | `w:vanish` → `display:none` in HTML |
+| Multi-column layouts | `w:cols` in section properties |
 
-Entry point: `docwow/html_parser/generic/`.
-
-#### Phase 2b — Floating images and text boxes
-
-`wp:anchor` positioned images, text wrapping modes, and `w:txbx` inline text boxes. Currently anchored images are silently skipped.
-
-#### Phase 3 — Tier 2 Word features
-
-Individual features, all following the same 5-layer pattern (parser → renderer → html_parser → writer → API):
-
-| Feature | OOXML element | Notes |
-|---|---|---|
-| Paragraph borders | `w:pBdr` | Box, shadow, bar borders |
-| Columns | `w:cols` in `w:sectPr` | Multi-column layouts |
-| Field codes | `w:instrText` | DATE, AUTHOR, TITLE fields |
-| Bidi / RTL text | `w:bidi`, `w:rtl` | Right-to-left paragraphs |
-| Hidden text | `w:vanish` | `display:none` in HTML |
-| Per-section headers/footers | `w:headerReference` in inline `w:sectPr` | Different header after section break |
-| Page number start | `w:pgNumType w:start` | Section-level page number reset |
-
-#### How to contribute
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, the 5-layer architecture pattern, testing requirements, and the PR process. One branch per feature, all layers in one PR.
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, the architecture pattern, and the PR process.
 
 ## Documentation
 
@@ -168,9 +138,9 @@ Full documentation at [docwow.readthedocs.io](https://docwow.readthedocs.io).
 - lxml
 - Pillow
 
-## Built with Claude Code
+## Contributing
 
-This library was vibe coded using [Claude Code](https://claude.ai/code). Community suggestions, bug reports, and PRs are very welcome.
+Bug reports, feature requests, and PRs are very welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
 ## License
 
