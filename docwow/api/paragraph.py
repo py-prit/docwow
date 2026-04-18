@@ -97,6 +97,18 @@ class MutableParagraph:
         self._fmt = dataclasses.replace(self._fmt, page_break_before=value)
         return self
 
+    # ---- Search --------------------------------------------------------------
+
+    def find(self, text: str) -> list[MutableRun]:
+        """Return all text runs in this paragraph whose text contains *text* (case-sensitive).
+
+        Example::
+
+            for run in para.find("total"):
+                run.set_bold(True)
+        """
+        return [r for r in self._runs if isinstance(r, MutableRun) and text in r.get_text()]
+
     # ---- Para-level convenience (loops over all runs) ------------------------
 
     def get_text(self) -> str:
@@ -533,6 +545,24 @@ class ParagraphCollection:
         toc = MutableTableOfContents(title=title)
         self._items.append(toc)
         return toc
+
+    # ---- Search --------------------------------------------------------------
+
+    def find(self, text: str) -> list["MutableParagraph"]:
+        """Return all paragraphs whose text contains *text* (case-sensitive).
+
+        Returns a list of :class:`MutableParagraph` objects in document order.
+        Tables, images, and section breaks are not searched.
+
+        Example::
+
+            for para in doc.paragraphs.find("action item"):
+                para.set_bold(True)
+        """
+        return [
+            item for item in self._items
+            if isinstance(item, MutableParagraph) and text in item.get_text()
+        ]
 
     # ---- Internal conversion -------------------------------------------------
 

@@ -101,6 +101,22 @@ class MutableTableOfContents:
 
     # ---- Factories -----------------------------------------------------------
 
+    def remove_entry(self, entry: "MutableTocEntry") -> None:
+        """Remove *entry* from the TOC.
+
+        Raises:
+            ValueError: if the entry is not in this TOC.
+        """
+        try:
+            self._entries.remove(entry)
+        except ValueError:
+            raise ValueError(f"{entry!r} is not in this TableOfContents")
+
+    def clear_entries(self) -> "MutableTableOfContents":
+        """Remove all entries. Returns self for chaining."""
+        self._entries.clear()
+        return self
+
     def add_entry(
         self,
         text: str,

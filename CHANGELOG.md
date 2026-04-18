@@ -7,6 +7,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `doc.find(text)` — search document body for paragraphs containing a string (case-sensitive)
+- `doc.paragraphs.find(text)` / `para.find(text)` — search at collection and run level
+- `doc.remove_footnote(note_id)` / `doc.remove_endnote(note_id)` — delete a note and all its reference markers
+- `doc.remove_comment(comment_id)` — delete a comment and all its reference markers
+- `MutableTableOfContents.remove_entry(entry)` / `.clear_entries()` — delete TOC entries
+
 ## [0.9.0] - 2026-04-18
 
 ### Added

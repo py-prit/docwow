@@ -207,12 +207,83 @@ class DocumentWrapper:
         """All endnote bodies in the document."""
         return self._endnotes
 
+    def remove_footnote(self, note_id: int) -> None:
+        """Remove the footnote with the given ``note_id``.
+
+        Also removes any :class:`~docwow.api.run.MutableFootnoteRef` markers
+        in the document body that reference this footnote.
+
+        Raises:
+            KeyError: if no footnote with that ID exists.
+        """
+        self._remove_note(self._footnotes, note_id, "footnote")
+
+    def remove_endnote(self, note_id: int) -> None:
+        """Remove the endnote with the given ``note_id``.
+
+        Also removes any :class:`~docwow.api.run.MutableFootnoteRef` markers
+        in the document body that reference this endnote.
+
+        Raises:
+            KeyError: if no endnote with that ID exists.
+        """
+        self._remove_note(self._endnotes, note_id, "endnote")
+
+    def _remove_note(self, lst: list[MutableFootnote], note_id: int, note_type: str) -> None:
+        for i, note in enumerate(lst):
+            if note.note_id == note_id:
+                lst.pop(i)
+                self._remove_note_refs(note_id, note_type)
+                return
+        raise KeyError(f"No {note_type} with note_id={note_id!r}")
+
+    def _remove_note_refs(self, note_id: int, note_type: str) -> None:
+        from docwow.api.footnote import MutableFootnoteRef
+        from docwow.api.paragraph import MutableParagraph
+        for item in self._paragraphs:
+            if isinstance(item, MutableParagraph):
+                to_remove = [
+                    i for i, r in enumerate(item.runs)
+                    if isinstance(r, MutableFootnoteRef)
+                    and r.note_id == note_id and r.note_type == note_type
+                ]
+                for i in reversed(to_remove):
+                    item.runs.remove(i)
+
     # ---- Comments ------------------------------------------------------------
 
     @property
     def comments(self) -> list[MutableComment]:
         """All comment bodies in the document."""
         return self._comments
+
+    def remove_comment(self, comment_id: int) -> None:
+        """Remove the comment with the given ``comment_id``.
+
+        Also removes any :class:`~docwow.api.run.MutableCommentRef` markers
+        in the document body that reference this comment.
+
+        Raises:
+            KeyError: if no comment with that ID exists.
+        """
+        for i, c in enumerate(self._comments):
+            if c.comment_id == comment_id:
+                self._comments.pop(i)
+                self._remove_comment_refs(comment_id)
+                return
+        raise KeyError(f"No comment with comment_id={comment_id!r}")
+
+    def _remove_comment_refs(self, comment_id: int) -> None:
+        from docwow.api.comment import MutableCommentRef
+        from docwow.api.paragraph import MutableParagraph
+        for item in self._paragraphs:
+            if isinstance(item, MutableParagraph):
+                to_remove = [
+                    i for i, r in enumerate(item.runs)
+                    if isinstance(r, MutableCommentRef) and r.comment_id == comment_id
+                ]
+                for i in reversed(to_remove):
+                    item.runs.remove(i)
 
     def add_comment(
         self,
@@ -266,6 +337,28 @@ class DocumentWrapper:
         note = MutableFootnote(note_id=note_id, note_type=note_type)
         lst.append(note)
         return note
+
+    # ---- Search --------------------------------------------------------------
+
+    def find(self, text: str) -> list:
+        """Return all paragraphs whose text contains *text*.
+
+        Searches the full concatenated text of every paragraph in the document
+        body (case-sensitive). Returns a list of
+        :class:`~docwow.api.paragraph.MutableParagraph` objects in document
+        order. Returns an empty list when nothing matches.
+
+        Example::
+
+            matches = doc.find("quarterly revenue")
+            for para in matches:
+                para.set_bold(True)
+        """
+        from docwow.api.paragraph import MutableParagraph
+        return [
+            item for item in self._paragraphs
+            if isinstance(item, MutableParagraph) and text in item.get_text()
+        ]
 
     # ---- Numbering -----------------------------------------------------------
 
