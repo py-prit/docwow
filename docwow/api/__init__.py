@@ -13,7 +13,7 @@ from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.image import MutableImage
 from docwow.api.list_item import MutableListItem
 from docwow.api.paragraph import MutableParagraph, MutableSectionBreak, ParagraphCollection
-from docwow.api.run import MutableBookmark, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
+from docwow.api.run import MutableBookmark, MutableFloatingImageRun, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
 from docwow.api.table import (
     MutableTable,
     MutableTableCell,
@@ -35,6 +35,7 @@ __all__ = [
     "MutableHeaderFooter",
     "MutableImage",
     "MutableHyperlink",
+    "MutableFloatingImageRun",
     "MutableImageRun",
     "MutableListItem",
     "MutablePageNumberField",

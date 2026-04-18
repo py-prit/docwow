@@ -11,13 +11,13 @@ from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
-from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FloatingImageRun, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.section import SectionBreak
 from docwow.models.table import Table, TableCell, TableRow
 from docwow.models.toc import TableOfContents, TocEntry
 from docwow.api.comment import MutableComment, MutableCommentRef
 from docwow.api.footnote import MutableFootnote, MutableFootnoteRef
-from docwow.api.run import MutableBookmark, MutableCrossRef, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
+from docwow.api.run import MutableBookmark, MutableCrossRef, MutableFloatingImageRun, MutableHyperlink, MutableImageRun, MutablePageNumberField, MutableRun, MutableTrackedChange, RunCollection
 from docwow.api.paragraph import MutableParagraph, MutableSectionBreak, ParagraphCollection
 from docwow.api.header_footer import MutableHeaderFooter
 from docwow.api.table import MutableTable, MutableTableCell, MutableTableRow
@@ -76,6 +76,8 @@ def run_from_frozen(frozen: Run) -> MutableRun | MutableImageRun | MutableHyperl
         )
     if isinstance(frozen, ImageRun):
         return MutableImageRun(frozen.image)
+    if isinstance(frozen, FloatingImageRun):
+        return MutableFloatingImageRun(frozen.image)
     if isinstance(frozen, Hyperlink):
         # Flatten multi-run hyperlink text into a single string
         text = "".join(r.text for r in frozen.runs)

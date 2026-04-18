@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TypeAlias
 
-from docwow.models.image import InlineImage
+from docwow.models.image import FloatingImage, InlineImage
 from docwow.models.lists import ListInfo
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 
@@ -22,6 +22,18 @@ class ImageRun:
 
     image: InlineImage
     formatting: RunFormatting = field(default_factory=RunFormatting)
+
+
+@dataclass(frozen=True)
+class FloatingImageRun:
+    """A floating (anchored) image run corresponding to ``wp:anchor``.
+
+    Unlike :class:`ImageRun`, a floating image is positioned independently of
+    the text flow.  It appears in the paragraph XML that acts as its anchor
+    point, but visually it floats over (or behind) the page content.
+    """
+
+    image: FloatingImage
 
 
 @dataclass(frozen=True)
@@ -115,7 +127,7 @@ class TrackedChange:
 
 
 # A paragraph's content is a sequence of runs.
-Run: TypeAlias = TextRun | ImageRun | Hyperlink | PageNumberField | CrossRef | FootnoteRef | BookmarkStart | CommentRef | TrackedChange
+Run: TypeAlias = TextRun | ImageRun | FloatingImageRun | Hyperlink | PageNumberField | CrossRef | FootnoteRef | BookmarkStart | CommentRef | TrackedChange
 
 
 @dataclass(frozen=True)

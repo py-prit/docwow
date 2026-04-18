@@ -5,9 +5,9 @@ from __future__ import annotations
 import html
 
 from docwow.models.comment import Comment
-from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FloatingImageRun, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting, TabStop
-from docwow.renderer.image_renderer import render_image
+from docwow.renderer.image_renderer import render_floating_image, render_image
 from docwow.utils.units import pt_to_css
 
 
@@ -30,12 +30,27 @@ def render_paragraph(
         data_attrs["data-dw-level"] = str(p.list_info.level)
 
     inline_style = _para_inline_style(fmt)
+
+    # If any floating run uses absolute positioning (wrapNone / behind_doc),
+    # the paragraph must be a positioned ancestor so absolute offsets work.
+    abs_floats = [
+        r.image for r in p.runs
+        if isinstance(r, FloatingImageRun)
+        and (r.image.wrap == "none" or r.image.behind_doc)
+    ]
+    if abs_floats:
+        min_h = max(img.height_pt for img in abs_floats)
+        extra = f"position:relative;min-height:{pt_to_css(min_h)}"
+        inline_style = f"{inline_style};{extra}" if inline_style else extra
+
     inner = "".join(_render_run(r, comments=comments) for r in p.runs)
 
     return _tag("p", classes, data_attrs, inline_style, inner)
 
 
 def _render_run(run: Run, comments: dict[int, Comment] | None = None) -> str:
+    if isinstance(run, FloatingImageRun):
+        return render_floating_image(run.image)
     if isinstance(run, ImageRun):
         return render_image(run.image)
     if isinstance(run, Hyperlink):

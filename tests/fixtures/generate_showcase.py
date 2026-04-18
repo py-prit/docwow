@@ -26,10 +26,10 @@ from docwow.models.comment import Comment
 from docwow.models.document import Document
 from docwow.models.footnote import Footnote
 from docwow.models.header_footer import HeaderFooter
-from docwow.models.image import InlineImage
+from docwow.models.image import FloatingImage, InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import (
-    BookmarkStart, CommentRef, FootnoteRef, Hyperlink, ImageRun,
+    BookmarkStart, CommentRef, FloatingImageRun, FootnoteRef, Hyperlink, ImageRun,
     PageBreak, PageNumberField, Paragraph, TextRun, TrackedChange,
 )
 from docwow.models.borders import BorderDef
@@ -137,6 +137,7 @@ BM = {
     "vanish":      "showcase-vanish",
     "metafields":  "showcase-metafields",
     "borders":     "showcase-borders",
+    "floating":    "showcase-floating",
 }
 
 
@@ -185,6 +186,7 @@ def build_showcase() -> Document:
             TocEntry("Hidden Text (vanish)",        f"#{BM['vanish']}",     1),
             TocEntry("Document Metadata Fields",    f"#{BM['metafields']}", 1),
             TocEntry("Paragraph Borders",           f"#{BM['borders']}",    1),
+            TocEntry("Floating Images",             f"#{BM['floating']}",   1),
         ),
     ))
 
@@ -858,6 +860,83 @@ def build_showcase() -> Document:
         formatting=ParagraphFormatting(borders=ParagraphBorders(left=_red)),
     ))
     body.append(_p("Plain paragraph (no borders) — for comparison."))
+
+    # -----------------------------------------------------------------------
+    # 18. Floating Images
+    # -----------------------------------------------------------------------
+    body.append(_ph("Floating Images", BM["floating"], style_id="Heading1"))
+    body.append(_p(
+        "Floating images (wp:anchor) are positioned independently of the text flow. "
+        "They appear anchored to a paragraph but float over or beside the page content. "
+        "In HTML they render as <figure class=\"dw-float-img\"> with float CSS and "
+        "data-dw-float-* attributes for lossless round-trip."
+    ))
+    body.append(_p("Square wrap — image floats left, text wraps around it:"))
+    body.append(Paragraph(
+        runs=(
+            FloatingImageRun(image=FloatingImage(
+                relationship_id="rId_float_sq",
+                content_type="image/png",
+                data=PNG_DATA,
+                width_pt=72.0,
+                height_pt=72.0,
+                pos_h_pt=36.0,
+                pos_v_pt=36.0,
+                h_anchor="column",
+                v_anchor="paragraph",
+                wrap="square",
+            )),
+            TextRun(text=(
+                "This paragraph has a square-wrapped floating image. "
+                "In Word the image sits to the left and the text flows beside it. "
+                "In HTML it renders as a left-floated <figure> element."
+            )),
+        ),
+    ))
+    body.append(_p("Top-and-bottom wrap — text appears above and below, not beside:"))
+    body.append(Paragraph(
+        runs=(
+            FloatingImageRun(image=FloatingImage(
+                relationship_id="rId_float_tb",
+                content_type="image/png",
+                data=PNG_DATA,
+                width_pt=144.0,
+                height_pt=72.0,
+                pos_h_pt=108.0,
+                pos_v_pt=36.0,
+                h_anchor="column",
+                v_anchor="paragraph",
+                wrap="topAndBottom",
+            )),
+            TextRun(text=(
+                "Text above the image. "
+                "The image spans the full column width; text appears above and below only."
+            )),
+        ),
+    ))
+    body.append(_p("No wrap — image overlaps the text (z-order: in front):"))
+    body.append(Paragraph(
+        runs=(
+            FloatingImageRun(image=FloatingImage(
+                relationship_id="rId_float_none",
+                content_type="image/png",
+                data=PNG_DATA,
+                width_pt=54.0,
+                height_pt=54.0,
+                pos_h_pt=0.0,
+                pos_v_pt=0.0,
+                h_anchor="column",
+                v_anchor="paragraph",
+                wrap="none",
+                behind_doc=False,
+            )),
+            TextRun(text=(
+                "This text is behind the overlapping image in Word and in HTML. "
+                "The image is positioned absolutely at (0pt, 0pt) within this paragraph "
+                "with z-index:1, so it overlaps the text in front."
+            )),
+        ),
+    ))
 
     # -----------------------------------------------------------------------
     # Numbering, styles, headers/footers, footnotes/endnotes

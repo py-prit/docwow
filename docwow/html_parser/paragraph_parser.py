@@ -5,9 +5,9 @@ import base64
 
 from docwow.html_parser._utils import has_class, pt_val
 from docwow.models.borders import BorderDef
-from docwow.models.image import InlineImage
+from docwow.models.image import FloatingImage, InlineImage
 from docwow.models.lists import ListInfo
-from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FloatingImageRun, FootnoteRef, Hyperlink, ImageRun, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphBorders, ParagraphFormatting, RunFormatting, TabStop
 
 
@@ -106,6 +106,10 @@ def _parse_runs(p_el) -> list[Run]:
                 runs.append(pf)
         elif child.tag == "img" and has_class(child, "dw-img"):
             runs.append(_parse_image_run(child))
+        elif child.tag in ("figure", "span") and has_class(child, "dw-float-img"):
+            fi = _parse_floating_image_run(child)
+            if fi is not None:
+                runs.append(fi)
         elif child.tag == "a" and child.get("data-dw-href"):
             runs.append(_parse_hyperlink(child))
         elif child.tag == "a" and child.get("data-dw-note-id"):
@@ -244,6 +248,29 @@ def _parse_image_run(img_el) -> ImageRun:
             alt_text=img_el.get("alt", ""),
         )
     )
+
+
+def _parse_floating_image_run(figure_el) -> FloatingImageRun | None:
+    img_el = figure_el.find("img")
+    if img_el is None:
+        return None
+    width_pt = pt_val(figure_el.get("data-dw-width"), 0.0)
+    height_pt = pt_val(figure_el.get("data-dw-height"), 0.0)
+    content_type, data = _parse_data_uri(img_el.get("src", ""))
+    return FloatingImageRun(image=FloatingImage(
+        relationship_id=figure_el.get("data-dw-rid", ""),
+        content_type=content_type,
+        data=data,
+        width_pt=width_pt,
+        height_pt=height_pt,
+        pos_h_pt=pt_val(figure_el.get("data-dw-float-pos-h"), 0.0),
+        pos_v_pt=pt_val(figure_el.get("data-dw-float-pos-v"), 0.0),
+        h_anchor=figure_el.get("data-dw-float-h-anchor", "column"),
+        v_anchor=figure_el.get("data-dw-float-v-anchor", "paragraph"),
+        wrap=figure_el.get("data-dw-float-wrap", "square"),
+        behind_doc=figure_el.get("data-dw-float-behind", "false") == "true",
+        alt_text=img_el.get("alt", ""),
+    ))
 
 
 def _parse_data_uri(src: str) -> tuple[str, bytes]:

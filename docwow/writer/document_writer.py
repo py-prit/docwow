@@ -4,8 +4,8 @@ from __future__ import annotations
 from lxml import etree
 
 from docwow.models.document import Document
-from docwow.models.image import InlineImage
-from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
+from docwow.models.image import FloatingImage, InlineImage
+from docwow.models.paragraph import BookmarkStart, CommentRef, CrossRef, FloatingImageRun, FootnoteRef, Hyperlink, ImageRun, PageBreak, PageNumberField, Paragraph, Run, TextRun, TrackedChange
 from docwow.models.styles import ParagraphFormatting, RunFormatting
 from docwow.models.section import SectionBreak, SectionProperties
 from docwow.models.table import BorderDef, Table, TableBorders, TableCell, TableRow
@@ -213,6 +213,8 @@ def _write_run(
 ) -> None:
     if isinstance(run, Hyperlink):
         _write_hyperlink(parent, run, hyperlink_rids or {})
+    elif isinstance(run, FloatingImageRun):
+        _write_floating_image_run(parent, run.image, image_rids, draw_counter)
     elif isinstance(run, ImageRun):
         _write_image_run(parent, run.image, image_rids, draw_counter)
     elif isinstance(run, PageNumberField):
@@ -524,6 +526,106 @@ def _write_image_run(
     # pic:pic
     pic_el = etree.SubElement(gdata, f"{{{PIC}}}pic")
 
+    nv_pr = etree.SubElement(pic_el, f"{{{PIC}}}nvPicPr")
+    cnv_pr = etree.SubElement(nv_pr, f"{{{PIC}}}cNvPr")
+    cnv_pr.set("id", "0")
+    cnv_pr.set("name", name)
+    etree.SubElement(nv_pr, f"{{{PIC}}}cNvPicPr")
+
+    blip_fill = etree.SubElement(pic_el, f"{{{PIC}}}blipFill")
+    blip = etree.SubElement(blip_fill, f"{{{A}}}blip")
+    blip.set(f"{{{R}}}embed", new_rid)
+    etree.SubElement(blip_fill, f"{{{A}}}stretch").append(
+        etree.Element(f"{{{A}}}fillRect")
+    )
+
+    sp_pr = etree.SubElement(pic_el, f"{{{PIC}}}spPr")
+    xfrm = etree.SubElement(sp_pr, f"{{{A}}}xfrm")
+    off = etree.SubElement(xfrm, f"{{{A}}}off")
+    off.set("x", "0")
+    off.set("y", "0")
+    ext = etree.SubElement(xfrm, f"{{{A}}}ext")
+    ext.set("cx", cx)
+    ext.set("cy", cy)
+    prst = etree.SubElement(sp_pr, f"{{{A}}}prstGeom")
+    prst.set("prst", "rect")
+    etree.SubElement(prst, f"{{{A}}}avLst")
+
+
+def _write_floating_image_run(
+    parent: etree._Element,
+    image: FloatingImage,
+    image_rids: dict[str, str],
+    draw_counter: list[int],
+) -> None:
+    new_rid = image_rids.get(image.relationship_id, image.relationship_id)
+    draw_id = draw_counter[0]
+    draw_counter[0] += 1
+
+    cx = pt_emu(image.width_pt)
+    cy = pt_emu(image.height_pt)
+    name = f"Image{draw_id}"
+
+    r_el = etree.SubElement(parent, f"{{{W}}}r")
+    drawing = etree.SubElement(r_el, f"{{{W}}}drawing")
+
+    anchor = etree.SubElement(drawing, f"{{{WP}}}anchor")
+    anchor.set("distT", "0")
+    anchor.set("distB", "0")
+    anchor.set("distL", "114300")
+    anchor.set("distR", "114300")
+    anchor.set("simplePos", "0")
+    anchor.set("relativeHeight", "251658240")
+    anchor.set("behindDoc", "1" if image.behind_doc else "0")
+    anchor.set("locked", "0")
+    anchor.set("layoutInCell", "1")
+    anchor.set("allowOverlap", "1")
+
+    simple_pos = etree.SubElement(anchor, f"{{{WP}}}simplePos")
+    simple_pos.set("x", "0")
+    simple_pos.set("y", "0")
+
+    pos_h = etree.SubElement(anchor, f"{{{WP}}}positionH")
+    pos_h.set("relativeFrom", image.h_anchor)
+    pos_h_off = etree.SubElement(pos_h, f"{{{WP}}}posOffset")
+    pos_h_off.text = str(round(image.pos_h_pt * 12700))
+
+    pos_v = etree.SubElement(anchor, f"{{{WP}}}positionV")
+    pos_v.set("relativeFrom", image.v_anchor)
+    pos_v_off = etree.SubElement(pos_v, f"{{{WP}}}posOffset")
+    pos_v_off.text = str(round(image.pos_v_pt * 12700))
+
+    extent = etree.SubElement(anchor, f"{{{WP}}}extent")
+    extent.set("cx", cx)
+    extent.set("cy", cy)
+
+    effect = etree.SubElement(anchor, f"{{{WP}}}effectExtent")
+    for attr in ("l", "t", "r", "b"):
+        effect.set(attr, "0")
+
+    # Wrap element
+    _WRAP_TAGS = {
+        "none": "wrapNone",
+        "square": "wrapSquare",
+        "tight": "wrapTight",
+        "through": "wrapThrough",
+        "topAndBottom": "wrapTopAndBottom",
+    }
+    wrap_tag = _WRAP_TAGS.get(image.wrap, "wrapSquare")
+    wrap_el = etree.SubElement(anchor, f"{{{WP}}}{wrap_tag}")
+    if image.wrap in ("square", "tight", "through"):
+        wrap_el.set("wrapText", "bothSides")
+
+    doc_pr = etree.SubElement(anchor, f"{{{WP}}}docPr")
+    doc_pr.set("id", str(draw_id))
+    doc_pr.set("name", name)
+
+    # a:graphic (identical to inline image)
+    graphic = etree.SubElement(anchor, f"{{{A}}}graphic")
+    gdata = etree.SubElement(graphic, f"{{{A}}}graphicData")
+    gdata.set("uri", "http://schemas.openxmlformats.org/drawingml/2006/picture")
+
+    pic_el = etree.SubElement(gdata, f"{{{PIC}}}pic")
     nv_pr = etree.SubElement(pic_el, f"{{{PIC}}}nvPicPr")
     cnv_pr = etree.SubElement(nv_pr, f"{{{PIC}}}cNvPr")
     cnv_pr.set("id", "0")
