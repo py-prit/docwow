@@ -68,10 +68,22 @@ def _render_footnote_ref(ref: FootnoteRef) -> str:
     )
 
 
+_FIELD_PLACEHOLDERS: dict[str, str] = {
+    "PAGE": "1",
+    "NUMPAGES": "1",
+    "SECTIONPAGES": "1",
+    "DATE": "1/1/2000",
+    "TIME": "12:00 PM",
+    "AUTHOR": "Author",
+    "TITLE": "Title",
+    "FILENAME": "document.docx",
+}
+
+
 def _render_page_number_field(field: PageNumberField) -> str:
     inline_style = _run_inline_style(field.formatting)
     style_attr = f' style="{inline_style}"' if inline_style else ""
-    placeholder = "1"  # visual placeholder in HTML
+    placeholder = _FIELD_PLACEHOLDERS.get(field.field_type, field.field_type)
     return (
         f'<span class="dw-field" data-dw-field="{field.field_type}"{style_attr}>'
         f"{placeholder}</span>"

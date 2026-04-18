@@ -295,6 +295,13 @@ para.runs.add_text("Page ")
 para.runs.add_page_number()           # PAGE field
 para.runs.add_text(" of ")
 para.runs.add_page_number("NUMPAGES") # NUMPAGES field
+
+# Document metadata fields
+para.runs.add_page_number("DATE")     # current date
+para.runs.add_page_number("TIME")     # current time
+para.runs.add_page_number("AUTHOR")   # document author
+para.runs.add_page_number("TITLE")    # document title
+para.runs.add_page_number("FILENAME") # file name
 ```
 
 The first-page and even-page slots are also available via `doc.header_first`, `doc.header_even`, `doc.footer_first`, `doc.footer_even`. Set `doc.title_pg = True` to activate the first-page slot.
