@@ -27,6 +27,19 @@ from __future__ import annotations
 import warnings
 
 
+class DocwowParseError(ValueError):
+    """Raised when a DOCX file contains an invalid or unreadable value.
+
+    This is raised instead of a bare ``ValueError`` or ``TypeError`` so
+    callers can catch docwow-specific parse failures without accidentally
+    swallowing unrelated errors.
+
+    The exception message includes the element name, the offending value, and
+    the file/attribute path to help users diagnose corrupted or non-standard
+    DOCX files.
+    """
+
+
 class DocwowConversionWarning(UserWarning):
     """Issued when general HTML→DOCX conversion encounters something it
     cannot fully represent in Word, or skips an unsupported construct.

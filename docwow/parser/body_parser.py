@@ -25,6 +25,17 @@ from docwow.parser.image_parser import extract_image
 from docwow.parser.style_parser import parse_para_fmt, parse_run_fmt
 from docwow.utils.units import emu_to_pt
 from docwow.utils.xml_utils import attrib, find, findall, qn
+from docwow.warnings import DocwowParseError
+
+
+def _int(value: str, attr: str) -> int:
+    """Parse an XML attribute value as int, raising DocwowParseError on failure."""
+    try:
+        return int(value)
+    except (ValueError, TypeError) as exc:
+        raise DocwowParseError(
+            f"Invalid value {value!r} for {attr} — expected an integer"
+        ) from exc
 
 
 def parse_body(
@@ -252,7 +263,7 @@ def _parse_list_info(
         ilvl_el = find(numPr, "w:ilvl")
         numId_el = find(numPr, "w:numId")
         if ilvl_el is not None and numId_el is not None:
-            level = int(attrib(ilvl_el, "w:val") or "0")
+            level = _int(attrib(ilvl_el, "w:val") or "0", "w:ilvl/@w:val")
             num_id = attrib(numId_el, "w:val") or "0"
             if num_id != "0":
                 return ListInfo(num_id=num_id, level=level)
@@ -410,24 +421,27 @@ def _parse_run(
 
         elif tag == qn("w:footnoteReference"):
             note_id_str = attrib(child, "w:id") or ""
-            try:
-                result.append(FootnoteRef(note_id=int(note_id_str), note_type="footnote"))
-            except ValueError:
-                pass
+            if note_id_str:
+                try:
+                    result.append(FootnoteRef(note_id=_int(note_id_str, "w:footnoteReference/@w:id"), note_type="footnote"))
+                except DocwowParseError:
+                    pass
 
         elif tag == qn("w:endnoteReference"):
             note_id_str = attrib(child, "w:id") or ""
-            try:
-                result.append(FootnoteRef(note_id=int(note_id_str), note_type="endnote"))
-            except ValueError:
-                pass
+            if note_id_str:
+                try:
+                    result.append(FootnoteRef(note_id=_int(note_id_str, "w:endnoteReference/@w:id"), note_type="endnote"))
+                except DocwowParseError:
+                    pass
 
         elif tag == qn("w:commentReference"):
             comment_id_str = attrib(child, "w:id") or ""
-            try:
-                result.append(CommentRef(comment_id=int(comment_id_str)))
-            except ValueError:
-                pass
+            if comment_id_str:
+                try:
+                    result.append(CommentRef(comment_id=_int(comment_id_str, "w:commentReference/@w:id")))
+                except DocwowParseError:
+                    pass
 
     return result
 
@@ -452,8 +466,8 @@ def _parse_drawing(
     extent = find(inline, "wp:extent")
     if extent is None:
         return None
-    cx = int(attrib(extent, "cx") or "0")
-    cy = int(attrib(extent, "cy") or "0")
+    cx = _int(attrib(extent, "cx") or "0", "wp:extent/@cx")
+    cy = _int(attrib(extent, "cy") or "0", "wp:extent/@cy")
 
     # Alt text from wp:docPr
     docPr = find(inline, "wp:docPr")
@@ -633,7 +647,7 @@ def _parse_table(
             w_val = attrib(gridCol, "w:w")
             if w_val is not None:
                 from docwow.utils.units import twips_to_pt
-                col_widths.append(twips_to_pt(int(w_val)))
+                col_widths.append(twips_to_pt(_int(w_val, "w:gridCol/@w:w")))
 
     rows: list[TableRow] = []
     for tr_el in tbl.findall(qn("w:tr")):
@@ -660,7 +674,7 @@ def _parse_row(
             h_val = attrib(trHeight, "w:val")
             if h_val is not None:
                 from docwow.utils.units import twips_to_pt
-                height_pt = twips_to_pt(int(h_val))
+                height_pt = twips_to_pt(_int(h_val, "w:trHeight/@w:val"))
 
     cells: list[TableCell] = []
     for tc_el in tr_el.findall(qn("w:tc")):
@@ -690,14 +704,14 @@ def _parse_cell(
             w_type = attrib(tcW, "w:type")
             if w_val is not None and w_type != "nil":
                 from docwow.utils.units import twips_to_pt
-                width_pt = twips_to_pt(int(w_val))
+                width_pt = twips_to_pt(_int(w_val, "w:tcW/@w:w"))
 
         # Horizontal span (gridSpan)
         gridSpan = find(tcPr, "w:gridSpan")
         if gridSpan is not None:
             val = attrib(gridSpan, "w:val")
             if val is not None:
-                col_span = int(val)
+                col_span = _int(val, "w:gridSpan/@w:val")
 
         # Vertical merge
         vMerge = find(tcPr, "w:vMerge")

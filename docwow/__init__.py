@@ -35,7 +35,7 @@ from pathlib import Path
 from docwow.html_parser.html_parser import parse_html
 from docwow.parser.docx_parser import parse_docx
 from docwow.renderer.html_renderer import render_document
-from docwow.warnings import DocwowConversionWarning, suppress_warnings, strict_warnings
+from docwow.warnings import DocwowConversionWarning, DocwowParseError, suppress_warnings, strict_warnings
 from docwow.writer.docx_writer import write_docx
 
 __all__ = [
@@ -47,6 +47,7 @@ __all__ = [
     "render_document",
     "write_docx",
     "DocwowConversionWarning",
+    "DocwowParseError",
     "suppress_warnings",
     "strict_warnings",
 ]

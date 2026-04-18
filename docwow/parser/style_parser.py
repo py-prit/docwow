@@ -14,6 +14,17 @@ from lxml import etree
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style, TabStop
 from docwow.utils.units import half_pt_to_pt, twips_to_pt
 from docwow.utils.xml_utils import attrib, find, findall, qn
+from docwow.warnings import DocwowParseError
+
+
+def _int(value: str, attr: str) -> int:
+    """Parse an XML attribute value as int, raising DocwowParseError on failure."""
+    try:
+        return int(value)
+    except (ValueError, TypeError) as exc:
+        raise DocwowParseError(
+            f"Invalid value {value!r} for {attr} — expected an integer"
+        ) from exc
 
 
 def parse_styles(styles_xml: bytes) -> tuple[Style, ...]:
@@ -74,9 +85,9 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
         first = attrib(ind_el, "w:firstLine")
         hanging = attrib(ind_el, "w:hanging")
         if first is not None:
-            indent_first_line_pt = twips_to_pt(int(first))
+            indent_first_line_pt = twips_to_pt(_int(first, "w:ind/@w:firstLine"))
         elif hanging is not None:
-            indent_first_line_pt = -twips_to_pt(int(hanging))
+            indent_first_line_pt = -twips_to_pt(_int(hanging, "w:ind/@w:hanging"))
 
     space_before_pt = 0.0
     space_after_pt = 0.0
@@ -87,11 +98,11 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
         after = attrib(spacing_el, "w:after")
         line = attrib(spacing_el, "w:line")
         if before is not None:
-            space_before_pt = twips_to_pt(int(before))
+            space_before_pt = twips_to_pt(_int(before, "w:spacing/@w:before"))
         if after is not None:
-            space_after_pt = twips_to_pt(int(after))
+            space_after_pt = twips_to_pt(_int(after, "w:spacing/@w:after"))
         if line is not None:
-            line_spacing_pt = twips_to_pt(int(line))
+            line_spacing_pt = twips_to_pt(_int(line, "w:spacing/@w:line"))
 
     keep_together = find(pPr, "w:keepLines") is not None
     keep_with_next = find(pPr, "w:keepNext") is not None
@@ -118,7 +129,7 @@ def _parse_para_fmt(pPr: etree._Element | None) -> ParagraphFormatting | None:
             leader_raw = attrib(tab_el, "w:leader")
             leader = leader_raw if leader_raw and leader_raw != "none" else None
             stops.append(TabStop(
-                position_pt=twips_to_pt(int(pos_str)),
+                position_pt=twips_to_pt(_int(pos_str, "w:tab/@w:pos")),
                 alignment=val,
                 leader=leader,
             ))
@@ -166,7 +177,7 @@ def _parse_run_fmt(rPr: etree._Element | None) -> RunFormatting | None:
     if sz_el is not None:
         raw = attrib(sz_el, "w:val")
         if raw is not None:
-            font_size_pt = half_pt_to_pt(int(raw))
+            font_size_pt = half_pt_to_pt(_int(raw, "w:sz/@w:val"))
 
     color: str | None = None
     color_el = find(rPr, "w:color")
@@ -239,7 +250,7 @@ def _normalise_alignment(raw: str) -> str | None:
 def _twips_or_zero(val: str | None) -> float:
     if val is None:
         return 0.0
-    return twips_to_pt(int(val))
+    return twips_to_pt(_int(val, "w:ind/@w:left or @w:right"))
 
 
 def parse_style_numbering(styles_xml: bytes) -> dict[str, tuple[str, int]]:
@@ -263,7 +274,7 @@ def parse_style_numbering(styles_xml: bytes) -> dict[str, tuple[str, int]]:
             continue
         ilvl_el = find(numPr, "w:ilvl")
         numId_el = find(numPr, "w:numId")
-        ilvl = int(attrib(ilvl_el, "w:val") or "0") if ilvl_el is not None else 0
+        ilvl = _int(attrib(ilvl_el, "w:val") or "0", "w:ilvl/@w:val") if ilvl_el is not None else 0
         num_id = attrib(numId_el, "w:val") if numId_el is not None else None
         if num_id and num_id != "0":
             result[style_id] = (num_id, ilvl)
