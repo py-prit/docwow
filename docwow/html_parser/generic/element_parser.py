@@ -13,7 +13,9 @@ Built incrementally across Phase 2 sub-features:
 """
 from __future__ import annotations
 
+import base64
 import dataclasses
+import io
 import re
 import urllib.request
 from collections.abc import Iterator
@@ -23,8 +25,9 @@ import lxml.html
 from docwow.html_parser.generic.css_resolver import CssResolver, parse_inline_style
 from docwow.html_parser.generic.css_units import css_value_to_pt
 from docwow.models.document import Document
+from docwow.models.image import InlineImage
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
-from docwow.models.paragraph import Hyperlink, PageBreak, Paragraph, TextRun
+from docwow.models.paragraph import Hyperlink, ImageRun, PageBreak, Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting, RunFormatting, Style
 from docwow.models.table import BorderDef, Table, TableBorders, TableCell, TableRow
 from docwow.warnings import warn as _warn
@@ -138,6 +141,7 @@ class ElementParser:
         self._warned_tags: set[str] = set()
         self._next_num_id: int = 0
         self._numbering_defs: list[NumberingDefinition] = []
+        self._img_counter: int = 0
 
     def parse(self, html: str) -> Document:
         """Parse an HTML string into a :class:`~docwow.models.document.Document`."""
@@ -257,19 +261,13 @@ class ElementParser:
                 yield from self._parse_table(child, resolver, blockquote_depth)
                 continue
 
-            # img — stub until feat/generic-images
             if tag == "img":
-                src = child.get("src", "")
-                if src.startswith("data:"):
-                    _warn("<img> (data URI) is not yet supported — image skipped.")
-                else:
-                    if self.fetch_images:
-                        _warn("<img> fetching is not yet supported — image skipped.")
-                    else:
-                        _warn(
-                            f"Found <img src=\"{src[:60]}...\"> but fetch_images=False "
-                            "— image skipped. Pass fetch_images=True to download remote images."
-                        )
+                img_run = self._parse_img(child, resolver)
+                if img_run is not None:
+                    yield Paragraph(
+                        runs=(img_run,),
+                        formatting=ParagraphFormatting(),
+                    )
                 continue
 
             # Unknown block-ish elements: recurse to preserve content
@@ -531,6 +529,75 @@ class ElementParser:
         return paras
 
     # -----------------------------------------------------------------------
+    # Image parsing
+    # -----------------------------------------------------------------------
+
+    def _parse_img(self, img_el, resolver: CssResolver) -> ImageRun | None:
+        """Parse an <img> element into an ImageRun, or return None to skip."""
+        src = (img_el.get("src") or "").strip()
+        alt = img_el.get("alt", "")
+
+        if src.startswith("data:"):
+            content_type, data = _decode_data_uri(src)
+            if not data:
+                _warn("<img> with malformed data URI — image skipped.")
+                return None
+
+        elif src.startswith(("http://", "https://")):
+            if not self.fetch_images:
+                _warn(
+                    f'Found <img src="{src[:60]}"> but fetch_images=False '
+                    "— image skipped. Pass fetch_images=True to download remote images."
+                )
+                return None
+            content_type, data = _fetch_image(src)
+            if not data:
+                return None  # _fetch_image already warned
+
+        else:
+            if src:
+                self._warn_once(
+                    f"img-rel-{src[:40]}",
+                    f"<img src={src!r}> — relative/local URLs are not supported "
+                    "in the generic parser — image skipped.",
+                )
+            return None
+
+        # Resolve dimensions: CSS > HTML attributes > Pillow natural size > default
+        css = resolver.resolve(img_el)
+        width_pt = css_value_to_pt(css.get("width", "")) or _html_dim_to_pt(
+            img_el.get("width")
+        )
+        height_pt = css_value_to_pt(css.get("height", "")) or _html_dim_to_pt(
+            img_el.get("height")
+        )
+
+        if width_pt is None or height_pt is None:
+            nat_w, nat_h = _natural_size_pt(data)
+            if nat_w and nat_h:
+                if width_pt is None and height_pt is None:
+                    width_pt, height_pt = nat_w, nat_h
+                elif width_pt is None:
+                    width_pt = nat_w * (height_pt / nat_h)
+                else:
+                    height_pt = nat_h * (width_pt / nat_w)
+            else:
+                width_pt = width_pt or 200.0
+                height_pt = height_pt or 150.0
+
+        self._img_counter += 1
+        return ImageRun(
+            image=InlineImage(
+                relationship_id=f"generic-img-{self._img_counter}",
+                content_type=content_type,
+                data=data,
+                width_pt=float(width_pt),
+                height_pt=float(height_pt),
+                alt_text=alt,
+            )
+        )
+
+    # -----------------------------------------------------------------------
     # Run building — inline content walker
     # -----------------------------------------------------------------------
 
@@ -566,7 +633,9 @@ class ElementParser:
                 out.append(TextRun(text="\n", formatting=inherited_fmt))
 
             elif child_tag == "img":
-                pass  # handled in feat/generic-images
+                img_run = self._parse_img(child, resolver)
+                if img_run is not None:
+                    out.append(img_run)
 
             elif child_tag in _BLOCK_TAGS:
                 if child_tag not in ("ul", "ol"):
@@ -1218,6 +1287,89 @@ def _parse_cell_borders(css: dict[str, str]) -> TableBorders | None:
         return TableBorders(top=top, right=right, bottom=bottom, left=left)
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# Image helpers
+# ---------------------------------------------------------------------------
+
+# MIME type guesses from URL extension when Content-Type header is missing
+_URL_EXT_MIME: dict[str, str] = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".gif": "image/gif", ".bmp": "image/bmp", ".webp": "image/webp",
+    ".svg": "image/svg+xml", ".tiff": "image/tiff", ".tif": "image/tiff",
+}
+
+
+def _decode_data_uri(src: str) -> tuple[str, bytes]:
+    """Decode a base64 data URI → (content_type, bytes).  Returns ("", b"") on failure."""
+    if not src.startswith("data:"):
+        return "", b""
+    rest = src[5:]
+    if "," not in rest:
+        return "", b""
+    meta, b64_data = rest.split(",", 1)
+    content_type = meta.split(";")[0] or "image/png"
+    try:
+        return content_type, base64.b64decode(b64_data)
+    except Exception:
+        return content_type, b""
+
+
+def _fetch_image(url: str) -> tuple[str, bytes]:
+    """Download an image from *url* → (content_type, bytes).
+
+    Warns and returns ("", b"") on network errors.
+    """
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            ct = resp.headers.get("Content-Type", "").split(";")[0].strip()
+            if not ct or ct == "application/octet-stream":
+                # Fall back to URL extension
+                lower = url.lower().split("?")[0]
+                for ext, mime in _URL_EXT_MIME.items():
+                    if lower.endswith(ext):
+                        ct = mime
+                        break
+                else:
+                    ct = "image/jpeg"
+            return ct, resp.read()
+    except Exception as exc:
+        _warn(f"Failed to fetch image from {url!r}: {exc} — image skipped.")
+        return "", b""
+
+
+def _html_dim_to_pt(value: str | None) -> float | None:
+    """Convert an HTML ``width``/``height`` attribute value to points.
+
+    Bare integers and ``Npx`` are treated as CSS pixels (1 px = 0.75 pt).
+    Returns ``None`` for empty or unrecognised values.
+    """
+    if not value:
+        return None
+    v = value.strip()
+    if v.endswith("px"):
+        v = v[:-2]
+    if v.endswith("%"):
+        return None  # percentages require layout context — skip
+    try:
+        return float(v) * 0.75  # 96 dpi: 1 px = 0.75 pt
+    except ValueError:
+        return None
+
+
+def _natural_size_pt(data: bytes) -> tuple[float | None, float | None]:
+    """Use Pillow to read the natural pixel dimensions and convert to pt (96 dpi).
+
+    Returns ``(None, None)`` if Pillow cannot open the image (e.g. SVG).
+    """
+    try:
+        from PIL import Image
+        with Image.open(io.BytesIO(data)) as img:
+            w_px, h_px = img.size
+            return w_px * 0.75, h_px * 0.75
+    except Exception:
+        return None, None
 
 
 def _bold_paragraph(para: Paragraph) -> Paragraph:
