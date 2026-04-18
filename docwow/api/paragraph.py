@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING, Iterator
 
 from docwow.models.lists import ListInfo
@@ -38,21 +39,7 @@ class MutableParagraph:
 
     def set_style(self, style_id: str | None) -> "MutableParagraph":
         """Set the paragraph style by style ID."""
-        self._fmt = ParagraphFormatting(
-            style_id=style_id,
-            alignment=self._fmt.alignment,
-            indent_left_pt=self._fmt.indent_left_pt,
-            indent_right_pt=self._fmt.indent_right_pt,
-            indent_first_line_pt=self._fmt.indent_first_line_pt,
-            space_before_pt=self._fmt.space_before_pt,
-            space_after_pt=self._fmt.space_after_pt,
-            line_spacing_pt=self._fmt.line_spacing_pt,
-            keep_together=self._fmt.keep_together,
-            keep_with_next=self._fmt.keep_with_next,
-            page_break_before=self._fmt.page_break_before,
-            shading=self._fmt.shading,
-            tab_stops=self._fmt.tab_stops,
-        )
+        self._fmt = dataclasses.replace(self._fmt, style_id=style_id)
         return self
 
     def set_alignment(self, alignment: str | None) -> "MutableParagraph":
@@ -62,21 +49,7 @@ class MutableParagraph:
                 f"alignment must be 'left', 'center', 'right', 'justify', or None; "
                 f"got {alignment!r}"
             )
-        self._fmt = ParagraphFormatting(
-            style_id=self._fmt.style_id,
-            alignment=alignment,
-            indent_left_pt=self._fmt.indent_left_pt,
-            indent_right_pt=self._fmt.indent_right_pt,
-            indent_first_line_pt=self._fmt.indent_first_line_pt,
-            space_before_pt=self._fmt.space_before_pt,
-            space_after_pt=self._fmt.space_after_pt,
-            line_spacing_pt=self._fmt.line_spacing_pt,
-            keep_together=self._fmt.keep_together,
-            keep_with_next=self._fmt.keep_with_next,
-            page_break_before=self._fmt.page_break_before,
-            shading=self._fmt.shading,
-            tab_stops=self._fmt.tab_stops,
-        )
+        self._fmt = dataclasses.replace(self._fmt, alignment=alignment)
         return self
 
     def set_indent(
@@ -86,20 +59,11 @@ class MutableParagraph:
         first_line_pt: float = 0.0,
     ) -> "MutableParagraph":
         """Set paragraph indentation in points."""
-        self._fmt = ParagraphFormatting(
-            style_id=self._fmt.style_id,
-            alignment=self._fmt.alignment,
+        self._fmt = dataclasses.replace(
+            self._fmt,
             indent_left_pt=left_pt,
             indent_right_pt=right_pt,
             indent_first_line_pt=first_line_pt,
-            space_before_pt=self._fmt.space_before_pt,
-            space_after_pt=self._fmt.space_after_pt,
-            line_spacing_pt=self._fmt.line_spacing_pt,
-            keep_together=self._fmt.keep_together,
-            keep_with_next=self._fmt.keep_with_next,
-            page_break_before=self._fmt.page_break_before,
-            shading=self._fmt.shading,
-            tab_stops=self._fmt.tab_stops,
         )
         return self
 
@@ -110,78 +74,27 @@ class MutableParagraph:
         line_pt: float | None = None,
     ) -> "MutableParagraph":
         """Set paragraph spacing in points."""
-        self._fmt = ParagraphFormatting(
-            style_id=self._fmt.style_id,
-            alignment=self._fmt.alignment,
-            indent_left_pt=self._fmt.indent_left_pt,
-            indent_right_pt=self._fmt.indent_right_pt,
-            indent_first_line_pt=self._fmt.indent_first_line_pt,
+        self._fmt = dataclasses.replace(
+            self._fmt,
             space_before_pt=before_pt,
             space_after_pt=after_pt,
             line_spacing_pt=line_pt,
-            keep_together=self._fmt.keep_together,
-            keep_with_next=self._fmt.keep_with_next,
-            page_break_before=self._fmt.page_break_before,
-            shading=self._fmt.shading,
-            tab_stops=self._fmt.tab_stops,
         )
         return self
 
     def set_keep_together(self, value: bool = True) -> "MutableParagraph":
         """Keep paragraph lines together across page breaks."""
-        self._fmt = ParagraphFormatting(
-            style_id=self._fmt.style_id,
-            alignment=self._fmt.alignment,
-            indent_left_pt=self._fmt.indent_left_pt,
-            indent_right_pt=self._fmt.indent_right_pt,
-            indent_first_line_pt=self._fmt.indent_first_line_pt,
-            space_before_pt=self._fmt.space_before_pt,
-            space_after_pt=self._fmt.space_after_pt,
-            line_spacing_pt=self._fmt.line_spacing_pt,
-            keep_together=value,
-            keep_with_next=self._fmt.keep_with_next,
-            page_break_before=self._fmt.page_break_before,
-            shading=self._fmt.shading,
-            tab_stops=self._fmt.tab_stops,
-        )
+        self._fmt = dataclasses.replace(self._fmt, keep_together=value)
         return self
 
     def set_keep_with_next(self, value: bool = True) -> "MutableParagraph":
         """Keep this paragraph on the same page as the following paragraph."""
-        self._fmt = ParagraphFormatting(
-            style_id=self._fmt.style_id,
-            alignment=self._fmt.alignment,
-            indent_left_pt=self._fmt.indent_left_pt,
-            indent_right_pt=self._fmt.indent_right_pt,
-            indent_first_line_pt=self._fmt.indent_first_line_pt,
-            space_before_pt=self._fmt.space_before_pt,
-            space_after_pt=self._fmt.space_after_pt,
-            line_spacing_pt=self._fmt.line_spacing_pt,
-            keep_together=self._fmt.keep_together,
-            keep_with_next=value,
-            page_break_before=self._fmt.page_break_before,
-            shading=self._fmt.shading,
-            tab_stops=self._fmt.tab_stops,
-        )
+        self._fmt = dataclasses.replace(self._fmt, keep_with_next=value)
         return self
 
     def set_page_break_before(self, value: bool = True) -> "MutableParagraph":
         """Force a page break before this paragraph."""
-        self._fmt = ParagraphFormatting(
-            style_id=self._fmt.style_id,
-            alignment=self._fmt.alignment,
-            indent_left_pt=self._fmt.indent_left_pt,
-            indent_right_pt=self._fmt.indent_right_pt,
-            indent_first_line_pt=self._fmt.indent_first_line_pt,
-            space_before_pt=self._fmt.space_before_pt,
-            space_after_pt=self._fmt.space_after_pt,
-            line_spacing_pt=self._fmt.line_spacing_pt,
-            keep_together=self._fmt.keep_together,
-            keep_with_next=self._fmt.keep_with_next,
-            page_break_before=value,
-            shading=self._fmt.shading,
-            tab_stops=self._fmt.tab_stops,
-        )
+        self._fmt = dataclasses.replace(self._fmt, page_break_before=value)
         return self
 
     # ---- Para-level convenience (loops over all runs) ------------------------
@@ -304,20 +217,8 @@ class MutableParagraph:
 
     def set_shading(self, hex_rgb: str | None) -> "MutableParagraph":
         """Set the paragraph background shading color (6-digit hex RGB, e.g. ``'4472C4'``) or ``None`` to clear."""
-        self._fmt = ParagraphFormatting(
-            style_id=self._fmt.style_id,
-            alignment=self._fmt.alignment,
-            indent_left_pt=self._fmt.indent_left_pt,
-            indent_right_pt=self._fmt.indent_right_pt,
-            indent_first_line_pt=self._fmt.indent_first_line_pt,
-            space_before_pt=self._fmt.space_before_pt,
-            space_after_pt=self._fmt.space_after_pt,
-            line_spacing_pt=self._fmt.line_spacing_pt,
-            keep_together=self._fmt.keep_together,
-            keep_with_next=self._fmt.keep_with_next,
-            page_break_before=self._fmt.page_break_before,
-            shading=hex_rgb.upper() if hex_rgb else None,
-            tab_stops=self._fmt.tab_stops,
+        self._fmt = dataclasses.replace(
+            self._fmt, shading=hex_rgb.upper() if hex_rgb else None
         )
         return self
 
@@ -328,21 +229,7 @@ class MutableParagraph:
 
     def set_tab_stops(self, stops: tuple) -> "MutableParagraph":
         """Set custom tab stops.  Pass a tuple of :class:`~docwow.models.styles.TabStop` objects, or ``()`` to clear."""
-        self._fmt = ParagraphFormatting(
-            style_id=self._fmt.style_id,
-            alignment=self._fmt.alignment,
-            indent_left_pt=self._fmt.indent_left_pt,
-            indent_right_pt=self._fmt.indent_right_pt,
-            indent_first_line_pt=self._fmt.indent_first_line_pt,
-            space_before_pt=self._fmt.space_before_pt,
-            space_after_pt=self._fmt.space_after_pt,
-            line_spacing_pt=self._fmt.line_spacing_pt,
-            keep_together=self._fmt.keep_together,
-            keep_with_next=self._fmt.keep_with_next,
-            page_break_before=self._fmt.page_break_before,
-            shading=self._fmt.shading,
-            tab_stops=tuple(stops),
-        )
+        self._fmt = dataclasses.replace(self._fmt, tab_stops=tuple(stops))
         return self
 
     # ---- List info (internal use; MutableListItem provides nicer surface) ----

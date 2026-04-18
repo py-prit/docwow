@@ -35,6 +35,17 @@ from docwow.parser.numbering_parser import parse_numbering
 from docwow.parser.style_parser import parse_style_numbering, parse_styles
 from docwow.utils.units import twips_to_pt
 from docwow.utils.xml_utils import attrib, find, parse_xml, qn
+from docwow.warnings import DocwowParseError
+
+
+def _int(value: str, attr: str) -> int:
+    """Parse an XML attribute value as int, raising DocwowParseError on failure."""
+    try:
+        return int(value)
+    except (ValueError, TypeError) as exc:
+        raise DocwowParseError(
+            f"Invalid value {value!r} for {attr} — expected an integer"
+        ) from exc
 
 
 def parse_docx(source: str | Path | bytes) -> Document:
@@ -167,9 +178,9 @@ def parse_sect_pr(sect_pr, break_type: str = "nextPage") -> SectionProperties:
         w_val = attrib(pgSz, "w:w")
         h_val = attrib(pgSz, "w:h")
         if w_val is not None:
-            page_width_pt = twips_to_pt(int(w_val))
+            page_width_pt = twips_to_pt(_int(w_val, "w:pgSz/@w:w"))
         if h_val is not None:
-            page_height_pt = twips_to_pt(int(h_val))
+            page_height_pt = twips_to_pt(_int(h_val, "w:pgSz/@w:h"))
         # w:orient="landscape" means Word stores short side as w:w and long side as w:h
         # but swaps them visually — honour the orient attribute to get correct dimensions
         if attrib(pgSz, "w:orient") == "landscape" and page_width_pt < page_height_pt:
@@ -186,13 +197,13 @@ def parse_sect_pr(sect_pr, break_type: str = "nextPage") -> SectionProperties:
         left = attrib(pgMar, "w:left")
         right = attrib(pgMar, "w:right")
         if top is not None:
-            margin_top_pt = twips_to_pt(int(top))
+            margin_top_pt = twips_to_pt(_int(top, "w:pgMar/@w:top"))
         if bottom is not None:
-            margin_bottom_pt = twips_to_pt(int(bottom))
+            margin_bottom_pt = twips_to_pt(_int(bottom, "w:pgMar/@w:bottom"))
         if left is not None:
-            margin_left_pt = twips_to_pt(int(left))
+            margin_left_pt = twips_to_pt(_int(left, "w:pgMar/@w:left"))
         if right is not None:
-            margin_right_pt = twips_to_pt(int(right))
+            margin_right_pt = twips_to_pt(_int(right, "w:pgMar/@w:right"))
 
     type_el = find(sect_pr, "w:type")
     if type_el is not None:
