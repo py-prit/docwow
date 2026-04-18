@@ -635,7 +635,7 @@ logging.basicConfig(filename="conversion.log")
 
 ### What is supported
 
-Currently supported (as of v0.8.x):
+**Block elements:**
 
 | HTML | Word output |
 |---|---|
@@ -646,10 +646,48 @@ Currently supported (as of v0.8.x):
 | `<pre>` | Paragraph in Courier New, whitespace preserved |
 | `<section>`, `<article>`, `<main>` | Transparent containers |
 | `<hr>` | Empty paragraph separator |
-| `<style>` block | CSS rules resolved (element, class, ID, descendant selectors) |
-| Inline `style=""` | CSS properties applied to paragraph |
+
+**Inline elements (character formatting):**
+
+| HTML | Word output |
+|---|---|
+| `<b>`, `<strong>` | Bold run |
+| `<i>`, `<em>`, `<cite>`, `<dfn>`, `<var>` | Italic run |
+| `<u>`, `<ins>` | Underline run |
+| `<s>`, `<del>`, `<strike>` | Strikethrough run |
+| `<code>`, `<kbd>`, `<samp>`, `<tt>` | Monospace run (Courier New) |
+| `<mark>` | Yellow-highlighted run |
+| `<sub>` | Subscript run |
+| `<sup>` | Superscript run |
+| `<abbr>`, `<acronym>` | Small-caps run |
+| `<span>` | Run with CSS-resolved formatting |
+| `<a href="...">` | Hyperlink (URL preserved) |
+| `<br>` | Line break within a paragraph |
+
+**CSS on inline elements** (`<span style="...">` or class/ID selectors):
+
+| CSS property | Word output |
+|---|---|
+| `font-weight: bold` / `700+` | Bold |
+| `font-style: italic` | Italic |
+| `text-decoration: underline` | Underline |
+| `text-decoration: line-through` | Strikethrough |
+| `font-size` (px, pt, em, rem) | Font size |
+| `font-family` | Font name (first family used) |
+| `color` (hex, rgb, named) | Font color |
+| `background-color` | Highlight color (mapped to Word's 15 highlight names) |
+| `vertical-align: super / sub` | Superscript / subscript |
+| `font-variant: small-caps` | Small caps |
+| `text-transform: uppercase` | All caps |
+
+**CSS on block elements:**
+
+| CSS property | Word output |
+|---|---|
 | `text-align` | Paragraph alignment |
 | `margin-left` / `padding-left` | Left indent |
 | `background-color` | Paragraph shading |
 
-Inline element formatting (`<b>`, `<i>`, `<span>`, etc.), lists, tables, and images are added in subsequent releases.
+Formatting accumulates through nested elements: `<b><i>text</i></b>` produces a bold-italic run.
+
+Lists, tables, and images are added in subsequent releases.
