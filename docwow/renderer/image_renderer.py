@@ -47,19 +47,30 @@ def render_floating_image(image: FloatingImage) -> str:
     width_css = pt_to_css(image.width_pt)
     height_css = pt_to_css(image.height_pt)
 
-    # Choose a CSS presentation that approximates the wrap mode in browsers.
-    # Exact page-level positioning is not reproducible without a layout engine;
-    # we capture the DOCX metadata verbatim so the round-trip is lossless.
+    # Choose CSS that faithfully replicates the Word wrap behaviour in a browser.
+    # Exact page-level coordinates can't be replicated without a layout engine,
+    # but the visual effect of each wrap mode can be achieved with CSS.
     wrap = image.wrap
+    z = "-1" if image.behind_doc else "1"
+
     if wrap in ("square", "tight", "through"):
-        # Float direction: if pos_h_pt is past the centre of a typical page
-        # (> ~220pt from left margin) treat as right-floated, else left.
+        # Float left or right based on horizontal position.
+        # A typical A4/Letter text column is ~450pt; treat >½ as right-floated.
         direction = "right" if image.pos_h_pt > 220 else "left"
-        figure_style = f"float:{direction};margin:4pt;"
+        margin = "margin:0 8pt 4pt 0" if direction == "left" else "margin:0 0 4pt 8pt"
+        figure_style = f"float:{direction};{margin};z-index:{z};"
     elif wrap == "topAndBottom":
-        figure_style = "display:block;margin:8pt auto;"
-    else:  # "none" — overlapping; show inline so it's at least visible
-        figure_style = "display:inline-block;"
+        # Block with clear on both sides forces text above and below only.
+        figure_style = f"display:block;clear:both;margin:8pt auto;z-index:{z};"
+    else:
+        # wrapNone — image is positioned absolutely relative to the paragraph.
+        # The paragraph renderer adds position:relative to the <p> element.
+        left = pt_to_css(image.pos_h_pt)
+        top = pt_to_css(image.pos_v_pt)
+        figure_style = (
+            f"position:absolute;left:{left};top:{top};"
+            f"z-index:{z};margin:0;"
+        )
 
     img_attrs = " ".join([
         f'src="{src}"',

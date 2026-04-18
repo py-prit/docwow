@@ -30,6 +30,19 @@ def render_paragraph(
         data_attrs["data-dw-level"] = str(p.list_info.level)
 
     inline_style = _para_inline_style(fmt)
+
+    # If any floating run uses absolute positioning (wrapNone / behind_doc),
+    # the paragraph must be a positioned ancestor so absolute offsets work.
+    abs_floats = [
+        r.image for r in p.runs
+        if isinstance(r, FloatingImageRun)
+        and (r.image.wrap == "none" or r.image.behind_doc)
+    ]
+    if abs_floats:
+        min_h = max(img.height_pt for img in abs_floats)
+        extra = f"position:relative;min-height:{pt_to_css(min_h)}"
+        inline_style = f"{inline_style};{extra}" if inline_style else extra
+
     inner = "".join(_render_run(r, comments=comments) for r in p.runs)
 
     return _tag("p", classes, data_attrs, inline_style, inner)
