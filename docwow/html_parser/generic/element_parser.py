@@ -345,20 +345,22 @@ class ElementParser:
         resolver: CssResolver,
         blockquote_depth: int,
         depth: int = 0,
-        num_id: str | None = None,
     ) -> Iterator[Paragraph]:
         """Parse a <ul> or <ol> into list-item Paragraphs.
 
-        Top-level lists create a new NumberingDefinition; nested lists reuse
-        the parent's num_id at a deeper depth level.
-        """
-        if depth == 0:
-            self._next_num_id += 1
-            num_id = str(self._next_num_id)
-            nd = _make_numbering_def(num_id, el.tag.lower() if isinstance(el.tag, str) else "ul")
-            self._numbering_defs.append(nd)
+        Every list element gets its own NumberingDefinition so that:
+        - each list has the correct format (bullet vs decimal)
+        - nested counters restart independently
+        - mixed nesting (ul inside ol) works correctly
 
-        assert num_id is not None
+        Items sit at *depth* within their own definition for correct indentation.
+        """
+        self._next_num_id += 1
+        num_id = str(self._next_num_id)
+        tag = el.tag.lower() if isinstance(el.tag, str) else "ul"
+        num_fmt = _resolve_list_num_fmt(el, tag, resolver)
+        nd = _make_numbering_def(num_id, tag, depth, num_fmt=num_fmt)
+        self._numbering_defs.append(nd)
 
         for child in el:
             child_tag = child.tag if isinstance(child.tag, str) else ""
@@ -367,18 +369,15 @@ class ElementParser:
             if child_tag != "li":
                 continue
 
-            # Inline runs for this item (ul/ol children are handled recursively below)
             runs = self._runs_from_element(child, resolver)
             has_content = any(
                 (r.text.strip() if isinstance(r, TextRun) else True) for r in runs
             )
+            list_info = ListInfo(num_id=num_id, level=depth)
             if runs and has_content:
-                list_info = ListInfo(num_id=num_id, level=depth)
                 fmt = self._para_fmt_from_css(resolver.resolve(child))
                 yield Paragraph(runs=tuple(runs), formatting=fmt, list_info=list_info)
-            elif not has_content or not runs:
-                # Emit even if only whitespace so the bullet renders
-                list_info = ListInfo(num_id=num_id, level=depth)
+            else:
                 yield Paragraph(
                     runs=(TextRun(text=""),),
                     formatting=ParagraphFormatting(),
@@ -391,8 +390,7 @@ class ElementParser:
                 gc_tag = gc_tag.lower()
                 if gc_tag in ("ul", "ol"):
                     yield from self._parse_list(
-                        grandchild, resolver, blockquote_depth,
-                        depth=depth + 1, num_id=num_id,
+                        grandchild, resolver, blockquote_depth, depth=depth + 1,
                     )
 
     # -----------------------------------------------------------------------
@@ -625,15 +623,42 @@ _DEFAULT_HANGING_PT = 18.0  # bullet/number protrudes 0.25 inch
 _BULLET_CHARS = ["\u2022", "\u25e6", "\u25aa"]  # •  ◦  ▪
 
 
-def _make_numbering_def(num_id: str, tag: str) -> NumberingDefinition:
+# <ol type="…"> attribute → Word num_fmt
+_OL_TYPE_MAP: dict[str, str] = {
+    "1": "decimal",
+    "a": "lowerLetter", "A": "upperLetter",
+    "i": "lowerRoman",  "I": "upperRoman",
+}
+
+
+def _resolve_list_num_fmt(el, tag: str, resolver: CssResolver) -> str:
+    """Determine Word num_fmt from CSS list-style-type and <ol type> attribute."""
+    props = resolver.resolve(el)
+    lst = props.get("list-style-type", "").strip().lower()
+    if lst and lst in _LIST_STYLE_TYPE_MAP:
+        return _LIST_STYLE_TYPE_MAP[lst]
+    # <ol type="a|A|i|I|1">
+    if tag == "ol":
+        ol_type = el.get("type", "")
+        if ol_type in _OL_TYPE_MAP:
+            return _OL_TYPE_MAP[ol_type]
+        return "decimal"
+    return "bullet"
+
+
+def _make_numbering_def(
+    num_id: str, tag: str, depth: int = 0, num_fmt: str | None = None
+) -> NumberingDefinition:
     """Build a NumberingDefinition for a <ul> or <ol> element."""
-    is_bullet = tag == "ul"
+    if num_fmt is None:
+        num_fmt = "bullet" if tag == "ul" else "decimal"
+    is_bullet = num_fmt == "bullet"
     levels = tuple(
         ListLevel(
             level=i,
-            num_fmt="bullet" if is_bullet else "decimal",
+            num_fmt=num_fmt,
             start_value=1,
-            text_template=_BULLET_CHARS[i % len(_BULLET_CHARS)] if is_bullet else "%1.",
+            text_template=_BULLET_CHARS[i % len(_BULLET_CHARS)] if is_bullet else f"%{i + 1}.",
             indent_pt=_DEFAULT_INDENT_PT * (i + 1),
             hanging_pt=_DEFAULT_HANGING_PT,
         )

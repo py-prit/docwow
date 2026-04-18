@@ -646,9 +646,9 @@ logging.basicConfig(filename="conversion.log")
 | `<pre>` | Paragraph in Courier New, whitespace preserved |
 | `<section>`, `<article>`, `<main>` | Transparent containers |
 | `<hr>` | Empty paragraph separator |
-| `<ul>` | Bulleted list |
-| `<ol>` | Numbered list (decimal) |
-| `<li>` | List item (nested `<ul>`/`<ol>` increase the indent level) |
+| `<ul>` | Bulleted list (•/◦/▪ cycling per nesting level) |
+| `<ol>` | Numbered list; `type="a/A/i/I"` and `list-style-type` CSS set the format |
+| `<li>` | List item; nested `<ul>`/`<ol>` increase indent and get their own counter |
 
 **Inline elements (character formatting):**
 
@@ -693,6 +693,6 @@ logging.basicConfig(filename="conversion.log")
 
 Formatting accumulates through nested elements: `<b><i>text</i></b>` produces a bold-italic run.
 
-Nested lists share a single numbering definition and increment the indent level per nesting depth.
+Each `<ul>`/`<ol>` element gets its own numbering definition so that counters restart independently and mixed nesting (e.g. `<ul>` inside `<ol>`) preserves the correct format at each level.
 
 Tables and images are added in subsequent releases.

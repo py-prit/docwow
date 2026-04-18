@@ -433,9 +433,9 @@ Block structure maps to Word paragraphs, headings, and lists:
 | `<p>`, `<div>` | Normal paragraph |
 | `<blockquote>` | Indented paragraph |
 | `<pre>` | Monospace paragraph |
-| `<ul>` | Bulleted list |
-| `<ol>` | Numbered list |
-| `<li>` | List item (nesting increases indent level) |
+| `<ul>` | Bulleted list (•/◦/▪ cycling per nesting level) |
+| `<ol>` | Numbered list; `type="a/A/i/I"` and CSS `list-style-type` set format |
+| `<li>` | List item; each nested list gets its own counter that restarts independently |
 
 Inline elements become character formatting within runs:
 

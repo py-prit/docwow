@@ -90,15 +90,17 @@ class TestNestedLists:
         assert items[0].list_info.level == 0
         assert items[1].list_info.level == 1
 
-    def test_nested_same_num_id(self):
+    def test_nested_different_num_id(self):
+        # Each list element gets its own NumberingDefinition so that mixed
+        # nesting (ul inside ol) and per-list counter resets work correctly.
         html = "<ul><li>A<ul><li>B</li></ul></li></ul>"
         items = _list_paras(html)
-        assert items[0].list_info.num_id == items[1].list_info.num_id
+        assert items[0].list_info.num_id != items[1].list_info.num_id
 
-    def test_nested_only_one_numbering_def(self):
+    def test_nested_has_two_numbering_defs(self):
         html = "<ul><li>A<ul><li>B</li></ul></li></ul>"
         doc = _parse(html)
-        assert len(doc.numbering) == 1
+        assert len(doc.numbering) == 2
 
     def test_three_levels_deep(self):
         html = "<ul><li>L0<ul><li>L1<ul><li>L2</li></ul></li></ul></li></ul>"
@@ -125,6 +127,27 @@ class TestNestedLists:
         assert items[0].list_info.level == 0
         assert items[1].list_info.level == 1
         assert items[2].list_info.level == 1
+
+    def test_ol_decimal_sub_item_uses_own_counter(self):
+        # Nested <ol> must have num_fmt=decimal at the level it sits on,
+        # with text_template "%2." (ilvl-1 counter) not "%1." (parent counter).
+        html = "<ol><li>Step 1<ol><li>Sub 1</li></ol></li></ol>"
+        doc = _parse(html)
+        # Outer list: num_id="1", inner list: num_id="2"
+        assert len(doc.numbering) == 2
+        inner_nd = doc.numbering[1]  # second def = the nested <ol>
+        # Level 1 text_template must reference ilvl-1's own counter, not ilvl-0
+        assert inner_nd.levels[1].text_template == "%2."
+
+    def test_mixed_nesting_ul_inside_ol_has_bullet_fmt(self):
+        # <ul> nested inside <ol> must get its own def with bullet num_fmt.
+        html = "<ol><li>Ordered<ul><li>Bullet child</li></ul></li></ol>"
+        doc = _parse(html)
+        assert len(doc.numbering) == 2
+        outer_nd = doc.numbering[0]  # outer <ol>
+        inner_nd = doc.numbering[1]  # inner <ul>
+        assert outer_nd.levels[0].num_fmt == "decimal"
+        assert inner_nd.levels[1].num_fmt == "bullet"
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +203,42 @@ class TestListItemFormatting:
         from docwow.models.paragraph import Hyperlink
         items = _list_paras('<ul><li><a href="https://x.com">link</a></li></ul>')
         assert any(isinstance(r, Hyperlink) for r in items[0].runs)
+
+
+# ---------------------------------------------------------------------------
+# CSS list-style-type and <ol type> attribute
+# ---------------------------------------------------------------------------
+
+class TestListStyleCustomisation:
+    def test_ol_type_a_lowerLetter(self):
+        doc = _parse('<ol type="a"><li>A</li></ol>')
+        assert doc.numbering[0].levels[0].num_fmt == "lowerLetter"
+
+    def test_ol_type_A_upperLetter(self):
+        doc = _parse('<ol type="A"><li>A</li></ol>')
+        assert doc.numbering[0].levels[0].num_fmt == "upperLetter"
+
+    def test_ol_type_i_lowerRoman(self):
+        doc = _parse('<ol type="i"><li>A</li></ol>')
+        assert doc.numbering[0].levels[0].num_fmt == "lowerRoman"
+
+    def test_ol_type_I_upperRoman(self):
+        doc = _parse('<ol type="I"><li>A</li></ol>')
+        assert doc.numbering[0].levels[0].num_fmt == "upperRoman"
+
+    def test_css_list_style_type_lower_alpha(self):
+        doc = _parse('<ol style="list-style-type: lower-alpha"><li>A</li></ol>')
+        assert doc.numbering[0].levels[0].num_fmt == "lowerLetter"
+
+    def test_css_list_style_type_disc_on_ol(self):
+        # disc overrides <ol> → bullet
+        doc = _parse('<ol style="list-style-type: disc"><li>A</li></ol>')
+        assert doc.numbering[0].levels[0].num_fmt == "bullet"
+
+    def test_css_list_style_type_decimal_on_ul(self):
+        # decimal overrides <ul> → decimal
+        doc = _parse('<ul style="list-style-type: decimal"><li>A</li></ul>')
+        assert doc.numbering[0].levels[0].num_fmt == "decimal"
 
 
 # ---------------------------------------------------------------------------
