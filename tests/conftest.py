@@ -1,6 +1,30 @@
 """Shared fixtures for the docwow test suite."""
 
+from pathlib import Path
+
 import pytest
+
+import docwow
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def generate_showcase():
+    """Generate showcase.docx/html once per test session.
+
+    showcase.docx is not committed to the repo — it is always generated
+    from build_showcase() so it stays in sync with the current codebase.
+    Any test that reads the file can rely on this fixture having run first.
+    """
+    from tests.fixtures.generate_showcase import build_showcase
+    doc = build_showcase()
+    data = docwow.write_docx(doc)
+    (FIXTURES / "showcase.docx").write_bytes(data)
+    (FIXTURES / "showcase.html").write_text(docwow.render_document(doc), encoding="utf-8")
+    (FIXTURES / "showcase_page_view.html").write_text(
+        docwow.render_document(doc, page_view=True), encoding="utf-8"
+    )
 
 from docwow.models import (
     Document,
