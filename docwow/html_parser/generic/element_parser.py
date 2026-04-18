@@ -621,15 +621,19 @@ _LIST_STYLE_TYPE_MAP: dict[str, str] = {
 _DEFAULT_INDENT_PT = 36.0   # 0.5 inch per level
 _DEFAULT_HANGING_PT = 18.0  # bullet/number protrudes 0.25 inch
 
+# Bullet characters cycling across nesting levels — matches Word's default bullet list
+_BULLET_CHARS = ["\u2022", "\u25e6", "\u25aa"]  # •  ◦  ▪
+
 
 def _make_numbering_def(num_id: str, tag: str) -> NumberingDefinition:
     """Build a NumberingDefinition for a <ul> or <ol> element."""
-    default_fmt = "bullet" if tag == "ul" else "decimal"
+    is_bullet = tag == "ul"
     levels = tuple(
         ListLevel(
             level=i,
-            num_fmt=default_fmt,
+            num_fmt="bullet" if is_bullet else "decimal",
             start_value=1,
+            text_template=_BULLET_CHARS[i % len(_BULLET_CHARS)] if is_bullet else "%1.",
             indent_pt=_DEFAULT_INDENT_PT * (i + 1),
             hanging_pt=_DEFAULT_HANGING_PT,
         )
