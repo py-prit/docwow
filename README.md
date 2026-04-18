@@ -2,6 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/docwow)](https://pypi.org/project/docwow/)
 [![CI](https://github.com/py-prit/docwow/actions/workflows/ci.yml/badge.svg)](https://github.com/py-prit/docwow/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A590%25-brightgreen)](https://github.com/py-prit/docwow/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/pypi/pyversions/docwow)](https://pypi.org/project/docwow/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

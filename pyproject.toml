@@ -32,6 +32,7 @@ dependencies = [
 Homepage = "https://docwow.readthedocs.io"
 Repository = "https://github.com/py-prit/docwow"
 Documentation = "https://docwow.readthedocs.io"
+Changelog = "https://github.com/py-prit/docwow/blob/main/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/py-prit/docwow/issues"
 
 [project.optional-dependencies]
