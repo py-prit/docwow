@@ -78,7 +78,7 @@ def render_floating_image(image: FloatingImage) -> str:
         f'style="width:{width_css};height:{height_css};display:block"',
     ])
 
-    figure_attrs = " ".join([
+    common_attrs = " ".join([
         'class="dw-float-img"',
         f'style="{figure_style}"',
         f'data-dw-float-wrap="{wrap}"',
@@ -92,7 +92,14 @@ def render_floating_image(image: FloatingImage) -> str:
         f'data-dw-height="{height_css}"',
     ])
 
-    return f'<figure {figure_attrs}><img {img_attrs}></figure>'
+    if wrap == "none":
+        # <figure> is block-level — browsers auto-close the enclosing <p> before it,
+        # which breaks position:relative/absolute. Use <span style="display:block">
+        # instead: it is phrasing content, valid inside <p>, and stays in the same
+        # stacking context as the paragraph.
+        return f'<span {common_attrs}><img {img_attrs}></span>'
+
+    return f'<figure {common_attrs}><img {img_attrs}></figure>'
 
 
 def _escape_attr(value: str) -> str:

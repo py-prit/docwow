@@ -931,8 +931,9 @@ def build_showcase() -> Document:
                 behind_doc=False,
             )),
             TextRun(text=(
-                "This text is behind the overlapping image in Word. "
-                "In HTML the image renders inline since browsers have no absolute positioning here."
+                "This text is behind the overlapping image in Word and in HTML. "
+                "The image is positioned absolutely at (0pt, 0pt) within this paragraph "
+                "with z-index:1, so it overlaps the text in front."
             )),
         ),
     ))

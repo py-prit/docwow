@@ -106,7 +106,7 @@ def _parse_runs(p_el) -> list[Run]:
                 runs.append(pf)
         elif child.tag == "img" and has_class(child, "dw-img"):
             runs.append(_parse_image_run(child))
-        elif child.tag == "figure" and has_class(child, "dw-float-img"):
+        elif child.tag in ("figure", "span") and has_class(child, "dw-float-img"):
             fi = _parse_floating_image_run(child)
             if fi is not None:
                 runs.append(fi)
