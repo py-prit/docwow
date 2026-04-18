@@ -8,6 +8,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Document field codes** — `DATE`, `TIME`, `AUTHOR`, `TITLE`, `FILENAME` field types now supported alongside existing `PAGE`/`NUMPAGES`/`SECTIONPAGES`; full round-trip via `add_page_number("DATE")` etc.
 - `doc.find(text)` — search document body for paragraphs containing a string (case-sensitive)
 - `doc.paragraphs.find(text)` / `para.find(text)` — search at collection and run level
 - `doc.remove_footnote(note_id)` / `doc.remove_endnote(note_id)` — delete a note and all its reference markers

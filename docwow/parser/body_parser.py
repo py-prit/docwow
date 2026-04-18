@@ -346,7 +346,7 @@ def _parse_hyperlink_runs(
 # Page number fields
 # ---------------------------------------------------------------------------
 
-_PAGE_FIELDS = ("PAGE", "NUMPAGES", "SECTIONPAGES")
+_PAGE_FIELDS = ("PAGE", "NUMPAGES", "SECTIONPAGES", "DATE", "TIME", "AUTHOR", "TITLE", "FILENAME")
 
 
 def _make_field(instr: str, fmt, display: str = "") -> PageNumberField | CrossRef | None:

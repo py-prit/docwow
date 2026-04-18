@@ -365,7 +365,7 @@ class MutableHyperlink:
 class MutablePageNumberField:
     """A mutable page-number field (PAGE, NUMPAGES, SECTIONPAGES)."""
 
-    _VALID_TYPES = ("PAGE", "NUMPAGES", "SECTIONPAGES")
+    _VALID_TYPES = ("PAGE", "NUMPAGES", "SECTIONPAGES", "DATE", "TIME", "AUTHOR", "TITLE", "FILENAME")
 
     def __init__(self, field_type: str = "PAGE") -> None:
         if field_type not in self._VALID_TYPES:
@@ -647,7 +647,8 @@ class RunCollection:
         """Create a MutablePageNumberField, append it, and return it.
 
         Args:
-            field_type: One of ``'PAGE'``, ``'NUMPAGES'``, ``'SECTIONPAGES'``.
+            field_type: One of ``'PAGE'``, ``'NUMPAGES'``, ``'SECTIONPAGES'``,
+                        ``'DATE'``, ``'TIME'``, ``'AUTHOR'``, ``'TITLE'``, ``'FILENAME'``.
         """
         field = MutablePageNumberField(field_type=field_type)
         self._items.append(field)
