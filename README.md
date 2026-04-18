@@ -125,7 +125,7 @@ Best-effort conversion of **arbitrary HTML** (not just docwow HTML) into DOCX. T
 | CSS cascade resolver + unit converter | ✅ shipped |
 | Block elements (`h1`–`h6`, `p`, `div`, `blockquote`, `pre`, `hr`) | ✅ shipped |
 | Inline elements (`b`/`i`/`u`/`s`/`code`/`mark`/`sub`/`sup`/`span`/`a` + CSS on runs) | ✅ shipped |
-| Lists (`ul`/`ol`/`li`, nesting) | pending |
+| Lists (`ul`/`ol`/`li`, nesting) | ✅ shipped |
 | Tables (`table`/`tr`/`td`/`th`, colspan/rowspan) | pending |
 | Images (`data:` URIs, `fetch_images` flag) | pending |
 

@@ -63,7 +63,11 @@ def _write_level(parent: etree._Element, lvl: ListLevel) -> None:
     fmt.set(f"{{{W}}}val", lvl.num_fmt)
 
     txt = etree.SubElement(lvl_el, f"{{{W}}}lvlText")
-    txt.set(f"{{{W}}}val", _LVL_TEXT.get(lvl.num_fmt, "%1."))
+    # Use text_template when it's been set to something format-specific (not the
+    # generic "%1." default), otherwise fall back to the format's canonical text.
+    default = _LVL_TEXT.get(lvl.num_fmt, "%1.")
+    lv_text = lvl.text_template if lvl.text_template != "%1." else default
+    txt.set(f"{{{W}}}val", lv_text)
 
     jc = etree.SubElement(lvl_el, f"{{{W}}}lvlJc")
     jc.set(f"{{{W}}}val", "left")

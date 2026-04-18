@@ -112,7 +112,49 @@ hello("docwow")</pre>
   <p>Paragraph after the rule.</p>
 
   <!-- ============================================================
-       8. CSS FROM &lt;style&gt; BLOCK AND INLINE STYLES
+       8. LISTS — bullet and numbered, with nesting
+       Expected: Word list items at correct levels, distinct numbering defs
+       ============================================================ -->
+  <h2>Lists</h2>
+
+  <p>Bullet list:</p>
+  <ul>
+    <li>Bullet item one</li>
+    <li>Bullet item two with <b>bold</b> text</li>
+    <li>Bullet item three
+      <ul>
+        <li>Nested bullet — level 2</li>
+        <li>Another nested item
+          <ul><li>Level 3 bullet</li></ul>
+        </li>
+      </ul>
+    </li>
+    <li>Back to level 1</li>
+  </ul>
+
+  <p>Numbered list:</p>
+  <ol>
+    <li>Step one</li>
+    <li>Step two with <a href="https://docwow.readthedocs.io">a link</a></li>
+    <li>Step three
+      <ol>
+        <li>Sub-step 3a</li>
+        <li>Sub-step 3b</li>
+      </ol>
+    </li>
+  </ol>
+
+  <p>Mixed nesting (ul inside ol):</p>
+  <ol>
+    <li>Ordered parent
+      <ul>
+        <li>Unordered child</li>
+      </ul>
+    </li>
+  </ol>
+
+  <!-- ============================================================
+       9. CSS FROM &lt;style&gt; BLOCK AND INLINE STYLES (now section 9)
        Expected: classes and inline styles both applied correctly
        ============================================================ -->
   <h2>CSS Resolution</h2>
