@@ -115,7 +115,7 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 
 The project follows a phased plan. Contributors are welcome at any level.
 
-#### Phase 2 — General HTML → DOCX (in progress)
+#### Phase 2 — General HTML → DOCX ✅ complete
 
 Best-effort conversion of **arbitrary HTML** (not just docwow HTML) into DOCX. This makes docwow useful as a general-purpose HTML-to-Word exporter.
 
