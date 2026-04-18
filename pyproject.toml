@@ -15,6 +15,7 @@ keywords = ["docx", "word", "html", "conversion", "round-trip", "document"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -32,6 +33,7 @@ dependencies = [
 Homepage = "https://docwow.readthedocs.io"
 Repository = "https://github.com/py-prit/docwow"
 Documentation = "https://docwow.readthedocs.io"
+Changelog = "https://github.com/py-prit/docwow/blob/main/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/py-prit/docwow/issues"
 
 [project.optional-dependencies]
