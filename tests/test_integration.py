@@ -532,22 +532,11 @@ class TestHyperlinkDocxRoundTrip:
 
 class TestShowcase:
     """
-    Regenerates showcase.docx from build_showcase() on every run (so it
-    always reflects every feature currently supported), then verifies both
-    DOCX and HTML round-trips preserve all key feature types.
-    """
+    Verifies DOCX and HTML round-trips on the showcase document.
 
-    @pytest.fixture(autouse=True, scope="class")
-    def showcase_doc(self):
-        """Build the showcase Document, write showcase.docx, showcase.html, and showcase_page_view.html."""
-        doc = build_showcase()
-        data = docwow.write_docx(doc)
-        (FIXTURES / "showcase.docx").write_bytes(data)
-        html = docwow.render_document(doc)
-        (FIXTURES / "showcase.html").write_text(html, encoding="utf-8")
-        html_pv = docwow.render_document(doc, page_view=True)
-        (FIXTURES / "showcase_page_view.html").write_text(html_pv, encoding="utf-8")
-        return doc
+    showcase.docx is generated once per test session by the session-scoped
+    fixture in conftest.py before any test in this class runs.
+    """
 
     # --- DOCX round-trip ---
 
