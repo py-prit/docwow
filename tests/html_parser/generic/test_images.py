@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import io
 import warnings
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -111,6 +112,104 @@ class TestDataUri:
         types = [type(r).__name__ for r in para.runs]
         assert "TextRun" in types
         assert "ImageRun" in types
+
+
+# ---------------------------------------------------------------------------
+# Remote URL fetching — fetch_images=True (urlopen mocked)
+# ---------------------------------------------------------------------------
+
+def _make_fake_response(png_bytes: bytes, content_type: str = "image/png"):
+    """Return a mock urlopen context manager yielding *png_bytes*."""
+    resp = MagicMock()
+    resp.headers = {"Content-Type": content_type}
+    resp.read.return_value = png_bytes
+    resp.__enter__ = lambda s: s
+    resp.__exit__ = MagicMock(return_value=False)
+    return resp
+
+
+def _png_bytes(width: int = 20, height: int = 10) -> bytes:
+    from PIL import Image
+    img = Image.new("RGB", (width, height), color=(200, 0, 0))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+_FETCH_TARGET = "urllib.request.urlopen"
+_FAKE_URL = "https://example.com/test.png"
+
+
+class TestFetchImages:
+    def test_fetched_image_produces_run(self):
+        data = _png_bytes()
+        with patch(_FETCH_TARGET, return_value=_make_fake_response(data)):
+            doc = parse_foreign_html(
+                f'<p><img src="{_FAKE_URL}" alt="fetched"></p>', fetch_images=True
+            )
+        runs = [r for el in doc.body if isinstance(el, Paragraph)
+                for r in el.runs if isinstance(r, ImageRun)]
+        assert len(runs) == 1
+
+    def test_fetched_content_type_is_png(self):
+        data = _png_bytes()
+        with patch(_FETCH_TARGET, return_value=_make_fake_response(data)):
+            doc = parse_foreign_html(
+                f'<p><img src="{_FAKE_URL}"></p>', fetch_images=True
+            )
+        runs = [r for el in doc.body if isinstance(el, Paragraph)
+                for r in el.runs if isinstance(r, ImageRun)]
+        assert runs[0].image.content_type == "image/png"
+
+    def test_fetched_data_matches_bytes(self):
+        data = _png_bytes()
+        with patch(_FETCH_TARGET, return_value=_make_fake_response(data)):
+            doc = parse_foreign_html(
+                f'<p><img src="{_FAKE_URL}"></p>', fetch_images=True
+            )
+        runs = [r for el in doc.body if isinstance(el, Paragraph)
+                for r in el.runs if isinstance(r, ImageRun)]
+        assert runs[0].image.data == data
+
+    def test_fetched_natural_size_from_pillow(self):
+        # 20×10 px PNG at 96 dpi → 15pt × 7.5pt
+        data = _png_bytes(20, 10)
+        with patch(_FETCH_TARGET, return_value=_make_fake_response(data)):
+            doc = parse_foreign_html(
+                f'<p><img src="{_FAKE_URL}"></p>', fetch_images=True
+            )
+        runs = [r for el in doc.body if isinstance(el, Paragraph)
+                for r in el.runs if isinstance(r, ImageRun)]
+        assert runs[0].image.width_pt == pytest.approx(15.0)
+        assert runs[0].image.height_pt == pytest.approx(7.5)
+
+    def test_fetched_alt_text(self):
+        data = _png_bytes()
+        with patch(_FETCH_TARGET, return_value=_make_fake_response(data)):
+            doc = parse_foreign_html(
+                f'<p><img src="{_FAKE_URL}" alt="served image"></p>', fetch_images=True
+            )
+        runs = [r for el in doc.body if isinstance(el, Paragraph)
+                for r in el.runs if isinstance(r, ImageRun)]
+        assert runs[0].image.alt_text == "served image"
+
+    def test_fetched_docx_roundtrip(self):
+        import docwow
+        data = _png_bytes()
+        html = f'<p><img src="{_FAKE_URL}" alt="roundtrip" width="40" height="20"></p>'
+        with patch(_FETCH_TARGET, return_value=_make_fake_response(data)):
+            docx_bytes = docwow.to_docx(html, is_foreign_html=True, fetch_images=True)
+        assert len(docx_bytes) > 0
+
+        doc = docwow.open(docx_bytes)
+        from docwow.api import MutableParagraph
+        from docwow.api.run import MutableImageRun
+        img_runs = [
+            r for p in doc.paragraphs if isinstance(p, MutableParagraph)
+            for r in p.runs if isinstance(r, MutableImageRun)
+        ]
+        assert len(img_runs) == 1
+        assert img_runs[0].get_image().content_type == "image/png"
 
 
 # ---------------------------------------------------------------------------
