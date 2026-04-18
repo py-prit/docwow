@@ -399,6 +399,87 @@ with open("q2_report_restored.docx", "wb") as f:
 
 Open `q2_report_restored.docx` in Word and verify that the header, footer page number fields, page break, text formatting, and hyperlink are all intact.
 
+## 18. Converting arbitrary HTML to DOCX
+
+Use `is_foreign_html=True` to convert HTML from any source — a CMS, rich text editor, web page, or email — into DOCX on a best-effort basis:
+
+```python
+import docwow
+
+html = """
+<h1>Quarterly Update</h1>
+<p>Revenue grew by <b>18%</b> year-on-year.</p>
+<p>Key highlights:</p>
+<p>
+  See the full report at
+  <a href="https://example.com/report">example.com/report</a>.
+</p>
+<p>
+  <span style="color: #C00000; font-weight: bold">Warning:</span>
+  margins are under pressure in Q3.
+</p>
+"""
+
+docwow.to_docx(html, "update.docx", is_foreign_html=True)
+```
+
+### What gets converted
+
+Block structure maps to Word paragraphs and headings:
+
+| HTML | Word |
+|---|---|
+| `<h1>`–`<h6>` | Heading 1–6 |
+| `<p>`, `<div>` | Normal paragraph |
+| `<blockquote>` | Indented paragraph |
+| `<pre>` | Monospace paragraph |
+
+Inline elements become character formatting within runs:
+
+| HTML | Word |
+|---|---|
+| `<b>`, `<strong>` | Bold |
+| `<i>`, `<em>` | Italic |
+| `<u>` | Underline |
+| `<s>`, `<del>` | Strikethrough |
+| `<code>`, `<kbd>` | Courier New |
+| `<mark>` | Yellow highlight |
+| `<sub>` / `<sup>` | Subscript / superscript |
+| `<a href="...">` | Hyperlink |
+| `<span style="...">` | CSS-resolved formatting |
+
+CSS properties on any element are applied to the corresponding run or paragraph:
+`font-weight`, `font-style`, `font-size`, `font-family`, `color`,
+`background-color`, `text-decoration`, `vertical-align`, `font-variant`,
+`text-transform`, `text-align`, `margin-left`, `margin-top`, `margin-bottom`.
+
+Formatting accumulates through nesting — `<b><i>text</i></b>` produces a bold+italic run.
+
+### Handling warnings
+
+When the converter encounters HTML it cannot represent in Word it emits a `DocwowConversionWarning` and continues:
+
+```python
+import warnings
+import docwow
+
+# Raise instead of warn (useful in CI)
+warnings.filterwarnings("error", category=docwow.DocwowConversionWarning)
+
+# Or silence entirely
+docwow.suppress_warnings()
+```
+
+### External CSS and images
+
+```python
+# Download <link rel="stylesheet"> stylesheets before converting
+docwow.to_docx(html, "out.docx", is_foreign_html=True, fetch_external_css=True)
+
+# Download <img src="https://..."> images (coming in a later release)
+docwow.to_docx(html, "out.docx", is_foreign_html=True, fetch_images=True)
+```
+
 ## Summary
 
 | Feature | How |
@@ -426,3 +507,4 @@ Open `q2_report_restored.docx` in Word and verify that the header, footer page n
 | Save DOCX | `doc.save("file.docx")` or `doc.to_bytes()` |
 | Convert to HTML | `doc.to_html()` or `docwow.to_html("file.docx")` |
 | Round-trip | `docwow.to_docx(html)` |
+| Arbitrary HTML → DOCX | `docwow.to_docx(html, is_foreign_html=True)` |
