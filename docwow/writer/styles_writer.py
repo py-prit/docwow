@@ -159,6 +159,8 @@ def _write_run_fmt(rpr: etree._Element, fmt: RunFormatting) -> None:
         etree.SubElement(rpr, f"{{{W}}}smallCaps")
     if fmt.all_caps:
         etree.SubElement(rpr, f"{{{W}}}caps")
+    if fmt.vanish:
+        etree.SubElement(rpr, f"{{{W}}}vanish")
     if fmt.font_name:
         fonts = etree.SubElement(rpr, f"{{{W}}}rFonts")
         fonts.set(f"{{{W}}}ascii", fmt.font_name)
