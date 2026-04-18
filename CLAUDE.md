@@ -74,12 +74,12 @@ Do not split a feature across multiple branches.
 
 ## Documentation rules
 
-After **every change** — no matter how small — verify that all of the following are
-consistent with the current codebase before committing:
+**MANDATORY before every commit** — open each file and confirm it reflects the
+current codebase. Do not commit until all nine are checked:
 
-- `README.md` — feature list, examples
+- `README.md` — feature list, examples, roadmap table
 - `docs/index.md` — feature bullets
-- `docs/user-guide/tutorial.md` — end-to-end tutorial
+- `docs/user-guide/tutorial.md` — end-to-end tutorial (add a section if new user-facing behaviour)
 - `docs/user-guide/open-api.md` — API reference guide
 - `docs/api-reference/api-classes.md` — mkdocstrings entries
 - `docs/html-format/data-attributes.md` — **every new `data-dw-*` attribute must be documented here**
