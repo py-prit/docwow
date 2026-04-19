@@ -7,6 +7,16 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-04-19
+
+### Changed
+- PyPI classifier updated from `Development Status :: 4 - Beta` to `5 - Production/Stable`
+- `docs/user-guide/to-docx.md`: removed misleading warning that `to_docx()` is not a general HTML converter; rewrote "What's preserved" section (was referencing v0.1 with only 7 features; now lists all features)
+- `docs/html-format/overview.md`: added 9 CSS classes missing from the summary table (`.dw-float-img`, `.dw-header/.dw-footer`, `.dw-xref`, `.dw-section-break`, `.dw-fn/.dw-en`, `.dw-comment-popup`, `.dw-tc-popup`, `.dw-cstyle-*`)
+- `docs/html-format/data-attributes.md`: added complete floating image (`data-dw-float-*`) section; expanded field codes table to all 8 types
+- `docs/internals/contributing.md`: fixed git clone URL; replaced stale Pre-1.0 versioning note
+- `README.md` / `docs/index.md`: replaced library comparison table with capabilities-first description; added battle-tested stats (2,552 tests, 159/176 stress files)
+
 ## [1.0.0] - 2026-04-18
 
 ### Added
@@ -113,7 +123,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - Inline images — PNG, JPEG, GIF, BMP, TIFF, WebP, SVG, EMF, WMF
 - Page geometry — page size and margins
 
-[Unreleased]: https://github.com/py-prit/docwow/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/py-prit/docwow/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/py-prit/docwow/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/py-prit/docwow/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/py-prit/docwow/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/py-prit/docwow/compare/v0.8.0...v0.9.0
