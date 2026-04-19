@@ -49,21 +49,30 @@ Every piece of Word-specific information that has no CSS equivalent is stored in
 | `.dw-list` | `<ul>` / `<ol>` | List container |
 | `.dw-li` | `<li>` | List item |
 | `.dw-img` | `<img>` | Inline image |
+| `.dw-float-img` | `<figure>` / `<span>` | Floating (anchored) image with text wrapping |
+| `.dw-header` | `<header>` | Document header (default, first, or even slot) |
+| `.dw-footer` | `<footer>` | Document footer (default, first, or even slot) |
 | `.dw-bookmark` | `<a>` | Zero-width bookmark anchor |
+| `.dw-xref` | `<a>` | Cross-reference link (REF field targeting a bookmark) |
 | `.dw-footnote-ref` | `<a>` | Inline footnote reference marker |
 | `.dw-endnote-ref` | `<a>` | Inline endnote reference marker |
 | `.dw-footnotes` | `<section>` | Footnote bodies section |
 | `.dw-endnotes` | `<section>` | Endnote bodies section |
+| `.dw-fn` / `.dw-en` | `<div>` | Individual footnote / endnote body container |
 | `.dw-toc` | `<nav>` | Table of Contents block |
 | `.dw-toc-link` | `<a>` | Clickable TOC entry link |
 | `.dw-comment-ref` | `<a>` | Inline comment reference marker (orange superscript) |
+| `.dw-comment-popup` | `<span>` | CSS-only comment hover popup |
 | `.dw-comments` | `<section>` | Hidden comment metadata section (round-trip only) |
 | `ins.dw-ins` | `<ins>` | Tracked insertion (green underline) |
 | `del.dw-del` | `<del>` | Tracked deletion (red strikethrough) |
+| `.dw-tc-popup` | `<span>` | Track-changes hover popup with Accept/Reject buttons |
+| `.dw-section-break` | `<div>` | Section break (hidden, round-trip only) |
 | `.dw-page-break` | `<div>` | Explicit page break (hidden, round-trip only) |
 | `.dw-page-only` | `<p>` | Page-number-only paragraph (hidden, round-trip only) |
-| `.dw-field` | `<span>` | Page number field placeholder |
-| `.dw-style-{StyleId}` | `<p>` | Named Word style applied to a paragraph |
+| `.dw-field` | `<span>` | Page number / document field placeholder |
+| `.dw-style-{StyleId}` | `<p>` | Named Word paragraph style |
+| `.dw-cstyle-{StyleId}` | `<span>` | Named Word character style |
 
 ## Self-contained
 

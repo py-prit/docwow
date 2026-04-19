@@ -1,12 +1,9 @@
 # Round-tripping to DOCX
 
-`docwow.to_docx()` converts a docwow HTML string back to a DOCX file.
+`docwow.to_docx()` converts an HTML string to a DOCX file. It supports two modes:
 
-!!! warning "docwow HTML only"
-    `to_docx()` is designed to read HTML produced by `docwow.to_html()` or
-    `docwow.render_document()`. It is **not** a general HTML-to-DOCX converter.
-    Arbitrary HTML (from a website, rich-text editor, etc.) will produce
-    unpredictable results or raise errors.
+- **Lossless round-trip** (default) — converts docwow-generated HTML back to DOCX with no data loss. All Word metadata is preserved via `data-dw-*` attributes.
+- **Best-effort conversion** (`is_foreign_html=True`) — converts arbitrary HTML from any source (a CMS, rich text editor, web page, email) on a best-effort basis. See [Converting arbitrary HTML to DOCX](tutorial.md#18-converting-arbitrary-html-to-docx) in the tutorial.
 
 ## Basic usage
 
@@ -60,15 +57,26 @@ output_bytes = docwow.to_docx(edited_html)
 
 ## What's preserved
 
-The round-trip preserves everything that docwow supports in v0.1:
+The round-trip preserves everything docwow supports:
 
-- All paragraph formatting (alignment, indentation, spacing, page breaks)
-- All run formatting (bold, italic, underline, strikethrough, font, size, color, highlight, super/subscript)
-- Named styles (Heading1, Normal, custom styles)
-- Tables (including col/row spans)
-- Lists (bullet and numbered, nested)
-- Inline images (original binary data restored from base64)
-- Page geometry (width, height, margins)
+- **Paragraph formatting** — alignment, indentation, spacing, keep-together, keep-with-next, page-break-before, paragraph borders, shading, tab stops
+- **Run formatting** — bold, italic, underline, strikethrough, small caps, all caps, hidden text, font name/size, color, highlight, superscript/subscript, character styles
+- **Named styles** — Heading 1–9, Normal, and any custom paragraph or character styles
+- **Tables** — column and row spans, column/row widths, table styles, cell shading
+- **Lists** — bullet and numbered, up to 9 nesting levels, all standard Word numbering formats
+- **Inline images** — original binary data restored from base64 data URIs
+- **Floating images** — position, text wrapping, anchor references, z-order
+- **Hyperlinks** — external URLs and mailto links
+- **Headers and footers** — text content, page number fields, all six slots (default/first/even × header/footer)
+- **Page geometry** — page size and margins
+- **Page breaks** — explicit page breaks and section breaks with independent geometry
+- **Footnotes and endnotes** — note bodies and all reference markers in the document body
+- **Bookmarks** — named anchor positions
+- **Table of Contents** — title, entries, and anchor URLs
+- **Comments** — author, date, initials, and multi-paragraph bodies; reference markers in the body
+- **Track changes** — inserted and deleted runs with author, date, and accepted/rejected state
+- **Field codes** — PAGE, NUMPAGES, SECTIONPAGES, DATE, TIME, AUTHOR, TITLE, FILENAME
+- **Cross-references** — REF fields linking to named bookmarks
 
 ## Using the low-level API
 

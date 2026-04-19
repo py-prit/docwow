@@ -257,18 +257,64 @@ The `data-dw-title-pg` attribute on the document div signals that a different fi
 
 ---
 
+## Floating images (`<figure class="dw-float-img">`)
+
+Floating images are rendered as `<figure>` elements (or `<span>` for `wrap="none"` to stay inside the paragraph's stacking context). The inner `<img>` carries the base64 data URI; all positioning metadata is on the outer element.
+
+```html
+<figure class="dw-float-img"
+        style="float:left;margin:0 8pt 4pt 0;z-index:1;"
+        data-dw-float-wrap="square"
+        data-dw-float-h-anchor="column"
+        data-dw-float-v-anchor="paragraph"
+        data-dw-float-pos-h="72pt"
+        data-dw-float-pos-v="36pt"
+        data-dw-float-behind="false"
+        data-dw-rid="rId5"
+        data-dw-width="144pt"
+        data-dw-height="72pt">
+  <img src="data:image/png;base64,iVBOR..."
+       alt="Company logo"
+       style="width:144pt;height:72pt;display:block">
+</figure>
+```
+
+| Attribute | Type | Description |
+|---|---|---|
+| `data-dw-float-wrap` | string | Text wrapping type: `square` \| `tight` \| `topAndBottom` \| `through` \| `none` |
+| `data-dw-float-h-anchor` | string | Horizontal reference frame: `margin` \| `page` \| `column` \| `character` |
+| `data-dw-float-v-anchor` | string | Vertical reference frame: `margin` \| `page` \| `paragraph` \| `line` |
+| `data-dw-float-pos-h` | CSS string (e.g. `72pt`) | Horizontal offset from the h-anchor origin |
+| `data-dw-float-pos-v` | CSS string (e.g. `36pt`) | Vertical offset from the v-anchor origin |
+| `data-dw-float-behind` | `"true"` / `"false"` | Whether the image floats behind body text |
+| `data-dw-rid` | string | Original OOXML relationship ID — used on round-trip to preserve the relationship |
+| `data-dw-width` | CSS string (e.g. `144pt`) | Rendered width |
+| `data-dw-height` | CSS string (e.g. `72pt`) | Rendered height |
+
+The image content type is derived from the base64 data URI (`data:<content-type>;base64,...`). The HTML parser reads this to reconstruct the binary image data.
+
+---
+
 ## Page number fields (`<span class="dw-field">`)
 
 ```html
 <span class="dw-field" data-dw-field="PAGE">1</span>
 <span class="dw-field" data-dw-field="NUMPAGES">1</span>
+<span class="dw-field" data-dw-field="DATE">2025-01-01</span>
 ```
 
-| Attribute | Type | Description |
+| Attribute | Value | Description |
 |---|---|---|
-| `data-dw-field` | string | `PAGE` \| `NUMPAGES` \| `SECTIONPAGES` |
+| `data-dw-field` | `PAGE` | Current page number (static placeholder `1` in HTML) |
+| `data-dw-field` | `NUMPAGES` | Total page count (static placeholder `1` in HTML) |
+| `data-dw-field` | `SECTIONPAGES` | Pages in the current section (static placeholder `1` in HTML) |
+| `data-dw-field` | `DATE` | Document date (rendered as a static string in HTML) |
+| `data-dw-field` | `TIME` | Document time (rendered as a static string in HTML) |
+| `data-dw-field` | `AUTHOR` | Document author (rendered as a static string in HTML) |
+| `data-dw-field` | `TITLE` | Document title (rendered as a static string in HTML) |
+| `data-dw-field` | `FILENAME` | File name (rendered as a static string in HTML) |
 
-The text content is always the static placeholder `1`. The HTML parser reads `data-dw-field` to reconstruct the `PageNumberField` model — the placeholder text is ignored.
+The HTML parser reads `data-dw-field` to reconstruct the `PageNumberField` model on round-trip — the displayed text content is ignored.
 
 ---
 
