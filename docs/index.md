@@ -6,15 +6,14 @@ docwow converts Word documents to a self-contained HTML representation and back 
 
 ## Why docwow?
 
-Existing libraries solve half the problem:
+Working with Word documents in Python usually means reaching for multiple tools — one for rendering to HTML, another for programmatic editing, another for writing DOCX output. docwow covers all of it in a single library with a unified model:
 
-| Library | DOCX → HTML | HTML → DOCX | Round-trip |
-|---|---|---|---|
-| mammoth | good | — | — |
-| python-docx | — | basic | — |
-| **docwow** | **yes** | **yes** | **guaranteed** |
+- **DOCX → HTML** — render any Word document to self-contained HTML for browser display, web apps, or archival storage
+- **HTML → DOCX (lossless round-trip)** — convert docwow HTML back to DOCX with guaranteed fidelity; not a single paragraph indent, table merge, list level, footnote, comment, or inline image is lost
+- **Arbitrary HTML → DOCX** — convert HTML from any source — a CMS, rich text editor, web page, or email — to a properly formatted Word document
+- **Programmatic API** — open, read, edit, and build Word documents in pure Python without touching XML; every feature accessible via a clean, chainable API
 
-The key insight: docwow embeds every piece of Word metadata into `data-dw-*` HTML attributes alongside the visual CSS. The browser renders the CSS; when you convert back to DOCX, docwow reads the data attributes and reconstructs the original Word XML exactly.
+The key insight behind the round-trip: rather than inferring Word semantics from CSS (which is lossy), docwow embeds the original Word metadata directly into `data-dw-*` HTML attributes. The browser renders the CSS; when you convert back to DOCX, docwow reads the data attributes and reconstructs the original Word XML exactly.
 
 ## Install
 
