@@ -47,7 +47,19 @@ def _parse_style(el: etree._Element) -> Style:
     based_on_el = find(el, "w:basedOn")
     based_on = attrib(based_on_el, "w:val") if based_on_el is not None else None
 
-    para_fmt = _parse_para_fmt(find(el, "w:pPr"))
+    next_el = find(el, "w:next")
+    next_style = attrib(next_el, "w:val") if next_el is not None else None
+
+    outline_level: int | None = None
+    pPr = find(el, "w:pPr")
+    if pPr is not None:
+        ol_el = find(pPr, "w:outlineLvl")
+        if ol_el is not None:
+            raw = attrib(ol_el, "w:val")
+            if raw is not None:
+                outline_level = int(raw)
+
+    para_fmt = _parse_para_fmt(pPr)
     run_fmt = _parse_run_fmt(find(el, "w:rPr"))
 
     return Style(
@@ -55,6 +67,8 @@ def _parse_style(el: etree._Element) -> Style:
         name=name,
         style_type=style_type,
         based_on=based_on,
+        next_style=next_style,
+        outline_level=outline_level,
         paragraph_fmt=para_fmt,
         run_fmt=run_fmt,
     )

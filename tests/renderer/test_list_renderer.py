@@ -3,7 +3,7 @@ import pytest
 from docwow.models.lists import ListInfo, ListLevel, NumberingDefinition
 from docwow.models.paragraph import Paragraph, TextRun
 from docwow.models.styles import ParagraphFormatting
-from docwow.renderer.list_renderer import render_list_group, _list_tag, _build_num_fmt_map
+from docwow.renderer.list_renderer import render_list_group, _list_tag
 
 
 def _para(text, num_id="1", level=0):
@@ -137,23 +137,8 @@ class TestListTag:
         ("upperRoman",  "ol"),
     ])
     def test_list_tag_by_format(self, fmt, expected_tag):
-        assert _list_tag("1", 0, {"1": fmt}) == expected_tag
+        nd = _numbering("1", fmt)
+        assert _list_tag(nd, 0) == expected_tag
 
-    def test_unknown_num_id_defaults_to_ul(self):
-        assert _list_tag("999", 0, {}) == "ul"
-
-
-class TestBuildNumFmtMap:
-    def test_extracts_level_zero_format(self):
-        nd = _numbering("1", "decimal")
-        result = _build_num_fmt_map((nd,))
-        assert result["1"] == "decimal"
-
-    def test_multiple_definitions(self):
-        nds = (_numbering("1", "bullet"), _numbering("2", "decimal"))
-        result = _build_num_fmt_map(nds)
-        assert result["1"] == "bullet"
-        assert result["2"] == "decimal"
-
-    def test_empty_tuple(self):
-        assert _build_num_fmt_map(()) == {}
+    def test_none_nd_defaults_to_ul(self):
+        assert _list_tag(None, 0) == "ul"

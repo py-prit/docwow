@@ -15,6 +15,8 @@ def render_paragraph(
     p: Paragraph,
     extra_classes: list[str] | None = None,
     comments: dict[int, Comment] | None = None,
+    list_label: str | None = None,
+    list_label_fmt: RunFormatting | None = None,
 ) -> str:
     """Return a <p> HTML element for a paragraph."""
     fmt = p.formatting
@@ -43,18 +45,33 @@ def render_paragraph(
         extra = f"position:relative;min-height:{pt_to_css(min_h)}"
         inline_style = f"{inline_style};{extra}" if inline_style else extra
 
-    inner = "".join(_render_run(r, comments=comments) for r in p.runs)
+    # Dot-leader tab stop: render as flex row so title and page number are
+    # separated by a CSS dot leader instead of a collapsed whitespace tab.
+    has_dot_leader = any(
+        s.alignment == "right" and s.leader == "dot"
+        for s in (fmt.tab_stops or ())
+    )
+    if has_dot_leader:
+        classes.append("dw-has-dot-leader")
+        inner = "".join(_render_run(r, comments=comments, dot_leader=True) for r in p.runs)
+    else:
+        inner = "".join(_render_run(r, comments=comments) for r in p.runs)
+
+    if list_label:
+        label_style = _run_inline_style(list_label_fmt) if list_label_fmt else ""
+        style_attr = f' style="{label_style}"' if label_style else ""
+        inner = f'<span class="dw-list-label" aria-hidden="true"{style_attr}>{html.escape(list_label)}</span>' + inner
 
     return _tag("p", classes, data_attrs, inline_style, inner)
 
 
-def _render_run(run: Run, comments: dict[int, Comment] | None = None) -> str:
+def _render_run(run: Run, comments: dict[int, Comment] | None = None, dot_leader: bool = False) -> str:
     if isinstance(run, FloatingImageRun):
         return render_floating_image(run.image)
     if isinstance(run, ImageRun):
         return render_image(run.image)
     if isinstance(run, Hyperlink):
-        return _render_hyperlink(run)
+        return _render_hyperlink(run, dot_leader=dot_leader)
     if isinstance(run, PageNumberField):
         return _render_page_number_field(run)
     if isinstance(run, CrossRef):
@@ -68,7 +85,7 @@ def _render_run(run: Run, comments: dict[int, Comment] | None = None) -> str:
         return _render_comment_ref(run, comment)
     if isinstance(run, TrackedChange):
         return _render_tracked_change(run)
-    return _render_text_run(run)
+    return _render_text_run(run, dot_leader=dot_leader)
 
 
 def _render_footnote_ref(ref: FootnoteRef) -> str:
@@ -189,14 +206,18 @@ def _render_bookmark(start: BookmarkStart) -> str:
     return f'<a id="{name}" class="dw-bookmark" data-dw-bookmark="{name}"></a>'
 
 
-def _render_hyperlink(link: Hyperlink) -> str:
-    inner = "".join(_render_text_run(r) for r in link.runs)
+def _render_hyperlink(link: Hyperlink, dot_leader: bool = False) -> str:
+    inner = "".join(_render_text_run(r, dot_leader=dot_leader) for r in link.runs)
     url = html.escape(link.url, quote=True)
-    return f'<a href="{url}" class="dw-hyperlink" data-dw-href="{url}">{inner}</a>'
+    extra = ' style="display:contents"' if dot_leader else ""
+    return f'<a href="{url}" class="dw-hyperlink" data-dw-href="{url}"{extra}>{inner}</a>'
 
 
-def _render_text_run(run: TextRun) -> str:
+def _render_text_run(run: TextRun, dot_leader: bool = False) -> str:
     fmt = run.formatting
+    # In a dot-leader context a tab-only run becomes the visual leader fill.
+    if dot_leader and run.text == "\t":
+        return '<span class="dw-tab-fill" aria-hidden="true"></span>'
     classes = ["dw-r"]
     if fmt.char_style_id:
         classes.append(f"dw-cstyle-{_css_ident(fmt.char_style_id)}")
