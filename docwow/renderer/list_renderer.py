@@ -26,14 +26,17 @@ def render_list_group(
     paragraphs: list[Paragraph],
     numbering: tuple[NumberingDefinition, ...],
     comments: dict[int, Comment] | None = None,
+    counters: dict[str, dict[int, int]] | None = None,
 ) -> str:
     """Render a sequence of list paragraphs (all with list_info set) to HTML."""
     if not paragraphs:
         return ""
 
     num_def_map = {nd.abstract_num_id: nd for nd in numbering}
-    # counters[num_id][level] → current count (1-based)
-    counters: dict[str, dict[int, int]] = {}
+    # counters[num_id][level] → current count (1-based); caller may pass a
+    # persistent dict so counters survive across non-list paragraph breaks.
+    if counters is None:
+        counters = {}
 
     buf: list[str] = []
     # Stack entries: (num_id, level, list_tag)
@@ -56,18 +59,18 @@ def render_list_group(
             buf.append(f"</li></{top_tag}>")
 
         if not stack or stack[-1][0] != num_id:
-            buf.append(f'<{list_tag} class="dw-list" data-dw-num-id="{num_id}">')
-            buf.append(_open_li(num_id, level))
+            buf.append(_open_list(list_tag, num_id, level, nd))
+            buf.append(_open_li(num_id, level, nd))
             stack.append((num_id, level, list_tag))
 
         elif stack[-1][1] < level:
-            buf.append(f'<{list_tag} class="dw-list" data-dw-num-id="{num_id}">')
-            buf.append(_open_li(num_id, level))
+            buf.append(_open_list(list_tag, num_id, level, nd))
+            buf.append(_open_li(num_id, level, nd))
             stack.append((num_id, level, list_tag))
 
         else:
             buf.append("</li>")
-            buf.append(_open_li(num_id, level))
+            buf.append(_open_li(num_id, level, nd))
 
         # Advance counter for this (num_id, level)
         if num_id not in counters:
@@ -79,10 +82,12 @@ def render_list_group(
                 del counters[num_id][deeper]
 
         label = _make_label(nd, level, counters[num_id])
-        if label:
-            buf.append(f'<span class="dw-list-label" aria-hidden="true">{label}</span>')
-
-        buf.append(render_paragraph(para, comments=comments))
+        lvl_def = _get_level(nd, level) if nd else None
+        buf.append(render_paragraph(
+            para, comments=comments,
+            list_label=label or None,
+            list_label_fmt=lvl_def.run_fmt if lvl_def else None,
+        ))
 
     while stack:
         _, _, tag = stack.pop()
@@ -123,6 +128,8 @@ def _make_label(nd: NumberingDefinition | None, level: int, counters: dict[int, 
 def _format_counter(n: int, num_fmt: str) -> str:
     if num_fmt == "decimal":
         return str(n)
+    if num_fmt == "decimalZero":
+        return f"{n:02d}"
     if num_fmt == "upperRoman":
         return _to_roman(n).upper()
     if num_fmt == "lowerRoman":
@@ -161,8 +168,28 @@ def _to_letter(n: int) -> str:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _open_li(num_id: str, level: int) -> str:
-    return f'<li class="dw-li" data-dw-num-id="{num_id}" data-dw-level="{level}">'
+def _open_list(tag: str, num_id: str, level: int, nd: NumberingDefinition | None) -> str:
+    """Open a <ul>/<ol> with numbering metadata as data attributes."""
+    attrs = f'class="dw-list" data-dw-num-id="{num_id}"'
+    if nd is not None:
+        lvl = _get_level(nd, level)
+        if lvl is not None:
+            import html as _html
+            attrs += f' data-dw-text-template="{_html.escape(lvl.text_template)}"'
+            attrs += f' data-dw-num-fmt="{lvl.num_fmt}"'
+            attrs += f' data-dw-start="{lvl.start_value}"'
+            if lvl.suff != "tab":
+                attrs += f' data-dw-suff="{lvl.suff}"'
+    return f"<{tag} {attrs}>"
+
+
+def _open_li(num_id: str, level: int, nd: NumberingDefinition | None = None) -> str:
+    style = ""
+    if nd is not None:
+        lvl = _get_level(nd, level)
+        if lvl and lvl.indent_pt:
+            style = f' style="padding-left:{lvl.indent_pt}pt"'
+    return f'<li class="dw-li" data-dw-num-id="{num_id}" data-dw-level="{level}"{style}>'
 
 
 def _get_level(nd: NumberingDefinition, level: int) -> ListLevel | None:

@@ -11,8 +11,8 @@ Assembles a complete HTML document from a Document model by:
 
 from __future__ import annotations
 
-import base64
 import html as html_mod
+import json
 import re
 
 from docwow.models.document import Document
@@ -68,7 +68,7 @@ def render_document(
         '<meta charset="UTF-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
         f"<style>\n{css}\n</style>\n"
-        f"{_render_raw_xml_blobs(doc)}"
+        f"{_render_style_meta(doc)}"
         "</head>\n"
         "<body>\n"
         f"{header_html}"
@@ -85,20 +85,104 @@ def render_document(
     )
 
 
-def _render_raw_xml_blobs(doc: Document) -> str:
-    """Embed raw styles.xml / numbering.xml as base64 so round-trips are lossless."""
-    parts: list[str] = []
-    if doc.raw_styles_xml:
-        b64 = base64.b64encode(doc.raw_styles_xml).decode("ascii")
-        parts.append(
-            f'<script type="application/docwow-data" data-dw-part="styles">{b64}</script>\n'
-        )
-    if doc.raw_numbering_xml:
-        b64 = base64.b64encode(doc.raw_numbering_xml).decode("ascii")
-        parts.append(
-            f'<script type="application/docwow-data" data-dw-part="numbering">{b64}</script>\n'
-        )
-    return "".join(parts)
+def _render_style_meta(doc: Document) -> str:
+    """Emit a JSON metadata block encoding every style's full definition."""
+    meta: dict[str, dict] = {}
+    for style in doc.styles:
+        entry: dict = {
+            "name":      style.name,
+            "styleType": style.style_type,
+        }
+        if style.based_on:
+            entry["basedOn"] = style.based_on
+        if style.next_style:
+            entry["next"] = style.next_style
+        if style.outline_level is not None:
+            entry["outlineLvl"] = style.outline_level
+        if style.paragraph_fmt:
+            entry["paraFmt"] = _para_fmt_to_dict(style.paragraph_fmt)
+        if style.run_fmt:
+            entry["runFmt"] = _run_fmt_to_dict(style.run_fmt)
+        meta[style.style_id] = entry
+    if not meta:
+        return ""
+    payload = json.dumps(meta, separators=(",", ":"))
+    return f'<script type="application/docwow-style-meta">{payload}</script>\n'
+
+
+def _para_fmt_to_dict(fmt) -> dict:
+    d: dict = {}
+    if fmt.alignment:
+        d["alignment"] = fmt.alignment
+    if fmt.indent_left_pt:
+        d["indentLeft"] = fmt.indent_left_pt
+    if fmt.indent_right_pt:
+        d["indentRight"] = fmt.indent_right_pt
+    if fmt.indent_first_line_pt:
+        d["indentFirstLine"] = fmt.indent_first_line_pt
+    if fmt.space_before_pt:
+        d["spaceBefore"] = fmt.space_before_pt
+    if fmt.space_after_pt:
+        d["spaceAfter"] = fmt.space_after_pt
+    if fmt.line_spacing_pt is not None:
+        d["lineSpacing"] = fmt.line_spacing_pt
+    if fmt.keep_together:
+        d["keepTogether"] = True
+    if fmt.keep_with_next:
+        d["keepWithNext"] = True
+    if fmt.page_break_before:
+        d["pageBreakBefore"] = True
+    if fmt.shading:
+        d["shading"] = fmt.shading
+    if fmt.tab_stops:
+        d["tabStops"] = [
+            {k: v for k, v in {
+                "pos": ts.position_pt,
+                "align": ts.alignment,
+                "leader": ts.leader,
+            }.items() if v is not None}
+            for ts in fmt.tab_stops
+        ]
+    if fmt.borders:
+        borders: dict = {}
+        for side in ("top", "left", "bottom", "right"):
+            bd = getattr(fmt.borders, side)
+            if bd is not None:
+                borders[side] = {"style": bd.style, "widthPt": bd.width_pt, "color": bd.color}
+        if borders:
+            d["borders"] = borders
+    return d
+
+
+def _run_fmt_to_dict(fmt) -> dict:
+    d: dict = {}
+    if fmt.bold:
+        d["bold"] = True
+    if fmt.italic:
+        d["italic"] = True
+    if fmt.underline:
+        d["underline"] = True
+    if fmt.strike:
+        d["strike"] = True
+    if fmt.small_caps:
+        d["smallCaps"] = True
+    if fmt.all_caps:
+        d["allCaps"] = True
+    if fmt.vanish:
+        d["vanish"] = True
+    if fmt.font_name:
+        d["fontName"] = fmt.font_name
+    if fmt.font_size_pt is not None:
+        d["fontSize"] = fmt.font_size_pt
+    if fmt.color:
+        d["color"] = fmt.color
+    if fmt.highlight:
+        d["highlight"] = fmt.highlight
+    if fmt.vertical_align:
+        d["verticalAlign"] = fmt.vertical_align
+    if fmt.char_style_id:
+        d["charStyleId"] = fmt.char_style_id
+    return d
 
 
 def _render_hf_slots(doc: Document, kind: str) -> str:
@@ -197,10 +281,15 @@ def _render_body(doc: Document, page_view: bool = False) -> str:
     parts: list[str] = []
     list_buffer: list[Paragraph] = []
     page_num = [1]  # mutable counter
+    list_counters: dict[str, dict[int, int]] = {}  # persistent across groups
 
     def flush_list() -> None:
         if list_buffer:
-            parts.append(render_list_group(list_buffer, doc.numbering, comments=comments_lookup))
+            parts.append(render_list_group(
+                list_buffer, doc.numbering,
+                comments=comments_lookup,
+                counters=list_counters,
+            ))
             list_buffer.clear()
 
     for element in doc.body:

@@ -94,7 +94,7 @@ def _build_zip(doc: Document) -> bytes:
     # Relationship ID budget after images
     next_rid = counter   # next available integer
 
-    has_numbering = bool(doc.numbering) or doc.raw_numbering_xml is not None
+    has_numbering = bool(doc.numbering)
 
     # 3. Assign rIds for non-image parts
     styles_rid = f"rId{next_rid}";    next_rid += 1
@@ -180,7 +180,7 @@ def _build_zip(doc: Document) -> bytes:
 
     # 10. Build all XML parts
     doc_xml       = build_document_xml(doc, image_rids, hyperlink_rids, hf_rids)
-    styles_xml    = doc.raw_styles_xml if doc.raw_styles_xml else build_styles_xml(doc.styles)
+    styles_xml    = build_styles_xml(doc.styles)
     settings_xml  = build_settings_xml()
     doc_rels_xml  = build_document_rels_xml(rel_entries)
     root_rels_xml = build_root_rels_xml()
@@ -189,12 +189,7 @@ def _build_zip(doc: Document) -> bytes:
         has_footnotes=has_footnotes, has_endnotes=has_endnotes,
         has_comments=has_comments,
     )
-    if doc.raw_numbering_xml:
-        numbering_xml = doc.raw_numbering_xml
-    elif has_numbering:
-        numbering_xml = build_numbering_xml(doc.numbering)
-    else:
-        numbering_xml = None
+    numbering_xml = build_numbering_xml(doc.numbering) if has_numbering else None
 
     # Build header/footer XML parts
     hf_xmls: dict[str, bytes] = {}

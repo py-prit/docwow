@@ -15,6 +15,8 @@ def render_paragraph(
     p: Paragraph,
     extra_classes: list[str] | None = None,
     comments: dict[int, Comment] | None = None,
+    list_label: str | None = None,
+    list_label_fmt: RunFormatting | None = None,
 ) -> str:
     """Return a <p> HTML element for a paragraph."""
     fmt = p.formatting
@@ -54,6 +56,11 @@ def render_paragraph(
         inner = "".join(_render_run(r, comments=comments, dot_leader=True) for r in p.runs)
     else:
         inner = "".join(_render_run(r, comments=comments) for r in p.runs)
+
+    if list_label:
+        label_style = _run_inline_style(list_label_fmt) if list_label_fmt else ""
+        style_attr = f' style="{label_style}"' if label_style else ""
+        inner = f'<span class="dw-list-label" aria-hidden="true"{style_attr}>{html.escape(list_label)}</span>' + inner
 
     return _tag("p", classes, data_attrs, inline_style, inner)
 

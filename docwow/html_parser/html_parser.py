@@ -9,7 +9,7 @@ the data attributes on each <p> element.
 """
 from __future__ import annotations
 
-import base64
+import json
 
 import lxml.html
 
@@ -25,7 +25,10 @@ from docwow.models.header_footer import HeaderFooter
 from docwow.models.lists import ListLevel, NumberingDefinition
 from docwow.models.paragraph import PageBreak, Paragraph
 from docwow.models.section import SectionBreak, SectionProperties
-from docwow.models.styles import Style
+from docwow.models.borders import BorderDef
+from docwow.models.styles import (
+    ParagraphBorders, ParagraphFormatting, RunFormatting, Style, TabStop,
+)
 from docwow.models.table import Table
 from docwow.models.toc import TableOfContents
 
@@ -62,13 +65,17 @@ def parse_html(source: str | bytes) -> Document:
     margin_left_pt   = pt_val(g("data-dw-margin-left"),   72.0)
     margin_right_pt  = pt_val(g("data-dw-margin-right"),  72.0)
 
+    style_meta = _parse_style_meta(root)
     body, numbering, style_ids = _parse_body(doc_div)
     title_pg = doc_div.get("data-dw-title-pg") == "true"
 
-    # Minimal Style objects: carry the style_id so the writer can reference them
+    # Merge style_ids from body with all style_ids in style_meta (e.g. TOC styles
+    # that aren't directly referenced by paragraphs but define tab stops / formatting)
+    all_style_ids = style_ids | set(style_meta.keys())
+
     styles = tuple(
-        Style(style_id=sid, name=sid, style_type="paragraph")
-        for sid in sorted(style_ids)
+        _style_from_meta(sid, style_meta.get(sid, {}))
+        for sid in sorted(all_style_ids)
     )
 
     # Headers and footers — parsed from <header>/<footer> siblings of dw-document
@@ -80,7 +87,6 @@ def parse_html(source: str | bytes) -> Document:
 
     # Comments — parsed from <section class="dw-comments">
     comments = _parse_comment_section(root)
-    raw_styles_xml, raw_numbering_xml = _extract_raw_xml_blobs(root)
 
     return Document(
         body=body,
@@ -96,30 +102,92 @@ def parse_html(source: str | bytes) -> Document:
         footnotes=footnotes,
         endnotes=endnotes,
         comments=comments,
-        raw_styles_xml=raw_styles_xml,
-        raw_numbering_xml=raw_numbering_xml,
         **hf_kwargs,
     )
 
 
-def _extract_raw_xml_blobs(root) -> tuple[bytes | None, bytes | None]:
-    """Extract embedded styles.xml / numbering.xml blobs from docwow HTML."""
-    raw_styles: bytes | None = None
-    raw_numbering: bytes | None = None
-    for script in root.xpath('//script[@data-dw-part]'):
-        part = script.get("data-dw-part")
+def _parse_style_meta(root) -> dict[str, dict]:
+    """Read the style metadata JSON block emitted by the renderer."""
+    for script in root.xpath('//script[@type="application/docwow-style-meta"]'):
         text = script.text_content().strip()
-        if not text:
-            continue
-        try:
-            data = base64.b64decode(text)
-        except Exception:
-            continue
-        if part == "styles":
-            raw_styles = data
-        elif part == "numbering":
-            raw_numbering = data
-    return raw_styles, raw_numbering
+        if text:
+            try:
+                return json.loads(text)
+            except Exception:
+                pass
+    return {}
+
+
+def _style_from_meta(style_id: str, meta: dict) -> Style:
+    """Reconstruct a full Style object from the style_meta JSON entry."""
+    return Style(
+        style_id=style_id,
+        name=meta.get("name", style_id),
+        style_type=meta.get("styleType", "paragraph"),
+        based_on=meta.get("basedOn"),
+        next_style=meta.get("next"),
+        outline_level=meta.get("outlineLvl"),
+        paragraph_fmt=_dict_to_para_fmt(meta["paraFmt"]) if "paraFmt" in meta else None,
+        run_fmt=_dict_to_run_fmt(meta["runFmt"]) if "runFmt" in meta else None,
+    )
+
+
+def _dict_to_para_fmt(d: dict) -> ParagraphFormatting:
+    tab_stops: tuple[TabStop, ...] = ()
+    if "tabStops" in d:
+        tab_stops = tuple(
+            TabStop(
+                position_pt=ts["pos"],
+                alignment=ts["align"],
+                leader=ts.get("leader"),
+            )
+            for ts in d["tabStops"]
+        )
+    borders = None
+    if "borders" in d:
+        sides = {}
+        for side in ("top", "left", "bottom", "right"):
+            bd = d["borders"].get(side)
+            if bd:
+                sides[side] = BorderDef(
+                    style=bd["style"],
+                    width_pt=bd["widthPt"],
+                    color=bd.get("color"),
+                )
+        borders = ParagraphBorders(**sides)
+    return ParagraphFormatting(
+        alignment=d.get("alignment"),
+        indent_left_pt=d.get("indentLeft", 0.0),
+        indent_right_pt=d.get("indentRight", 0.0),
+        indent_first_line_pt=d.get("indentFirstLine", 0.0),
+        space_before_pt=d.get("spaceBefore", 0.0),
+        space_after_pt=d.get("spaceAfter", 0.0),
+        line_spacing_pt=d.get("lineSpacing"),
+        keep_together=d.get("keepTogether", False),
+        keep_with_next=d.get("keepWithNext", False),
+        page_break_before=d.get("pageBreakBefore", False),
+        shading=d.get("shading"),
+        tab_stops=tab_stops,
+        borders=borders,
+    )
+
+
+def _dict_to_run_fmt(d: dict) -> RunFormatting:
+    return RunFormatting(
+        bold=d.get("bold", False),
+        italic=d.get("italic", False),
+        underline=d.get("underline", False),
+        strike=d.get("strike", False),
+        small_caps=d.get("smallCaps", False),
+        all_caps=d.get("allCaps", False),
+        vanish=d.get("vanish", False),
+        font_name=d.get("fontName"),
+        font_size_pt=d.get("fontSize"),
+        color=d.get("color"),
+        highlight=d.get("highlight"),
+        vertical_align=d.get("verticalAlign"),
+        char_style_id=d.get("charStyleId"),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -169,8 +237,8 @@ def _parse_body(
     """Walk direct children of the dw-document div and build the body tuple."""
     body: list = []
     style_ids: set[str] = set()
-    # num_id → {level → num_fmt}
-    numbering_levels: dict[str, dict[int, str]] = {}
+    # num_id → {level → ListLevel}
+    numbering_levels: dict[str, dict[int, ListLevel]] = {}
 
     for child in doc_div:
         tag = child.tag
@@ -214,17 +282,18 @@ def _collect_list(
     list_el,
     body: list,
     style_ids: set[str],
-    numbering_levels: dict[str, dict[int, str]],
+    numbering_levels: dict[str, dict[int, ListLevel]],
 ) -> None:
     """Extract paragraphs from a dw-list element, handling nesting."""
     num_id = list_el.get("data-dw-num-id", "")
-    num_fmt = "bullet" if list_el.tag == "ul" else "decimal"
 
     for li in list_el:
         if li.tag != "li":
             continue
         level = int(li.get("data-dw-level", "0"))
-        numbering_levels.setdefault(num_id, {})[level] = num_fmt
+        if num_id not in numbering_levels or level not in numbering_levels[num_id]:
+            lvl_obj = _parse_list_level(list_el, level)
+            numbering_levels.setdefault(num_id, {})[level] = lvl_obj
 
         for child in li:
             if child.tag == "p" and has_class(child, "dw-p"):
@@ -233,6 +302,32 @@ def _collect_list(
                 _collect_style(para, style_ids)
             elif child.tag in ("ul", "ol") and has_class(child, "dw-list"):
                 _collect_list(child, body, style_ids, numbering_levels)
+
+
+def _parse_list_level(list_el, level: int) -> ListLevel:
+    """Build a ListLevel from data attributes on a <ul>/<ol> element."""
+    default_fmt = "bullet" if list_el.tag == "ul" else "decimal"
+    num_fmt = list_el.get("data-dw-num-fmt", default_fmt)
+    text_template = list_el.get("data-dw-text-template", "\u2022" if num_fmt == "bullet" else "%1.")
+    start_value = int(list_el.get("data-dw-start", "1"))
+    suff = list_el.get("data-dw-suff", "tab")
+
+    # Recover label run_fmt from the inline style on the first label span
+    run_fmt: RunFormatting | None = None
+    first_li = next((c for c in list_el if c.tag == "li"), None)
+    if first_li is not None:
+        label_spans = first_li.xpath('.//span[contains(@class,"dw-list-label")]')
+        if label_spans and label_spans[0].get("style"):
+            run_fmt = _css_to_run_fmt(label_spans[0].get("style", ""))
+
+    return ListLevel(
+        level=level,
+        num_fmt=num_fmt,
+        text_template=text_template,
+        start_value=start_value,
+        suff=suff,
+        run_fmt=run_fmt,
+    )
 
 
 def _collect_style(para: Paragraph, style_ids: set[str]) -> None:
@@ -283,15 +378,44 @@ def _parse_comment_section(root) -> tuple[Comment, ...]:
 
 
 def _build_numbering(
-    numbering_levels: dict[str, dict[int, str]],
+    numbering_levels: dict[str, dict[int, ListLevel]],
 ) -> tuple[NumberingDefinition, ...]:
     return tuple(
         NumberingDefinition(
             abstract_num_id=num_id,
-            levels=tuple(
-                ListLevel(level=lvl, num_fmt=fmt)
-                for lvl, fmt in sorted(levels.items())
-            ),
+            levels=tuple(lvl_obj for _, lvl_obj in sorted(levels.items())),
         )
         for num_id, levels in sorted(numbering_levels.items())
+    )
+
+
+def _css_to_run_fmt(style: str) -> RunFormatting | None:
+    """Parse an inline CSS style string into a RunFormatting object."""
+    props: dict[str, str] = {}
+    for part in style.split(";"):
+        part = part.strip()
+        if ":" in part:
+            k, _, v = part.partition(":")
+            props[k.strip()] = v.strip()
+    if not props:
+        return None
+    bold = props.get("font-weight") == "bold"
+    italic = props.get("font-style") == "italic"
+    td = props.get("text-decoration", "")
+    underline = "underline" in td
+    strike = "line-through" in td
+    font_name = props.get("font-family")
+    font_size_pt: float | None = None
+    raw_size = props.get("font-size", "")
+    if raw_size.endswith("pt"):
+        try:
+            font_size_pt = float(raw_size[:-2])
+        except ValueError:
+            pass
+    color = props.get("color", "").lstrip("#") or None
+    if not any([bold, italic, underline, strike, font_name, font_size_pt, color]):
+        return None
+    return RunFormatting(
+        bold=bold, italic=italic, underline=underline, strike=strike,
+        font_name=font_name, font_size_pt=font_size_pt, color=color,
     )

@@ -206,19 +206,11 @@ _BASE_CSS = """\
 
 .dw-li {
   margin: 0;
-  display: flex;
-  align-items: baseline;
 }
 
 .dw-list-label {
-  flex-shrink: 0;
   margin-right: 0.4em;
   white-space: nowrap;
-}
-
-.dw-li > .dw-p {
-  flex: 1;
-  min-width: 0;
 }
 
 .dw-img {

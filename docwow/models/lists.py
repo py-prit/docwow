@@ -16,6 +16,7 @@ class ListLevel:
     text_template: str = "%1."   # e.g. "%1." → "1.", "%1.%2." → "1.1."
     indent_pt: float = 0.0       # left indent for the list item text
     hanging_pt: float = 0.0      # hanging indent (bullet/number protrudes left)
+    suff: str = "tab"            # separator after label: "tab" | "space" | "nothing"
     run_fmt: RunFormatting | None = None   # formatting applied to the list label
 
 

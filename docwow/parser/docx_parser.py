@@ -77,20 +77,17 @@ def _parse_zip(zf: zipfile.ZipFile) -> Document:
     # -----------------------------------------------------------------------
     styles = ()
     style_num_map: dict[str, tuple[str, int]] = {}
-    raw_styles_xml: bytes | None = None
     if "word/styles.xml" in names:
-        raw_styles_xml = zf.read("word/styles.xml")
-        styles = parse_styles(raw_styles_xml)
-        style_num_map = parse_style_numbering(raw_styles_xml)
+        styles_xml = zf.read("word/styles.xml")
+        styles = parse_styles(styles_xml)
+        style_num_map = parse_style_numbering(styles_xml)
 
     # -----------------------------------------------------------------------
     # Numbering
     # -----------------------------------------------------------------------
     numbering = ()
-    raw_numbering_xml: bytes | None = None
     if "word/numbering.xml" in names:
-        raw_numbering_xml = zf.read("word/numbering.xml")
-        numbering = parse_numbering(raw_numbering_xml)
+        numbering = parse_numbering(zf.read("word/numbering.xml"))
 
     # -----------------------------------------------------------------------
     # Relationships  (rId → media path)
@@ -149,8 +146,6 @@ def _parse_zip(zf: zipfile.ZipFile) -> Document:
         footnotes=footnotes,
         endnotes=endnotes,
         comments=comments,
-        raw_styles_xml=raw_styles_xml,
-        raw_numbering_xml=raw_numbering_xml,
         **margins,
         **hf,
     )

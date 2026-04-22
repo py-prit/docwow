@@ -69,6 +69,10 @@ def _write_level(parent: etree._Element, lvl: ListLevel) -> None:
     lv_text = lvl.text_template if lvl.text_template != "%1." else default
     txt.set(f"{{{W}}}val", lv_text)
 
+    if lvl.suff != "tab":
+        suff_el = etree.SubElement(lvl_el, f"{{{W}}}suff")
+        suff_el.set(f"{{{W}}}val", lvl.suff)
+
     jc = etree.SubElement(lvl_el, f"{{{W}}}lvlJc")
     jc.set(f"{{{W}}}val", "left")
 

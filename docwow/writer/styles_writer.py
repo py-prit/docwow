@@ -73,9 +73,17 @@ def _write_style(parent: etree._Element, style: Style) -> None:
         based = etree.SubElement(el, f"{{{W}}}basedOn")
         based.set(f"{{{W}}}val", style.based_on)
 
-    if style.paragraph_fmt:
+    if style.next_style:
+        next_el = etree.SubElement(el, f"{{{W}}}next")
+        next_el.set(f"{{{W}}}val", style.next_style)
+
+    if style.paragraph_fmt or style.outline_level is not None:
         ppr = etree.SubElement(el, f"{{{W}}}pPr")
-        _write_para_fmt(ppr, style.paragraph_fmt)
+        if style.paragraph_fmt:
+            _write_para_fmt(ppr, style.paragraph_fmt)
+        if style.outline_level is not None:
+            ol = etree.SubElement(ppr, f"{{{W}}}outlineLvl")
+            ol.set(f"{{{W}}}val", str(style.outline_level))
 
     if style.run_fmt:
         rpr = etree.SubElement(el, f"{{{W}}}rPr")

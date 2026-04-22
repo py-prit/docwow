@@ -69,6 +69,8 @@ class Style:
     style_id: str
     name: str
     style_type: str                          # "paragraph" | "character" | "table" | "numbering"
-    based_on: str | None = None              # style_id of parent style
+    based_on: str | None = None              # style_id of parent style (w:basedOn)
+    next_style: str | None = None            # style applied to next paragraph (w:next)
+    outline_level: int | None = None         # 0-8 for headings; drives TOC generation (w:outlineLvl)
     paragraph_fmt: ParagraphFormatting | None = None
     run_fmt: RunFormatting | None = None

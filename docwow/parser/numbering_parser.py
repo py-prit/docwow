@@ -16,6 +16,7 @@ from __future__ import annotations
 from lxml import etree
 
 from docwow.models.lists import ListLevel, NumberingDefinition
+from docwow.parser.style_parser import parse_run_fmt
 from docwow.utils.units import twips_to_pt
 from docwow.utils.xml_utils import attrib, find, findall, qn
 
@@ -81,6 +82,12 @@ def _parse_abstract_levels(an: etree._Element) -> list[ListLevel]:
                 if hanging is not None:
                     hanging_pt = twips_to_pt(int(hanging))
 
+        suff_el = find(lvl_el, "w:suff")
+        suff = attrib(suff_el, "w:val") or "tab" if suff_el is not None else "tab"
+
+        rPr = find(lvl_el, "w:rPr")
+        run_fmt = parse_run_fmt(rPr)
+
         levels.append(ListLevel(
             level=level_idx,
             num_fmt=num_fmt,
@@ -88,6 +95,8 @@ def _parse_abstract_levels(an: etree._Element) -> list[ListLevel]:
             text_template=text_template,
             indent_pt=indent_pt,
             hanging_pt=hanging_pt,
+            suff=suff,
+            run_fmt=run_fmt,
         ))
 
     return levels
@@ -97,6 +106,7 @@ def _normalise_num_fmt(raw: str) -> str:
     mapping = {
         "bullet":       "bullet",
         "decimal":      "decimal",
+        "decimalZero":  "decimalZero",
         "lowerLetter":  "lowerLetter",
         "upperLetter":  "upperLetter",
         "lowerRoman":   "lowerRoman",
