@@ -124,9 +124,32 @@ DOCX allows `<w:pgNumType w:start="N"/>` to start numbering from a value other t
 
 ### 🗓 Planned
 
-| Feature | Notes |
+The items below represent the committed future direction of docwow, in rough priority order.
+
+#### Round-trip fidelity gaps (identified v1.0.2 audit)
+
+These are properties that exist in real DOCX files but are currently dropped on the DOCX → HTML → DOCX round-trip:
+
+| Area | Missing properties |
 |---|---|
-| Multi-column layouts | `w:cols` in section properties |
+| Run formatting | Complex-script bold/italic/size (`bCs`/`iCs`/`szCs`), font kerning, double strikethrough, run border, character spacing, run shading, language (`w:lang`), no-proof flag |
+| Paragraph formatting | Paragraph-mark formatting (`w:pPr/w:rPr`), contextual spacing, style-attached numbering (`w:numPr` in style definitions) |
+| Tables | Table width, cell vertical alignment, cell margins, individual cell borders, cell spacing, table conditional formatting |
+| Section properties | Multi-column layout (`w:cols`), document grid (`w:docGrid`) |
+| Field codes | TC fields (TOC entry markers), TOC regeneration field, PAGEREF cross-reference fields |
+| Document parts | Theme colours/fonts (`theme1.xml`), document metadata (`core.xml`/`app.xml`), full settings passthrough |
+
+#### DOCX → PDF (pure Python, no LibreOffice)
+
+Direct `Document` model → PDF output pipeline — no HTML intermediate, no external binaries, no LibreOffice. Pure Python using ReportLab for PDF primitives and fonttools for font metrics. Planned in two phases:
+
+- **Phase 1** — Paragraphs, run formatting, headings, page breaks, inline images, basic tables, lists
+- **Phase 2** — Headers/footers repeated per page, footnotes, column layout, TOC with live page numbers
+
+#### Other
+
+- Visual page separation and correct page numbers in browser HTML (requires JS layout pass)
+- Header/footer repeating per page in browser HTML
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, the architecture pattern, and the PR process.
 
