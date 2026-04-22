@@ -7,6 +7,11 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- DOCX round-trip lost style and numbering definitions: `styles.xml` and `numbering.xml` were rebuilt from scratch on every HTML→DOCX conversion, discarding 98% of the original content (TOC styles, list label formats, custom styles). Raw XML is now preserved through the round-trip via embedded base64 blobs in the HTML.
+- Custom list labels (e.g. `ARTICLE I`, `(a)`, `i.`) were not rendered — the browser rendered default counters instead. List labels are now expanded from the `text_template` using per-level counters.
+- TOC dot-leader tab stops were collapsed to whitespace. TOC entries now render with a CSS dot-pattern flex spacer between the entry title and page number.
+
 ## [1.0.1] - 2026-04-19
 
 ### Changed
