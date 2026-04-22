@@ -56,3 +56,8 @@ class Document:
 
     # Comments (optional)
     comments: tuple[Comment, ...] = ()
+
+    # Raw XML blobs — preserved verbatim on DOCX → HTML → DOCX round-trips
+    # so that style and numbering definitions are never rebuilt from scratch.
+    raw_styles_xml: bytes | None = None
+    raw_numbering_xml: bytes | None = None

@@ -11,6 +11,7 @@ Assembles a complete HTML document from a Document model by:
 
 from __future__ import annotations
 
+import base64
 import html as html_mod
 import re
 
@@ -67,6 +68,7 @@ def render_document(
         '<meta charset="UTF-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
         f"<style>\n{css}\n</style>\n"
+        f"{_render_raw_xml_blobs(doc)}"
         "</head>\n"
         "<body>\n"
         f"{header_html}"
@@ -81,6 +83,22 @@ def render_document(
         "</body>\n"
         "</html>"
     )
+
+
+def _render_raw_xml_blobs(doc: Document) -> str:
+    """Embed raw styles.xml / numbering.xml as base64 so round-trips are lossless."""
+    parts: list[str] = []
+    if doc.raw_styles_xml:
+        b64 = base64.b64encode(doc.raw_styles_xml).decode("ascii")
+        parts.append(
+            f'<script type="application/docwow-data" data-dw-part="styles">{b64}</script>\n'
+        )
+    if doc.raw_numbering_xml:
+        b64 = base64.b64encode(doc.raw_numbering_xml).decode("ascii")
+        parts.append(
+            f'<script type="application/docwow-data" data-dw-part="numbering">{b64}</script>\n'
+        )
+    return "".join(parts)
 
 
 def _render_hf_slots(doc: Document, kind: str) -> str:

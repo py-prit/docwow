@@ -9,6 +9,8 @@ the data attributes on each <p> element.
 """
 from __future__ import annotations
 
+import base64
+
 import lxml.html
 
 from docwow.html_parser._utils import has_class, pt_val
@@ -78,6 +80,7 @@ def parse_html(source: str | bytes) -> Document:
 
     # Comments — parsed from <section class="dw-comments">
     comments = _parse_comment_section(root)
+    raw_styles_xml, raw_numbering_xml = _extract_raw_xml_blobs(root)
 
     return Document(
         body=body,
@@ -93,8 +96,30 @@ def parse_html(source: str | bytes) -> Document:
         footnotes=footnotes,
         endnotes=endnotes,
         comments=comments,
+        raw_styles_xml=raw_styles_xml,
+        raw_numbering_xml=raw_numbering_xml,
         **hf_kwargs,
     )
+
+
+def _extract_raw_xml_blobs(root) -> tuple[bytes | None, bytes | None]:
+    """Extract embedded styles.xml / numbering.xml blobs from docwow HTML."""
+    raw_styles: bytes | None = None
+    raw_numbering: bytes | None = None
+    for script in root.xpath('//script[@data-dw-part]'):
+        part = script.get("data-dw-part")
+        text = script.text_content().strip()
+        if not text:
+            continue
+        try:
+            data = base64.b64decode(text)
+        except Exception:
+            continue
+        if part == "styles":
+            raw_styles = data
+        elif part == "numbering":
+            raw_numbering = data
+    return raw_styles, raw_numbering
 
 
 # ---------------------------------------------------------------------------

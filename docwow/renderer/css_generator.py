@@ -200,12 +200,25 @@ _BASE_CSS = """\
 
 .dw-list {
   margin: 0;
-  padding-left: 2em;
+  padding-left: 0;
+  list-style: none;
 }
 
 .dw-li {
   margin: 0;
-  padding-left: 0.25em;
+  display: flex;
+  align-items: baseline;
+}
+
+.dw-list-label {
+  flex-shrink: 0;
+  margin-right: 0.4em;
+  white-space: nowrap;
+}
+
+.dw-li > .dw-p {
+  flex: 1;
+  min-width: 0;
 }
 
 .dw-img {
@@ -281,6 +294,26 @@ _BASE_CSS = """\
   flex-shrink: 0;
   font-size: 0.75em;
   vertical-align: super;
+}
+
+/* Dot-leader tab stops (TOC entries etc.) */
+.dw-has-dot-leader {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+}
+
+.dw-tab-fill {
+  flex: 1;
+  overflow: hidden;
+  height: 1em;
+  align-self: flex-end;
+  margin: 0 3pt 0.15em;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 5pt 5pt;
+  background-repeat: repeat-x;
+  background-position: left center;
+  min-width: 20pt;
 }
 
 /* Table of Contents */
