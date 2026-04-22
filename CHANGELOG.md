@@ -7,6 +7,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-04-22
+
 ### Fixed
 - DOCX round-trip lost style and numbering definitions: `styles.xml` and `numbering.xml` were rebuilt from scratch on every HTML→DOCX conversion, discarding most of the original content (TOC styles, list label formats, custom styles). Style definitions — including `paragraph_fmt` (indents, spacing, tab stops), `run_fmt` (fonts, bold, colour), `basedOn`, `next`, `outlineLvl`, and `styleType` — are now embedded as a JSON metadata block (`<script type="application/docwow-style-meta">`) in the HTML and fully restored on HTML→DOCX conversion. Numbering level metadata (`numFmt`, `text_template`, `start`, `suff`) is encoded as `data-dw-*` attributes on `<ul>`/`<ol>` elements.
 - Custom list labels (e.g. `ARTICLE I`, `(a)`, `i.`) were not rendered — the browser rendered default counters instead. List labels are now expanded from the `text_template` using per-level counters.
